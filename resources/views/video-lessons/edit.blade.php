@@ -30,6 +30,26 @@
     <section class="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
         <div class="flex justify-between items-start"><div><h2 class="text-lg font-semibold">Status & Publikasi</h2><p class="text-xs text-slate-500 mt-1">{{ $videoLesson->checkpoints->count() }} checkpoint · {{ $attemptCount }} pengerjaan selesai</p></div><span class="rounded-lg px-3 py-1 text-xs {{ $videoLesson->is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">{{ $videoLesson->is_published ? 'Diterbitkan' : 'Draf' }}</span></div>
         <p class="text-sm text-slate-600">{{ $videoLesson->is_published ? 'Siswa anggota kelas dapat menonton dan mengerjakan.' : 'Video belum muncul untuk siswa. Publikasikan setelah membuat soal.' }}</p>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 class="text-sm font-semibold text-slate-900">Kontrol pemutaran siswa</h3>
+            <p class="mt-1 text-xs text-slate-600">Atur sebelum publikasi. Siswa dapat mengetuk dua kali sisi kanan video untuk maju, atau sisi kiri untuk mundur.</p>
+            @if(!$videoLesson->is_published && !$hasAnswers)
+                <form method="POST" action="{{ route('video-lessons.playback.update', $videoLesson) }}" class="mt-3 space-y-3">
+                    @csrf @method('PUT')
+                    <label class="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" name="allow_seeking" value="1" @checked($videoLesson->allow_seeking) class="mt-1 rounded border-slate-300"> <span>Izinkan ketuk dua kali untuk skip video <small class="block text-xs text-slate-500">Sisi kanan maju, sisi kiri mundur. Checkpoint tetap wajib dijawab berurutan.</small></span></label>
+                    <label class="block text-xs font-semibold text-slate-700">Jarak tiap lompatan
+                        <select name="skip_seconds" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                            <option value="5" @selected($videoLesson->skip_seconds === 5)>5 detik</option>
+                            <option value="10" @selected($videoLesson->skip_seconds !== 5)>10 detik</option>
+                        </select>
+                    </label>
+                    <button class="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900">Simpan pengaturan pemutaran</button>
+                </form>
+            @else
+                <p class="mt-3 text-xs text-slate-700">Ketuk dua kali untuk skip: <strong>{{ $videoLesson->allow_seeking ? 'Boleh' : 'Tidak boleh' }}</strong> · Jarak: <strong>{{ $videoLesson->skip_seconds }} detik</strong></p>
+                <p class="mt-1 text-xs text-amber-700">{{ $hasAnswers ? 'Pengaturan terkunci karena sudah ada jawaban siswa.' : 'Sembunyikan video untuk mengubah pengaturan.' }}</p>
+            @endif
+        </div>
         <form method="POST" action="{{ route('video-lessons.publish', $videoLesson) }}">@csrf<button class="rounded-lg px-4 py-2.5 text-sm font-medium text-white {{ $videoLesson->is_published ? 'bg-amber-600' : 'bg-emerald-600' }}">{{ $videoLesson->is_published ? 'Sembunyikan dari siswa' : 'Publikasikan video' }}</button></form>
         <hr>
         <form method="POST" action="{{ route('video-lessons.destroy', $videoLesson) }}" onsubmit="return confirm('Hapus video beserta seluruh jawaban dan nilai siswa? Tidak bisa dibatalkan.');">@csrf @method('DELETE')<button class="text-sm font-semibold text-red-600 hover:underline">Hapus video dan seluruh nilainya</button></form>

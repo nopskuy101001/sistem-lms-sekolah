@@ -31,6 +31,20 @@ class VideoAnswerService
             if (! $next || $next->id !== $checkpoint->id) {
                 throw ValidationException::withMessages(['answer' => 'Jawab pertanyaan sesuai urutan checkpoint video.']);
             }
+            if (! $lesson->allow_seeking) {
+                $previous = $lesson->checkpoints()
+                    ->where('time_seconds', '<', $checkpoint->time_seconds)
+                    ->orderByDesc('time_seconds')->first();
+                $previousAnswer = $previous
+                    ? $attempt->answers()->where('video_checkpoint_id', $previous->id)->first()
+                    : null;
+                $startedAt = $previousAnswer?->created_at ?? $attempt->created_at;
+                $secondsToWatch = $checkpoint->time_seconds - ($previous?->time_seconds ?? 0);
+                $minimumElapsed = max(0, $secondsToWatch - 1);
+                if ($startedAt && now()->lt($startedAt->copy()->addSeconds($minimumElapsed))) {
+                    throw ValidationException::withMessages(['answer' => 'Checkpoint belum tercapai. Tonton video sampai pertanyaan muncul.']);
+                }
+            }
             $answer = $attempt->answers()->create([
                 'video_checkpoint_id' => $checkpoint->id,
                 'selected_index' => $selectedIndex,

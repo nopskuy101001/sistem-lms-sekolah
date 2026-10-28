@@ -104,6 +104,25 @@ class VideoLessonController extends Controller
         return back()->with('success', $videoLesson->is_published ? 'Video dipublikasikan.' : 'Video disembunyikan dari siswa.');
     }
 
+    public function updatePlayback(Request $request, VideoLesson $videoLesson): RedirectResponse
+    {
+        $this->authorizeManage($videoLesson->classroom);
+        if ($videoLesson->is_published || $videoLesson->attempts()->whereHas('answers')->exists()) {
+            return back()->withErrors(['playback' => 'Sembunyikan video sebelum mengubah pengaturan pemutaran. Pengaturan terkunci setelah ada jawaban siswa.']);
+        }
+
+        $request->validate([
+            'allow_seeking' => ['sometimes', 'boolean'],
+            'skip_seconds' => ['required', 'integer', Rule::in([5, 10])],
+        ]);
+        $videoLesson->update([
+            'allow_seeking' => $request->boolean('allow_seeking'),
+            'skip_seconds' => (int) $request->input('skip_seconds'),
+        ]);
+
+        return back()->with('success', 'Pengaturan pemutaran siswa berhasil disimpan.');
+    }
+
     public function destroy(VideoLesson $videoLesson): RedirectResponse
     {
         $this->authorizeManage($videoLesson->classroom);

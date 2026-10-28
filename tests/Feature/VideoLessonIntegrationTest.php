@@ -103,6 +103,105 @@ class VideoLessonIntegrationTest extends TestCase
         $this->assertStringContainsString('Video Interaktif', $csv->streamedContent());
     }
 
+    public function test_teacher_configures_double_tap_skip_before_publish_and_restricted_answers_wait_for_video_time(): void
+    {
+        $this->actingAs($this->teacher)->post(route('video-lessons.publish', $this->lesson))->assertRedirect();
+        $this->put(route('video-lessons.playback.update', $this->lesson), ['skip_seconds' => 5])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->lesson->refresh();
+        $this->assertFalse($this->lesson->allow_seeking);
+        $this->assertSame(5, $this->lesson->skip_seconds);
+        $this->get(route('video-lessons.edit', $this->lesson))
+            ->assertOk()->assertSee('Izinkan ketuk dua kali untuk skip video')->assertSee('5 detik');
+
+        $this->post(route('video-lessons.publish', $this->lesson))->assertRedirect();
+        $this->put(route('video-lessons.playback.update', $this->lesson), ['allow_seeking' => 1, 'skip_seconds' => 10])
+            ->assertSessionHasErrors('playback');
+
+        $this->actingAs($this->student)->get(route('video-lessons.player', $this->lesson))
+            ->assertOk()->assertSee('id="playback-progress"', false)
+            ->assertSee('Skip video dinonaktifkan oleh guru.')
+            ->assertDontSee('id="skip-forward"', false)
+            ->assertDontSee('id="playback-speed"', false);
+        $questions = $this->lesson->checkpoints;
+        $this->postJson(route('video-lessons.answer', $this->lesson), [
+            'question_id' => $questions[0]->id, 'selected_index' => 1,
+        ])->assertUnprocessable();
+        $this->travel(5)->seconds();
+        $this->postJson(route('video-lessons.answer', $this->lesson), [
+            'question_id' => $questions[0]->id, 'selected_index' => 1,
+        ])->assertOk();
+        $this->postJson(route('video-lessons.answer', $this->lesson), [
+            'question_id' => $questions[1]->id, 'selected_index' => 2,
+        ])->assertUnprocessable();
+        $this->travel(10)->seconds();
+        $this->postJson(route('video-lessons.answer', $this->lesson), [
+            'question_id' => $questions[1]->id, 'selected_index' => 2,
+        ])->assertOk()->assertJsonPath('completed', true);
+        $this->travelBack();
+
+        $this->actingAs($this->teacher)->post(route('video-lessons.publish', $this->lesson))->assertRedirect();
+        $this->put(route('video-lessons.playback.update', $this->lesson), ['allow_seeking' => 1, 'skip_seconds' => 10])
+            ->assertSessionHasErrors('playback');
+        $this->actingAs($this->student)->put(route('video-lessons.playback.update', $this->lesson), ['skip_seconds' => 10])->assertForbidden();
+    }
+
+    public function test_teacher_can_enable_double_tap_skip_for_five_or_ten_seconds(): void
+    {
+        $this->lesson->update(['is_published' => false]);
+        $this->actingAs($this->teacher)->put(route('video-lessons.playback.update', $this->lesson), [
+            'allow_seeking' => 1,
+            'skip_seconds' => 5,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->lesson->refresh();
+        $this->assertTrue($this->lesson->allow_seeking);
+        $this->assertSame(5, $this->lesson->skip_seconds);
+        $this->put(route('video-lessons.playback.update', $this->lesson), [
+            'allow_seeking' => 1,
+            'skip_seconds' => 10,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->lesson->refresh();
+        $this->assertTrue($this->lesson->allow_seeking);
+        $this->assertSame(10, $this->lesson->skip_seconds);
+        $this->put(route('video-lessons.playback.update', $this->lesson), [
+            'allow_seeking' => 1,
+            'skip_seconds' => 6,
+        ])->assertSessionHasErrors('skip_seconds');
+        $this->post(route('video-lessons.publish', $this->lesson))->assertRedirect();
+        $this->actingAs($this->student)->get(route('video-lessons.player', $this->lesson))
+            ->assertOk()
+            ->assertSee('id="skip-forward"', false)
+            ->assertSee('id="skip-back"', false)
+            ->assertSee('id="playback-progress"', false)
+            ->assertSee('sisi kanan video untuk maju 10 detik')
+            ->assertDontSee('id="seek-range"', false)
+            ->assertDontSee('id="playback-speed"', false);
+        $this->postJson(route('video-lessons.answer', $this->lesson), [
+            'question_id' => $this->lesson->checkpoints->first()->id, 'selected_index' => 1,
+        ])->assertOk();
+    }
+
+    public function test_mp4_player_uses_the_same_teacher_playback_permissions(): void
+    {
+        $this->lesson->update([
+            'source_type' => 'mp4',
+            'source_url' => 'https://example.com/lesson.mp4',
+            'allow_seeking' => false,
+            'skip_seconds' => 5,
+        ]);
+
+        $this->actingAs($this->student)->get(route('video-lessons.player', $this->lesson))
+            ->assertOk()
+            ->assertSee('id="mp4-player"', false)
+            ->assertSee('id="play-toggle"', false)
+            ->assertSee('id="mute-toggle"', false)
+            ->assertSee('id="fullscreen-toggle"', false)
+            ->assertSee('id="playback-progress"', false)
+            ->assertDontSee('id="skip-forward"', false)
+            ->assertDontSee('id="playback-speed"', false)
+            ->assertSee('Skip video dinonaktifkan oleh guru.');
+    }
+
     public function test_student_can_not_modify_lesson_and_outsider_can_not_watch(): void
     {
         $this->actingAs($this->student)->post(route('video-lessons.publish', $this->lesson))->assertForbidden();

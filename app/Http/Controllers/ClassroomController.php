@@ -14,6 +14,7 @@ use App\Models\VideoLesson;
 use App\Services\TranscriptReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -109,9 +110,26 @@ class ClassroomController extends Controller
             'room' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['required', Rule::in(Classroom::COLORS)],
+            'theme_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'theme_zoom' => ['sometimes', 'integer', 'between:100,250'],
+            'theme_position_x' => ['sometimes', 'integer', 'between:0,100'],
+            'theme_position_y' => ['sometimes', 'integer', 'between:0,100'],
         ]);
 
-        $classroom = Classroom::create($data + ['teacher_id' => $request->user()->id]);
+        unset($data['theme_image']);
+        if ($request->hasFile('theme_image')) {
+            $data['theme_image_path'] = $request->file('theme_image')->store('classroom-themes', 'public');
+            if (! $data['theme_image_path']) {
+                return back()->withErrors(['theme_image' => 'Gambar tema gagal disimpan. Coba unggah kembali.'])->withInput();
+            }
+        }
+
+        try {
+            $classroom = Classroom::create($data + ['teacher_id' => $request->user()->id]);
+        } catch (\Throwable $exception) {
+            if (isset($data['theme_image_path'])) Storage::disk('public')->delete($data['theme_image_path']);
+            throw $exception;
+        }
 
         return redirect()->route('classrooms.show', $classroom)->with('success', 'Kelas berhasil dibuat. Bagikan kode kelas ke siswa.');
     }
@@ -149,9 +167,34 @@ class ClassroomController extends Controller
             'room' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['required', Rule::in(Classroom::COLORS)],
+            'theme_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_theme_image' => ['sometimes', 'boolean'],
+            'theme_zoom' => ['sometimes', 'integer', 'between:100,250'],
+            'theme_position_x' => ['sometimes', 'integer', 'between:0,100'],
+            'theme_position_y' => ['sometimes', 'integer', 'between:0,100'],
         ]);
 
-        $classroom->update($data);
+        unset($data['theme_image'], $data['remove_theme_image']);
+        $previousImage = $classroom->theme_image_path;
+        $newImage = $request->hasFile('theme_image')
+            ? $request->file('theme_image')->store('classroom-themes', 'public')
+            : null;
+        if ($request->hasFile('theme_image') && ! $newImage) {
+            return back()->withErrors(['theme_image' => 'Gambar tema gagal disimpan. Coba unggah kembali.'])->withInput();
+        }
+        if ($newImage || $request->boolean('remove_theme_image')) {
+            $data['theme_image_path'] = $newImage;
+        }
+
+        try {
+            $classroom->update($data);
+        } catch (\Throwable $exception) {
+            if ($newImage) Storage::disk('public')->delete($newImage);
+            throw $exception;
+        }
+        if ($previousImage && $previousImage !== $classroom->theme_image_path) {
+            Storage::disk('public')->delete($previousImage);
+        }
 
         return back()->with('success', 'Kelas diperbarui.');
     }
@@ -160,7 +203,9 @@ class ClassroomController extends Controller
     {
         $this->authorizeManage($classroom);
 
+        $themeImage = $classroom->theme_image_path;
         $classroom->delete();
+        if ($themeImage) Storage::disk('public')->delete($themeImage);
 
         return redirect()->route('dashboard')->with('success', 'Kelas dihapus.');
     }

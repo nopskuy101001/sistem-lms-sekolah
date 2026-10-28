@@ -13,7 +13,14 @@ class Classroom extends Model
     public const COLORS = ['indigo', 'emerald', 'rose', 'amber', 'sky', 'violet'];
 
     protected $fillable = [
-        'teacher_id', 'name', 'section', 'subject', 'room', 'description', 'color', 'code',
+        'teacher_id', 'name', 'section', 'subject', 'room', 'description', 'color', 'code', 'theme_image_path',
+        'theme_zoom', 'theme_position_x', 'theme_position_y',
+    ];
+
+    protected $casts = [
+        'theme_zoom' => 'integer',
+        'theme_position_x' => 'integer',
+        'theme_position_y' => 'integer',
     ];
 
     protected static function booted(): void
@@ -108,5 +115,16 @@ class Classroom extends Model
             'violet' => 'bg-violet-600',
             default => 'bg-indigo-600',
         };
+    }
+
+    public function themeImageStyle(): string
+    {
+        $zoom = min(250, max(100, (int) ($this->theme_zoom ?? 100))) / 100;
+        $x = min(100, max(0, (int) ($this->theme_position_x ?? 50)));
+        $y = min(100, max(0, (int) ($this->theme_position_y ?? 50)));
+        $shiftX = round((50 - $x) * ($zoom - 1), 2);
+        $shiftY = round((50 - $y) * ($zoom - 1), 2);
+
+        return "object-position: {$x}% {$y}%; transform: translate({$shiftX}%, {$shiftY}%) scale({$zoom});";
     }
 }

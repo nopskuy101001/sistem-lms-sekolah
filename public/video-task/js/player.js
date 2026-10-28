@@ -1,4 +1,4 @@
-/* VideoTask: YouTube IFrame API + native MP4 checkpoint player. No npm required. */
+/* VideoTask: YouTube IFrame API + MP4 checkpoint player. No npm required. */
 (() => {
     'use strict';
     const config = window.VideoTaskLesson;
@@ -18,6 +18,16 @@
     const errorBox = qs('player-error');
     const finishBanner = qs('finish-banner');
     const checkpointProgress = qs('checkpoint-progress');
+    const playToggle = qs('play-toggle');
+    const playbackProgress = qs('playback-progress');
+    const playbackTime = qs('playback-time');
+    const skipBack = qs('skip-back');
+    const skipForward = qs('skip-forward');
+    const skipFeedback = qs('skip-feedback');
+    const muteToggle = qs('mute-toggle');
+    const volumeRange = qs('volume-range');
+    const fullscreenToggle = qs('fullscreen-toggle');
+    const watchMain = qs('watch-main');
     const questions = [...config.questions].sort((a, b) => a.time_seconds - b.time_seconds || a.id - b.id);
     const answered = new Set(config.answeredIds.map(Number));
 
@@ -51,6 +61,9 @@
     let selectedIndex = null;
     let submitting = false;
     let submitted = false;
+    let highestWatchedTime = 0;
+    let lastObservedAt = performance.now();
+    let skipFeedbackTimer = null;
 
     function clock(seconds) {
         const s = Math.floor(Math.max(0, seconds));
@@ -68,9 +81,85 @@
         try { return youtubePlayer?.getCurrentTime() || 0; } catch { return 0; }
     }
 
+    function getDuration() {
+        if (mp4) return Number.isFinite(mp4.duration) ? mp4.duration : 0;
+        try { return youtubePlayer?.getDuration() || 0; } catch { return 0; }
+    }
+
+    function isPlaying() {
+        if (mp4) return !mp4.paused && !mp4.ended;
+        try { return youtubePlayer?.getPlayerState() === window.YT.PlayerState.PLAYING; } catch { return false; }
+    }
+
+    function seekTo(seconds) {
+        const duration = getDuration();
+        const target = Math.max(0, Math.min(Number(seconds) || 0, duration || 86400));
+        if (mp4) mp4.currentTime = target;
+        else if (youtubePlayer && ready) youtubePlayer.seekTo(target, true);
+    }
+
+    function getVolume() {
+        if (mp4) return Math.round(mp4.volume * 100);
+        try { return youtubePlayer?.getVolume() ?? 100; } catch { return 100; }
+    }
+
+    function isMuted() {
+        if (mp4) return mp4.muted;
+        try { return youtubePlayer?.isMuted() || false; } catch { return false; }
+    }
+
+    function setVolume(value) {
+        const volume = Math.max(0, Math.min(100, Number(value) || 0));
+        if (mp4) {
+            mp4.volume = volume / 100;
+            mp4.muted = volume === 0;
+        } else if (youtubePlayer && ready) {
+            youtubePlayer.setVolume(volume);
+            if (volume === 0) youtubePlayer.mute();
+            else youtubePlayer.unMute();
+        }
+        volumeRange.value = String(volume);
+        muteToggle.textContent = volume === 0 ? '🔇' : '🔊';
+        muteToggle.setAttribute('aria-label', volume === 0 ? 'Nyalakan suara' : 'Bisukan video');
+    }
+
+    function syncControls() {
+        if (!ready) return;
+        const current = getTime();
+        const duration = getDuration();
+        playbackProgress.max = Math.max(1, duration);
+        playbackProgress.value = Math.min(current, duration || current);
+        playbackTime.textContent = `${clock(current)} / ${duration ? clock(duration) : '--:--'}`;
+        playToggle.disabled = !!currentQuestion;
+        playToggle.textContent = isPlaying() ? '⏸ Jeda' : '▶ Putar';
+        playToggle.setAttribute('aria-label', isPlaying() ? 'Jeda video' : 'Putar video');
+        muteToggle.textContent = isMuted() ? '🔇' : '🔊';
+        muteToggle.setAttribute('aria-label', isMuted() ? 'Nyalakan suara' : 'Bisukan video');
+    }
+
+    function keepPlaybackWithinWatchedTime() {
+        const now = performance.now();
+        const current = getTime();
+        if (!config.allowSeek) {
+            const elapsed = Math.max(0, (now - lastObservedAt) / 1000);
+            const permitted = highestWatchedTime + (isPlaying() ? elapsed : 0) + 2;
+            if (current > permitted) {
+                seekTo(highestWatchedTime);
+                status.textContent = 'Skip video dinonaktifkan oleh guru.';
+                lastObservedAt = now;
+                syncControls();
+                return false;
+            }
+        }
+        highestWatchedTime = Math.max(highestWatchedTime, current);
+        lastObservedAt = now;
+        return true;
+    }
+
     function pause() {
         if (mp4) mp4.pause();
         else if (youtubePlayer && ready) youtubePlayer.pauseVideo();
+        syncControls();
     }
 
     function play() {
@@ -79,6 +168,7 @@
         } else if (youtubePlayer && ready) {
             youtubePlayer.playVideo();
         }
+        syncControls();
     }
 
     function nextQuestion() {
@@ -127,6 +217,7 @@
         });
 
         overlay.classList.remove('hidden');
+        syncControls();
         status.textContent = `⏸ Video dijeda pada ${clock(q.time_seconds)} untuk menjawab pertanyaan`;
         notifyParent('checkpoint', {questionId: q.id, timeSeconds: q.time_seconds});
         overlay.querySelector('input')?.focus({ preventScroll: true });
@@ -134,6 +225,8 @@
 
     function tick() {
         if (!ready) return;
+        if (!keepPlaybackWithinWatchedTime()) return;
+        syncControls();
         if (currentQuestion) {
             pause();
             return;
@@ -235,10 +328,90 @@
         tick(); // Jika timestamp soal berikutnya sudah terlewati, tampilkan sekarang.
     });
 
+    playToggle.addEventListener('click', () => {
+        if (!ready || currentQuestion) return;
+        if (isPlaying()) pause();
+        else play();
+    });
+    function skipBy(direction) {
+        if (!config.allowSeek || !ready || currentQuestion) return;
+        const current = getTime();
+        const upcoming = nextQuestion();
+        if (direction > 0 && upcoming && current + 0.06 >= upcoming.time_seconds) {
+            tick();
+            return;
+        }
+        const interval = config.skipSeconds === 5 ? 5 : 10;
+        const target = direction > 0
+            ? Math.min(current + interval, upcoming?.time_seconds ?? (getDuration() || 86400))
+            : Math.max(0, current - interval);
+        seekTo(target);
+        if (skipFeedback) {
+            skipFeedback.textContent = `${direction > 0 ? '+' : '−'}${Math.abs(Math.round(target - current))} detik`;
+            skipFeedback.classList.remove('hidden');
+            clearTimeout(skipFeedbackTimer);
+            skipFeedbackTimer = setTimeout(() => skipFeedback.classList.add('hidden'), 900);
+        }
+        setTimeout(tick, 80);
+    }
+
+    function attachDoubleTap(zone, direction) {
+        if (!zone) return;
+        let lastTap = 0;
+        zone.addEventListener('pointerup', (event) => {
+            event.preventDefault();
+            const now = performance.now();
+            if (now - lastTap <= 380) {
+                lastTap = 0;
+                skipBy(direction);
+            } else {
+                lastTap = now;
+            }
+        });
+        zone.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            skipBy(direction);
+        });
+    }
+
+    attachDoubleTap(skipBack, -1);
+    attachDoubleTap(skipForward, 1);
+    muteToggle.addEventListener('click', () => {
+        if (!ready) return;
+        if (isMuted()) setVolume(Number(volumeRange.dataset.previous) || 100);
+        else {
+            volumeRange.dataset.previous = String(getVolume());
+            setVolume(0);
+        }
+    });
+    volumeRange.addEventListener('input', () => {
+        if (ready) setVolume(volumeRange.value);
+    });
+    fullscreenToggle.addEventListener('click', async () => {
+        try {
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else if (watchMain.requestFullscreen) await watchMain.requestFullscreen();
+        } catch {
+            status.textContent = 'Layar penuh tidak tersedia pada browser ini.';
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        fullscreenToggle.textContent = document.fullscreenElement ? '⤢' : '⛶';
+        fullscreenToggle.setAttribute('aria-label', document.fullscreenElement ? 'Keluar layar penuh' : 'Layar penuh');
+    });
+
     if (config.sourceType === 'mp4') {
         mp4 = qs('mp4-player');
         if (!mp4) return;
         ready = true;
+        mp4.playbackRate = 1;
+        mp4.addEventListener('loadedmetadata', syncControls);
+        mp4.addEventListener('durationchange', syncControls);
+        mp4.addEventListener('pause', syncControls);
+        mp4.addEventListener('ratechange', () => {
+            if (mp4.playbackRate !== 1) mp4.playbackRate = 1;
+        });
         notifyParent('ready', {answeredCount: answered.size, totalCount: questions.length, completed: !!config.completed});
         mp4.addEventListener('timeupdate', tick);
         mp4.addEventListener('seeking', tick);
@@ -255,9 +428,9 @@
             if (youtubePlayer || !window.YT?.Player) return;
             youtubePlayer = new window.YT.Player('youtube-player', {
                 width: '100%', height: '100%', videoId: config.youtubeId,
-                playerVars: {playsinline: 1, rel: 0, fs: 0, origin: window.location.origin, widget_referrer: config.parentOrigin || window.location.origin},
+                playerVars: {playsinline: 1, rel: 0, fs: 0, controls: 0, disablekb: 1, origin: window.location.origin, widget_referrer: config.parentOrigin || window.location.origin},
                 events: {
-                    onReady: () => { ready = true; tick(); status.textContent = '▶ Tekan Play untuk memulai'; notifyParent('ready', {answeredCount: answered.size, totalCount: questions.length, completed: !!config.completed}); },
+                    onReady: () => { ready = true; youtubePlayer.setPlaybackRate(1); tick(); syncControls(); status.textContent = '▶ Tekan Play untuk memulai'; notifyParent('ready', {answeredCount: answered.size, totalCount: questions.length, completed: !!config.completed}); },
                     onStateChange: (event) => {
                         if (event.data === window.YT.PlayerState.ENDED) {
                             status.textContent = nextQuestion() ? 'Video berakhir sebelum semua pertanyaan tampil.' : '✓ Video selesai. Lihat hasil kuis Anda.';
@@ -265,7 +438,9 @@
                         } else if (event.data === window.YT.PlayerState.PLAYING) {
                             tick();
                         }
+                        syncControls();
                     },
+                    onPlaybackRateChange: (event) => { if (event.data !== 1) youtubePlayer.setPlaybackRate(1); },
                     onError: () => showError('Video YouTube tidak dapat ditampilkan. Pastikan video publik dan mengizinkan embed.'),
                 },
             });

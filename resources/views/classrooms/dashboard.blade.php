@@ -49,15 +49,16 @@
 </section>
 
 @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
-    <details class="lms-create-panel" id="buat-kelas" @if($errors->hasAny(['name', 'section', 'subject', 'room', 'color', 'description'])) open @endif>
+    <details class="lms-create-panel" id="buat-kelas" @if($errors->hasAny(['name', 'section', 'subject', 'room', 'color', 'description', 'theme_image', 'theme_zoom', 'theme_position_x', 'theme_position_y'])) open @endif>
         <summary>＋ Buat ruang kelas baru</summary>
-        <form method="POST" action="{{ route('classrooms.store') }}" class="lms-form-grid">
+        <form method="POST" action="{{ route('classrooms.store') }}" enctype="multipart/form-data" class="lms-form-grid">
             @csrf
             <div class="lms-field lms-span-2"><label>Nama kelas *</label><input type="text" name="name" value="{{ old('name') }}" required placeholder="Contoh: Matematika Wajib"></div>
             <div class="lms-field"><label>Rombel / bagian</label><input type="text" name="section" value="{{ old('section') }}" placeholder="Contoh: X-A"></div>
             <div class="lms-field"><label>Mata pelajaran</label><input type="text" name="subject" value="{{ old('subject') }}" placeholder="Contoh: Matematika"></div>
             <div class="lms-field"><label>Ruangan</label><input type="text" name="room" value="{{ old('room') }}" placeholder="Contoh: R-12"></div>
             <div class="lms-field"><label>Warna kelas</label><select name="color">@foreach(\App\Models\Classroom::COLORS as $color)<option value="{{ $color }}" @selected(old('color') === $color)>{{ ucfirst($color) }}</option>@endforeach</select></div>
+            <div class="lms-span-2">@include('classrooms._theme-editor', ['themeClassroom' => null])</div>
             <div class="lms-field lms-span-2"><label>Deskripsi</label><textarea name="description" rows="3" placeholder="Tujuan belajar atau informasi singkat kelas">{{ old('description') }}</textarea></div>
             <div class="lms-span-2"><button class="lms-button lms-button-primary">Buat kelas</button></div>
         </form>
@@ -78,7 +79,8 @@
             <div class="lms-class-grid">
                 @foreach($classrooms as $classroom)
                     <a href="{{ route('classrooms.show', $classroom) }}" class="lms-class-card" data-class-card data-color="{{ $classroom->color }}">
-                        <div class="lms-class-cover">
+                        <div class="lms-class-cover {{ $classroom->theme_image_path ? 'lms-has-theme-image' : '' }}">
+                            @if($classroom->theme_image_path)<img class="lms-theme-image" src="{{ asset('storage/'.$classroom->theme_image_path) }}" alt="" loading="lazy" style="{{ $classroom->themeImageStyle() }}">@endif
                             <span class="lms-class-label">{{ $classroom->subject ?: 'Ruang belajar' }}</span>
                             <h3>{{ $classroom->name }}</h3>
                             <p>{{ $classroom->section ?: 'Kelas umum' }}{{ $classroom->room ? ' · Ruang '.$classroom->room : '' }}</p>

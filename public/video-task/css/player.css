@@ -32,6 +32,24 @@ body { background: #fff; }
 @media(max-width:550px) {.vt-wrap .player-shell{height:410px;aspect-ratio:auto;} .vt-heading h1{font-size:16px} .vt-wrap{padding:9px}}
 
 /* Responsive hardening for the embedded lesson player. */
+.vt-playback-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 12px; padding: 10px 12px; border: 1px solid #e0e5ef; border-radius: 12px; background: #f8f9fd; }
+.vt-control-button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: #4f46e5; color: #fff; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.vt-control-button:disabled { opacity: .55; cursor: not-allowed; }
+.vt-control-secondary { min-width: 36px; min-height: 36px; padding: 0 6px; border: 1px solid #cbd2e5; border-radius: 8px; background: white; color: #17213f; font-size: 16px; cursor: pointer; }
+.vt-playback-progress { flex: 1 1 150px; min-width: 80px; height: 9px; accent-color: #4f46e5; pointer-events: none; }
+.vt-playback-time { white-space: nowrap; font-size: 12px; font-weight: 700; color: #4b5870; }
+.vt-skip-zone { position: absolute; top: 0; bottom: 0; z-index: 2; width: 38%; border: 0; background: transparent; color: white; cursor: pointer; touch-action: manipulation; }
+.vt-skip-back { left: 0; }
+.vt-skip-forward { right: 0; }
+.vt-skip-zone span { display: inline-block; padding: 8px 12px; border-radius: 999px; background: rgba(11, 18, 35, .72); font-size: 13px; font-weight: 800; opacity: 0; transition: opacity .15s; }
+.vt-skip-zone:hover span, .vt-skip-zone:focus-visible span { opacity: 1; }
+.vt-skip-feedback { position: absolute; top: 50%; left: 50%; z-index: 3; transform: translate(-50%, -50%); padding: 9px 16px; border-radius: 999px; background: rgba(11, 18, 35, .82); color: white; font-size: 16px; font-weight: 800; pointer-events: none; }
+.vt-volume-label { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #596681; }
+.vt-volume-label input { width: 66px; accent-color: #4f46e5; }
+.watch-main:fullscreen { display: flex; flex-direction: column; justify-content: center; padding: 16px; background: #0c1223; }
+.watch-main:fullscreen .player-shell { width: 100%; max-height: calc(100vh - 120px); }
+.watch-main:fullscreen .player-underbar { color: #dbe3f5; }
+.vt-playback-note { margin: 6px 2px 0; color: #8a5a13; font-size: 11px; }
 html, body { max-width: 100%; overflow-x: hidden; }
 .vt-wrap, .vt-wrap * { min-width: 0; }
 
@@ -40,6 +58,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 
 @media (max-width: 550px) {
+    .vt-playback-controls { gap: 8px; padding: 9px; }
+    .vt-playback-progress { order: 3; flex-basis: 100%; }
+    .vt-volume-label { display: none; }
     .vt-wrap { padding: 8px; }
     .vt-heading { align-items: flex-start; margin-bottom: 10px; }
     .vt-heading > div { min-width: 0; }

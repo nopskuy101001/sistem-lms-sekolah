@@ -131,6 +131,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/video-lessons/{videoLesson}/answer', [VideoLessonController::class, 'answer'])->middleware('throttle:30,1')->name('video-lessons.answer');
     Route::get('/video-lessons/{videoLesson}/edit', [VideoLessonController::class, 'edit'])->name('video-lessons.edit');
     Route::put('/video-lessons/{videoLesson}', [VideoLessonController::class, 'update'])->name('video-lessons.update');
+    Route::put('/video-lessons/{videoLesson}/playback', [VideoLessonController::class, 'updatePlayback'])->name('video-lessons.playback.update');
     Route::post('/video-lessons/{videoLesson}/publish', [VideoLessonController::class, 'publish'])->name('video-lessons.publish');
     Route::delete('/video-lessons/{videoLesson}', [VideoLessonController::class, 'destroy'])->name('video-lessons.destroy');
     Route::post('/video-lessons/{videoLesson}/checkpoints', [VideoLessonController::class, 'checkpointStore'])->name('video-checkpoints.store');

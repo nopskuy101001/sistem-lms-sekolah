@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Storage;
 
 class VideoLesson extends Model
 {
-    protected $fillable = ['classroom_id', 'creator_id', 'title', 'description', 'source_type', 'source_url', 'file_path', 'is_published'];
+    protected $fillable = ['classroom_id', 'creator_id', 'title', 'description', 'source_type', 'source_url', 'file_path', 'is_published', 'allow_seeking', 'skip_seconds'];
 
-    protected $casts = ['is_published' => 'boolean'];
+    protected $casts = ['is_published' => 'boolean', 'allow_seeking' => 'boolean', 'skip_seconds' => 'integer'];
 
     public function classroom(): BelongsTo { return $this->belongsTo(Classroom::class); }
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'creator_id'); }

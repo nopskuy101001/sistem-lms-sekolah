@@ -5,19 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Pemutar Video Interaktif</title>
-<link rel="stylesheet" href="{{ asset('video-task/css/player.css') }}">
+<link rel="stylesheet" href="{{ asset('video-task/css/player.css') }}?v=double-tap-1">
 </head>
 <body>
 <main class="vt-wrap">
     <header class="vt-heading"><div><h1>🎬 {{ $videoLesson->title }}</h1><p>{{ $preview ? 'Pratinjau guru (tidak menyimpan jawaban)' : 'Tonton dan jawab setiap pertanyaan yang muncul' }}</p></div><span id="checkpoint-progress" class="vt-pill" aria-live="polite">{{ count($answeredIds) }}/{{ count($questions) }} checkpoint</span></header>
     <div class="watch-layout">
-        <div class="watch-main">
+        <div class="watch-main" id="watch-main">
             <div class="player-shell" id="player-shell">
                 @if($videoLesson->source_type === 'youtube')
                     @if($youtubeId)<div id="youtube-player" class="video-player" aria-label="Pemutar video YouTube"></div>
                     @else <div class="player-unavailable">URL YouTube tidak valid.</div>@endif
                 @else
-                    <video id="mp4-player" class="video-player" playsinline controls preload="metadata" controlsList="nodownload"><source src="{{ $videoLesson->playback_url }}" type="video/mp4">Browser Anda tidak mendukung MP4.</video>
+                    <video id="mp4-player" class="video-player" playsinline preload="metadata" controlsList="nodownload"><source src="{{ $videoLesson->playback_url }}" type="video/mp4">Browser Anda tidak mendukung MP4.</video>
+                @endif
+                @if($preview || $videoLesson->allow_seeking)
+                    <button id="skip-back" type="button" class="vt-skip-zone vt-skip-back" aria-label="Ketuk dua kali untuk mundur {{ $videoLesson->skip_seconds }} detik"><span>↶ {{ $videoLesson->skip_seconds }} dtk</span></button>
+                    <button id="skip-forward" type="button" class="vt-skip-zone vt-skip-forward" aria-label="Ketuk dua kali untuk maju {{ $videoLesson->skip_seconds }} detik"><span>{{ $videoLesson->skip_seconds }} dtk ↷</span></button>
+                    <div id="skip-feedback" class="vt-skip-feedback hidden" aria-live="polite"></div>
                 @endif
                 <div class="question-overlay hidden" id="question-overlay" role="dialog" aria-modal="true" aria-labelledby="question-title">
                     <div class="question-dialog">
@@ -30,6 +35,19 @@
                     </div>
                 </div>
             </div>
+            <div class="vt-playback-controls" aria-label="Kontrol pemutaran video">
+                <button id="play-toggle" type="button" class="vt-control-button" aria-label="Putar video">▶ Putar</button>
+                <progress id="playback-progress" class="vt-playback-progress" max="1" value="0" aria-label="Progres video"></progress>
+                <span id="playback-time" class="vt-playback-time">00:00 / --:--</span>
+                <button id="mute-toggle" type="button" class="vt-control-secondary" aria-label="Bisukan video">🔊</button>
+                <label class="vt-volume-label">Suara <input id="volume-range" type="range" min="0" max="100" value="100" aria-label="Volume video"></label>
+                <button id="fullscreen-toggle" type="button" class="vt-control-secondary" aria-label="Layar penuh">⛶</button>
+            </div>
+            @if($preview || $videoLesson->allow_seeking)
+                <p class="vt-playback-note">Ketuk dua kali sisi kanan video untuk maju {{ $videoLesson->skip_seconds }} detik; sisi kiri untuk mundur. Garis progres hanya menunjukkan posisi.</p>
+            @else
+                <p class="vt-playback-note">Skip video dinonaktifkan oleh guru.</p>
+            @endif
             <div class="player-underbar"><span id="player-status">▶ Tekan Play untuk mulai</span><span>⏸ Video berhenti otomatis di checkpoint</span></div>
             <div id="player-error" class="alert alert-error hidden" role="alert"></div>
             <div id="finish-banner" class="card finish-banner {{ $attempt?->completed_at ? '' : 'hidden' }}"><div><strong>✓ Semua pertanyaan selesai</strong><p class="muted">{{ $preview ? 'Pratinjau guru selesai.' : 'Nilai tersimpan otomatis di tab Nilai.' }}</p></div></div>
@@ -53,11 +71,13 @@ window.VideoTaskLesson = {{ \Illuminate\Support\Js::from([
     'answerUrl' => route('video-lessons.answer', $videoLesson),
     'embed' => true,
     'preview' => $preview,
+    'allowSeek' => $preview || $videoLesson->allow_seeking,
+    'skipSeconds' => $videoLesson->skip_seconds,
     'parentOrigin' => $parentOrigin,
     'csrf' => true,
 ]) }};
 </script>
-<script defer src="{{ asset('video-task/js/player.js') }}"></script>
+<script defer src="{{ asset('video-task/js/player.js') }}?v=double-tap-1"></script>
 @if($videoLesson->source_type === 'youtube' && $youtubeId)
 <script src="https://www.youtube.com/iframe_api"></script>
 @endif

@@ -18,7 +18,7 @@
 @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
     <details class="mb-6 bg-white border border-slate-200 rounded-xl">
         <summary class="cursor-pointer px-4 py-3 font-medium text-indigo-700">+ Buat kelas baru</summary>
-        <form method="POST" action="{{ route('classrooms.store') }}" class="p-4 grid md:grid-cols-2 gap-4 border-t border-slate-200">
+        <form method="POST" action="{{ route('classrooms.store') }}" enctype="multipart/form-data" class="p-4 grid md:grid-cols-2 gap-4 border-t border-slate-200">
             @csrf
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1">Nama kelas *</label>
@@ -44,6 +44,7 @@
                     @endforeach
                 </select>
             </div>
+            <div class="md:col-span-2">@include('classrooms._theme-editor', ['themeClassroom' => null])</div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1">Deskripsi</label>
                 <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-300 px-3 py-2"></textarea>
@@ -68,9 +69,10 @@
         @foreach($classrooms as $classroom)
             <a href="{{ route('classrooms.show', $classroom) }}"
                class="block bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition">
-                <div class="{{ $classroom->bannerClass() }} text-white p-4 h-28">
-                    <div class="font-semibold text-lg leading-tight">{{ $classroom->name }}</div>
-                    <div class="text-sm opacity-90">{{ $classroom->section }}{{ $classroom->subject ? ' · '.$classroom->subject : '' }}</div>
+                <div class="relative {{ $classroom->bannerClass() }} text-white p-4 h-28 overflow-hidden">
+                    @if($classroom->theme_image_path)<img src="{{ asset('storage/'.$classroom->theme_image_path) }}" alt="" class="lms-theme-image" loading="lazy" style="{{ $classroom->themeImageStyle() }}"><div class="absolute inset-0 bg-slate-950/50"></div>@endif
+                    <div class="relative z-10 font-semibold text-lg leading-tight">{{ $classroom->name }}</div>
+                    <div class="relative z-10 text-sm opacity-90">{{ $classroom->section }}{{ $classroom->subject ? ' · '.$classroom->subject : '' }}</div>
                 </div>
                 <div class="p-4 text-sm text-slate-600">
                     <div>Guru: {{ $classroom->teacher->name }}</div>
