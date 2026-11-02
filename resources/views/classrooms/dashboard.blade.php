@@ -86,7 +86,7 @@
                             <p>{{ $classroom->section ?: 'Kelas umum' }}{{ $classroom->room ? ' · Ruang '.$classroom->room : '' }}</p>
                         </div>
                         <div class="lms-class-body">
-                            <div class="lms-class-teacher"><span class="lms-mini-avatar">{{ strtoupper(mb_substr($classroom->teacher->name, 0, 1)) }}</span><span>{{ $classroom->teacher->name }}</span></div>
+                            <div class="lms-class-teacher"><x-user-avatar :user="$classroom->teacher" class="lms-mini-avatar" /><span>{{ $classroom->teacher->name }}</span></div>
                             <div class="lms-class-meta">
                                 <span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 11a4 4 0 0 1 4 4v2"/></svg>{{ $classroom->students_count }} siswa</span>
                                 <span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5"/></svg>{{ $classroom->materials_count }} materi</span>

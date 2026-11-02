@@ -7,9 +7,7 @@
 <div class="max-w-2xl">
     <h2 class="text-lg font-semibold border-b border-slate-300 pb-2 mb-3">Guru</h2>
     <div class="flex items-center gap-3 py-2 mb-8">
-        <div class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-medium">
-            {{ strtoupper(substr($classroom->teacher->name, 0, 1)) }}
-        </div>
+        <x-user-avatar :user="$classroom->teacher" class="lms-member-avatar bg-indigo-100 text-indigo-700" />
         <div>
             <div class="font-medium">{{ $classroom->teacher->name }}</div>
             @if($classroom->teacher->nomor_induk)
@@ -26,9 +24,7 @@
     @forelse($students as $student)
         <div class="flex items-center justify-between gap-3 border-b border-slate-100 py-3">
             <div class="flex min-w-0 flex-1 items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-medium">
-                    {{ strtoupper(substr($student->name, 0, 1)) }}
-                </div>
+                <x-user-avatar :user="$student" class="lms-member-avatar bg-slate-100 text-slate-600" />
                 <div class="min-w-0">
                     <div class="break-words font-medium">{{ $student->name }}</div>
                     @if($student->nomor_induk)

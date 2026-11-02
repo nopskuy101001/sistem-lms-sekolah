@@ -6,7 +6,9 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionBulkImportController;
 use App\Http\Controllers\QuestionController;
@@ -39,11 +41,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/password/change', [PasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordController::class, 'update'])->name('password.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 
     Route::get('/dashboard', [ClassroomController::class, 'index'])->name('dashboard');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{notification}', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
     Route::middleware(RoleMiddleware::class.':guru')->prefix('teacher')->group(function () {
         Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');
+        Route::get('/transcripts/{classroom}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
         Route::get('/transcripts/{classroom}/csv', [TranscriptController::class, 'csv'])->name('transcripts.csv');
         Route::put('/transcripts/{classroom}/scores', [TranscriptController::class, 'updateScore'])->name('transcripts.scores.update');
         Route::delete('/transcripts/{classroom}/scores', [TranscriptController::class, 'clearScore'])->name('transcripts.scores.clear');
@@ -63,6 +73,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(RoleMiddleware::class.':siswa')->prefix('student')->name('student.')->group(function () {
         Route::get('/transcripts', [StudentTranscriptController::class, 'index'])->name('transcripts.index');
+        Route::get('/transcripts/print', [StudentTranscriptController::class, 'print'])->name('transcripts.print');
         Route::get('/transcripts/csv', [StudentTranscriptController::class, 'allCsv'])->name('transcripts.all.csv');
         Route::get('/transcripts/excel', [StudentTranscriptController::class, 'allExcel'])->name('transcripts.all.excel');
     });

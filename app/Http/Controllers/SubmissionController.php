@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Assignment;
 use App\Models\Submission;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -51,6 +52,14 @@ class SubmissionController extends Controller
         $submission->submitted_at = now();
         $submission->save();
 
+        AcademicNotifier::teacher(
+            $assignment->classroom,
+            'Tugas dikumpulkan',
+            $user->name.' mengumpulkan '.$assignment->title.'.',
+            route('assignments.show', $assignment, false),
+            'submission',
+        );
+
         return back()->with('success', 'Tugas berhasil dikumpulkan.');
     }
 
@@ -66,6 +75,14 @@ class SubmissionController extends Controller
         ]);
 
         $submission->update($data);
+
+        AcademicNotifier::user(
+            $submission->user,
+            'Tugas sudah dinilai',
+            'Nilai untuk '.$assignment->title.' sudah tersedia.',
+            route('assignments.show', $assignment, false),
+            'grade',
+        );
 
         return back()->with('success', 'Nilai disimpan.');
     }

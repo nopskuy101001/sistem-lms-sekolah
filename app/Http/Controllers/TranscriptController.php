@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Services\TranscriptReportService;
 use App\Services\TranscriptXlsxExporter;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -40,6 +41,15 @@ class TranscriptController extends Controller
         $report = $classroom ? $this->reports->build($classroom) : null;
 
         return view('transcripts.index', compact('classrooms', 'classroom', 'report'));
+    }
+
+    public function print(Request $request, Classroom $classroom): \Illuminate\Http\Response
+    {
+        $this->authorizeTeacher($request, $classroom);
+        $report = $this->reports->build($classroom);
+
+        return response()->view('transcripts.print-teacher', compact('classroom', 'report'))
+            ->header('Cache-Control', 'private, no-store');
     }
 
     /** Override transcript-only score, preserving original attempts and submissions. */
@@ -153,6 +163,14 @@ class TranscriptController extends Controller
             ]);
         });
 
+        AcademicNotifier::students(
+            $classroom,
+            'Transkrip nilai divalidasi',
+            'Transkrip kelas '.$classroom->name.' sudah dapat dilihat.',
+            route('student.transcripts.index', absolute: false),
+            'transcript',
+        );
+
         return redirect()->route('transcripts.index', ['classroom' => $classroom->id])
             ->with('success', 'Final Validation selesai. Transkrip kelas sekarang terkunci.');
     }
@@ -237,7 +255,7 @@ class TranscriptController extends Controller
         abort_unless(
             $request->user()->isGuru() && $classroom->teacher_id === $request->user()->id,
             403,
-            'Hanya guru pengampu kelas ini yang dapat mengunduh transkrip.'
+            'Hanya guru pengampu kelas ini yang dapat mengakses transkrip.'
         );
     }
 

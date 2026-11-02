@@ -86,7 +86,28 @@ class TeacherTranscriptTest extends TestCase
             ->assertSee('Kuis Persamaan')
             ->assertSee('80 / 100')
             ->assertSee('40 / 50')
-            ->assertSee('Excel (.xlsx)');
+            ->assertSee('Cetak')
+            ->assertSee(route('transcripts.print', $this->classroom))
+            ->assertDontSee(route('transcripts.excel', $this->classroom))
+            ->assertDontSee(route('transcripts.csv', $this->classroom));
+    }
+
+    public function test_print_splits_wide_tables_and_restricts_access_to_the_teacher(): void
+    {
+        for ($i = 1; $i <= 7; $i++) {
+            Assignment::create(['classroom_id' => $this->classroom->id, 'title' => 'Komponen tambahan '.$i, 'points' => 100]);
+        }
+        $response = $this->actingAs($this->teacher)->get(route('transcripts.print', $this->classroom))
+            ->assertOk()->assertSee('Draf — belum divalidasi')
+            ->assertSee('Bagian 1 dari 2')->assertSee('Bagian 2 dari 2')
+            ->assertSee('Komponen tambahan 7')->assertSee('80 / 100')->assertSee('40 / 50')
+            ->assertSee('NIS-001')->assertDontSee('Koreksi nilai');
+        $this->assertSame(2, substr_count($response->getContent(), 'class="teacher-table"'));
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+
+        $other = User::factory()->create(['role' => 'guru']);
+        $this->actingAs($other)->get(route('transcripts.print', $this->classroom))->assertForbidden();
+        $this->actingAs($this->student)->get(route('transcripts.print', $this->classroom))->assertForbidden();
     }
 
     public function test_teacher_can_download_utf8_csv_transcript(): void

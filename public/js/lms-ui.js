@@ -28,6 +28,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Escape') setSidebar(false);
     });
 
+    const topbarMenus = [...document.querySelectorAll('[data-topbar-menu]')];
+    topbarMenus.forEach((menu) => {
+        menu.addEventListener('toggle', () => {
+            if (!menu.open) return;
+            topbarMenus.forEach(other => {
+                if (other !== menu) other.open = false;
+            });
+        });
+    });
+    document.addEventListener('click', (event) => {
+        topbarMenus.forEach(menu => {
+            if (menu.open && !menu.contains(event.target)) menu.open = false;
+        });
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') topbarMenus.forEach(menu => { menu.open = false; });
+    });
+
     const search = document.querySelector('[data-class-search]');
     const cards = [...document.querySelectorAll('[data-class-card]')];
     const noResults = document.querySelector('[data-no-results]');

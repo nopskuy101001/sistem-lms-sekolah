@@ -50,11 +50,8 @@
             <p class="text-sm text-slate-500 mt-1">{{ $classroom->subject ?: 'Mata pelajaran belum diisi' }}@if($classroom->section) · {{ $classroom->section }}@endif · diperbarui {{ now()->translatedFormat('d M Y, H:i') }}</p>
         </div>
         <div class="flex w-full flex-wrap gap-2 sm:w-auto">
-            <a href="{{ route('transcripts.csv', $classroom) }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>CSV
-            </a>
-            <a href="{{ route('transcripts.excel', $classroom) }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h11l5 5v13H4z"/><path d="M14 3v6h6M8 13l4 5m0-5-4 5"/></svg>Excel (.xlsx)
+            <a href="{{ route('transcripts.print', $classroom) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 shadow-sm">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Cetak
             </a>
         </div>
     </div>
@@ -67,7 +64,7 @@
     @endif
     @if($report['finalized'])
         <div class="mb-5 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
-            <strong>Transkrip final — terkunci.</strong> Final Validation dilakukan {{ $report['finalized_at']?->translatedFormat('d M Y H:i') }}. Data dan ekspor memakai snapshot saat validasi; perubahan nilai sumber setelah itu tidak mengubah transkrip final.
+            <strong>Transkrip final — terkunci.</strong> Final Validation dilakukan {{ $report['finalized_at']?->translatedFormat('d M Y H:i') }}. Tabel dan hasil cetak memakai nilai yang disimpan saat validasi; perubahan nilai sumber setelah itu tidak mengubah transkrip final.
         </div>
     @else
         <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -82,7 +79,7 @@
     </div>
 
     @if($report['rows']->isEmpty())
-        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Belum ada siswa di kelas ini. Transkrip dapat diunduh setelah siswa bergabung.</div>
+        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Belum ada siswa di kelas ini. Siswa akan tercantum di transkrip setelah bergabung.</div>
     @elseif($report['activities']->isEmpty())
         <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Belum ada tugas, kuis, atau video sebagai komponen transkrip.</div>
     @else
@@ -162,7 +159,7 @@
             <form method="POST" action="{{ route('transcripts.finalize', $classroom) }}" class="mt-5 rounded-2xl border-2 border-amber-300 bg-white p-5">
                 @csrf
                 <h3 class="text-base font-bold text-slate-900">Final Validation — kunci transkrip kelas</h3>
-                <p class="mt-1 text-sm text-slate-600">Periksa kembali seluruh nilai, termasuk siswa yang tidak mengerjakan. Setelah dikonfirmasi, nilai transkrip dan hasil ekspor dibekukan. Tidak tersedia tombol buka kunci pada fitur ini.</p>
+                <p class="mt-1 text-sm text-slate-600">Periksa kembali seluruh nilai, termasuk siswa yang tidak mengerjakan. Setelah dikonfirmasi, nilai transkrip dan hasil cetak dibekukan. Tidak tersedia tombol buka kunci pada fitur ini.</p>
                 <label class="mt-4 flex items-start gap-3 text-sm text-slate-800">
                     <input type="checkbox" name="final_validation" value="1" required class="mt-1 h-4 w-4 rounded border-slate-400">
                     <span>Saya telah memeriksa nilai dan menyetujui <strong>Final Validation</strong> untuk kelas ini. Saya memahami nilai transkrip tidak dapat diedit lagi.</span>

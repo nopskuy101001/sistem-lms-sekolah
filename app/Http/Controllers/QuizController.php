@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Classroom;
 use App\Models\Quiz;
 use App\Models\QuizSecurityEvent;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -137,6 +138,16 @@ class QuizController extends Controller
         }
 
         $quiz->update(['is_published' => ! $quiz->is_published]);
+
+        if ($quiz->is_published) {
+            AcademicNotifier::students(
+                $quiz->classroom,
+                'Kuis dipublikasikan',
+                $quiz->title.' sudah tersedia di kelas '.$quiz->classroom->name.'.',
+                route('quizzes.show', $quiz, false),
+                'quiz',
+            );
+        }
 
         return back()->with('success', $quiz->is_published ? 'Kuis dipublikasikan.' : 'Kuis ditarik kembali (draft).');
     }

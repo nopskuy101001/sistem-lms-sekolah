@@ -13,8 +13,7 @@
     @if($classrooms->isNotEmpty())
         <div class="mt-5 flex flex-wrap items-center gap-3">
             <span class="rounded-xl bg-white/15 px-4 py-2 text-sm">{{ $validatedCount }} dari {{ $classrooms->count() }} kelas tervalidasi</span>
-            <a href="{{ route('student.transcripts.all.csv') }}" class="lms-button lms-button-light">Unduh CSV</a>
-            <a href="{{ route('student.transcripts.all.excel') }}" class="lms-button lms-button-primary">Excel (.xlsx)</a>
+            <a href="{{ route('student.transcripts.print') }}" target="_blank" rel="noopener" class="lms-button lms-button-light">Cetak</a>
         </div>
     @endif
 </header>

@@ -64,7 +64,7 @@
         @if($classroom->canManage(auth()->user()))
             <form method="POST" action="{{ route('announcements.store', $classroom) }}" class="lms-announcement-form">
                 @csrf
-                <span class="lms-avatar">{{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                <x-user-avatar :user="auth()->user()" />
                 <div class="flex-1">
                     <textarea name="body" rows="3" required placeholder="Bagikan informasi, pengingat, atau semangat untuk kelas..."></textarea>
                     <div class="mt-2 flex justify-between items-center gap-3">
@@ -79,7 +79,7 @@
             <article class="lms-feed-card">
                 <div class="lms-feed-head">
                     <div class="lms-feed-user">
-                        <span class="lms-mini-avatar">{{ strtoupper(mb_substr($announcement->user->name, 0, 1)) }}</span>
+                        <x-user-avatar :user="$announcement->user" class="lms-mini-avatar" />
                         <span><strong>{{ $announcement->user->name }}</strong><time>{{ $announcement->created_at->diffForHumans() }} · {{ $announcement->created_at->translatedFormat('d M Y, H:i') }}</time></span>
                     </div>
                     @if($classroom->canManage(auth()->user()))

@@ -21,6 +21,7 @@ class PasswordController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
+        $wasRequired = $request->user()->must_change_password;
         $request->user()->update([
             'password' => $data['password'],
             'must_change_password' => false,
@@ -28,6 +29,7 @@ class PasswordController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard')->with('success', 'Password berhasil diperbarui.');
+        return redirect()->route($wasRequired ? 'dashboard' : 'profile.edit')
+            ->with('success', 'Password berhasil diperbarui.');
     }
 }

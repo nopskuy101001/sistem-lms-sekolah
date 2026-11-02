@@ -71,14 +71,36 @@
                 </div>
 
                 <div class="lms-top-actions">
-                    <a href="{{ route('dashboard') }}#agenda" class="lms-icon-button" aria-label="Lihat agenda" title="Agenda terbaru"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg><span class="lms-notification-dot"></span></a>
-                    <details class="lms-user-menu">
+                    <details class="lms-notifications" data-topbar-menu>
+                        <summary class="lms-icon-button" aria-label="Notifikasi{{ $unreadNotificationCount ? ', '.$unreadNotificationCount.' belum dibaca' : '' }}" title="Notifikasi">
+                            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                            @if($unreadNotificationCount)<span class="lms-notification-badge" aria-hidden="true">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>@endif
+                        </summary>
+                        <div class="lms-notification-popover">
+                            <div class="lms-notification-popover-head">
+                                <div><strong>Notifikasi</strong><span>{{ $unreadNotificationCount }} belum dibaca</span></div>
+                                @if($unreadNotificationCount)
+                                    <form method="POST" action="{{ route('notifications.read-all') }}">@csrf<button type="submit">Tandai semua</button></form>
+                                @endif
+                            </div>
+                            <div class="lms-notification-popover-list">
+                                @forelse($headerNotifications as $notification)
+                                    <x-notification-entry :notification="$notification" :compact="true" />
+                                @empty
+                                    <div class="lms-notification-empty">Belum ada notifikasi baru.</div>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('notifications.index') }}" class="lms-notification-all">Lihat semua notifikasi</a>
+                        </div>
+                    </details>
+                    <details class="lms-user-menu" data-topbar-menu>
                         <summary aria-label="Menu akun">
-                            <span class="lms-avatar">{{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                            <x-user-avatar :user="auth()->user()" />
                             <span class="lms-user-copy"><strong>{{ auth()->user()->name }}</strong><span>{{ auth()->user()->roleLabel() }}</span></span>
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                         </summary>
                         <div class="lms-user-popover">
+                            <a href="{{ route('profile.edit') }}">Profil saya</a>
                             <a href="{{ route('dashboard') }}">Beranda saya</a>
                             @if(auth()->user()->isGuru())<a href="{{ route('question-banks.index') }}">Bank soal</a><a href="{{ route('transcripts.index') }}">Transkrip nilai</a>@endif
                             @if(auth()->user()->isSiswa())<a href="{{ route('student.transcripts.index') }}">Transkrip saya</a>@endif

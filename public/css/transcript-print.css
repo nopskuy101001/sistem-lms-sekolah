@@ -1,0 +1,41 @@
+@page { size: A4 landscape; margin: 12mm; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #e5e7eb; color: #111; font: 10pt/1.4 Arial, sans-serif; }
+.print-toolbar { max-width: 1100px; margin: 18px auto; padding: 0 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.print-toolbar button { background: #222; color: white; border: 0; border-radius: 7px; padding: 12px 20px; cursor: pointer; font: bold 14px Arial, sans-serif; }
+.print-toolbar p { flex: 1 1 260px; margin: 0; font-size: 13px; }
+.print-document { max-width: 1100px; margin: 0 auto 24px; background: #fff; padding: 32px; }
+.print-section + .print-section { margin-top: 36px; }
+.document-heading { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 12px; }
+.document-heading p { margin: 3px 0; }
+.school-name { font-weight: bold; letter-spacing: 1px; }
+h1 { font-size: 17pt; margin: 6px 0; }
+h2 { font-size: 10pt; margin: 10px 0 5px; break-after: avoid; }
+.document-meta { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
+.document-meta > div { flex: 1; overflow-wrap: anywhere; }
+.summary { margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
+caption { text-align: left; font-weight: bold; padding: 0 0 7px; }
+th, td { border: 1px solid #777; padding: 7px 6px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+thead th { background: #e5e5e5; color: #111; font-weight: bold; text-align: center; }
+.student-name { font-weight: normal; }
+.number { text-align: center; }
+small { display: block; font-size: 8pt; color: #444; margin-top: 3px; }
+.activity-legend p { margin: 3px 0; overflow-wrap: anywhere; }
+.document-note { font-size: 8pt; color: #444; margin: 12px 0 0; }
+@media screen and (max-width: 700px) {
+    .print-document { padding: 14px; overflow-x: auto; }
+    table { min-width: 850px; }
+    .document-meta { flex-direction: column; gap: 8px; }
+}
+@media print {
+    body { background: white; }
+    .print-toolbar { display: none; }
+    .print-document { max-width: none; margin: 0; padding: 0; }
+    .print-section + .print-section { break-before: page; margin-top: 0; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    .document-heading, .document-meta { break-inside: avoid; }
+    table { min-width: 0; }
+    th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

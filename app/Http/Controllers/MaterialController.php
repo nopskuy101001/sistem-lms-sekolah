@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Classroom;
 use App\Models\Material;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +39,14 @@ class MaterialController extends Controller
         }
 
         $classroom->materials()->save($material);
+
+        AcademicNotifier::students(
+            $classroom,
+            'Materi baru tersedia',
+            $material->title.' ditambahkan ke kelas '.$classroom->name.'.',
+            route('classrooms.classwork', $classroom, false),
+            'material',
+        );
 
         return redirect()->route('classrooms.classwork', $classroom)->with('success', 'Materi ditambahkan.');
     }

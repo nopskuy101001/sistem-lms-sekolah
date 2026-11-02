@@ -8,6 +8,7 @@ use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\QuizSecurityEvent;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,6 +161,14 @@ class QuizAttemptController extends Controller
         $attempt->save();
         $attempt->recalculate();
 
+        AcademicNotifier::teacher(
+            $attempt->quiz->classroom,
+            'Kuis selesai dikerjakan',
+            $request->user()->name.' menyelesaikan kuis '.$attempt->quiz->title.'.',
+            route('attempts.show', $attempt, false),
+            'submission',
+        );
+
         return redirect()->route('attempts.show', $attempt)->with('success', 'Jawaban dikumpulkan.');
     }
 
@@ -220,6 +229,14 @@ class QuizAttemptController extends Controller
         }
 
         $attempt->recalculate();
+
+        AcademicNotifier::user(
+            $attempt->user,
+            'Nilai kuis diperbarui',
+            'Penilaian '.$attempt->quiz->title.' sudah diperbarui oleh guru.',
+            route('attempts.show', $attempt, false),
+            'grade',
+        );
 
         return back()->with('success', 'Nilai esai disimpan.');
     }

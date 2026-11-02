@@ -8,6 +8,7 @@ use App\Models\VideoAttempt;
 use App\Models\VideoLesson;
 use App\Services\VideoAnswerService;
 use App\Support\VideoSource;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,6 +102,17 @@ class VideoLessonController extends Controller
             return back()->withErrors(['publish' => 'Tambahkan minimal satu pertanyaan sebelum memublikasikan video.']);
         }
         $videoLesson->update(['is_published' => ! $videoLesson->is_published]);
+
+        if ($videoLesson->is_published) {
+            AcademicNotifier::students(
+                $videoLesson->classroom,
+                'Video task dipublikasikan',
+                $videoLesson->title.' sudah tersedia di kelas '.$videoLesson->classroom->name.'.',
+                route('video-lessons.show', $videoLesson, false),
+                'video',
+            );
+        }
+
         return back()->with('success', $videoLesson->is_published ? 'Video dipublikasikan.' : 'Video disembunyikan dari siswa.');
     }
 
@@ -187,13 +199,29 @@ class VideoLessonController extends Controller
             'question_id' => ['required', 'integer'],
             'selected_index' => ['required', 'integer', 'between:0,3'],
         ]);
-        return response()->json(
-            $service->submit(
+        $wasCompleted = VideoAttempt::where('video_lesson_id', $videoLesson->id)
+            ->where('user_id', $request->user()->id)
+            ->whereNotNull('completed_at')
+            ->exists();
+        $result = $service->submit(
                 $videoLesson,
                 $request->user()->id,
                 (int) $data['question_id'],
                 (int) $data['selected_index']
-            ),
+            );
+
+        if (! $wasCompleted && $result['completed']) {
+            AcademicNotifier::teacher(
+                $videoLesson->classroom,
+                'Video task diselesaikan',
+                $request->user()->name.' menyelesaikan '.$videoLesson->title.'.',
+                route('video-lessons.edit', $videoLesson, false),
+                'submission',
+            );
+        }
+
+        return response()->json(
+            $result,
             options: JSON_PRESERVE_ZERO_FRACTION
         );
     }

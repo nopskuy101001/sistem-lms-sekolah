@@ -21,6 +21,14 @@ class StudentTranscriptController extends Controller
         return view('transcripts.student', $this->overview($request));
     }
 
+    public function print(Request $request): \Illuminate\Http\Response
+    {
+        return response()->view('transcripts.print-student', [
+            ...$this->overview($request),
+            'student' => $request->user(),
+        ])->header('Cache-Control', 'private, no-store');
+    }
+
     public function allCsv(Request $request): StreamedResponse
     {
         $overview = $this->overview($request);

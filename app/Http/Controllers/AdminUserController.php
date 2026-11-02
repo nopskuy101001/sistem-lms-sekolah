@@ -7,6 +7,7 @@ use App\Services\StudentBatchImportService;
 use App\Services\StudentImportTemplateXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -101,7 +102,10 @@ class AdminUserController extends Controller
             return back()->withErrors(['user' => 'Anda tidak bisa menghapus akun sendiri.']);
         }
 
+        $profilePhoto = $user->profile_photo_path;
+        $user->notifications()->delete();
         $user->delete();
+        if ($profilePhoto) Storage::disk('public')->delete($profilePhoto);
 
         return back()->with('success', 'Pengguna dihapus.');
     }

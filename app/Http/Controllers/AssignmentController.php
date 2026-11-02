@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Assignment;
 use App\Models\Classroom;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -41,6 +42,17 @@ class AssignmentController extends Controller
         }
 
         $classroom->assignments()->save($assignment);
+
+        $deadline = $assignment->due_at
+            ? ' Tenggat '.$assignment->due_at->translatedFormat('d M Y, H:i').'.'
+            : '';
+        AcademicNotifier::students(
+            $classroom,
+            'Tugas baru',
+            $assignment->title.' tersedia di '.$classroom->name.'.'.$deadline,
+            route('assignments.show', $assignment, false),
+            'assignment',
+        );
 
         return redirect()->route('assignments.show', $assignment)->with('success', 'Tugas dibuat.');
     }

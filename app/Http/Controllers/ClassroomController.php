@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\VideoAttempt;
 use App\Models\VideoLesson;
 use App\Services\TranscriptReportService;
+use App\Support\AcademicNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -238,6 +239,14 @@ class ClassroomController extends Controller
         }
 
         $classroom->students()->attach($request->user()->id);
+
+        AcademicNotifier::teacher(
+            $classroom,
+            'Siswa baru bergabung',
+            $request->user()->name.' bergabung ke kelas '.$classroom->name.'.',
+            route('classrooms.people', $classroom, false),
+            'classroom',
+        );
 
         return redirect()->route('classrooms.show', $classroom)->with('success', 'Berhasil bergabung ke kelas '.$classroom->name.'.');
     }

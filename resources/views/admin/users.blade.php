@@ -103,7 +103,7 @@
         <tbody>
             @foreach($users as $user)
                 <tr class="border-t border-slate-100">
-                    <td class="px-4 py-3">{{ $user->name }}</td>
+                    <td class="px-4 py-3"><span class="flex items-center gap-2"><x-user-avatar :user="$user" class="lms-mini-avatar" /><span>{{ $user->name }}</span></span></td>
                     <td class="px-4 py-3 text-slate-600">{{ $user->email }}</td>
                     <td class="px-4 py-3 text-slate-600"><span class="block">{{ $user->nomor_induk ?? '-' }}</span>@if($user->date_of_birth)<span class="text-[10px] text-slate-400">Lahir {{ $user->date_of_birth->format('d/m/Y') }}</span>@endif</td>
                     <td class="px-4 py-3 text-center">
