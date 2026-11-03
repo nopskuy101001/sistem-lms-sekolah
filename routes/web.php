@@ -31,8 +31,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
 // ---------- Sudah login ----------
@@ -152,7 +150,8 @@ Route::middleware('auth')->group(function () {
     // Admin: kelola pengguna
     Route::middleware(RoleMiddleware::class.':admin')->prefix('admin')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
-        Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::post('/users', [AdminUserController::class, 'storeStaff'])->name('admin.users.store');
+        Route::post('/users/students', [AdminUserController::class, 'storeStudent'])->name('admin.users.students.store');
         Route::post('/users/import', [AdminUserController::class, 'importStudents'])->name('admin.users.import');
         Route::get('/users/import/template.csv', [AdminUserController::class, 'studentTemplateCsv'])->name('admin.users.import.template.csv');
         Route::get('/users/import/template.xlsx', [AdminUserController::class, 'studentTemplateXlsx'])->name('admin.users.import.template.xlsx');

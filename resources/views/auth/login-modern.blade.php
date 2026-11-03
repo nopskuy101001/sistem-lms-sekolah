@@ -36,7 +36,7 @@
                 <button class="lms-button lms-button-primary w-full">Masuk ke RuangKelas</button>
             </form>
 
-            <p class="text-xs text-slate-500 text-center mt-7">Siswa baru? <a href="{{ route('register') }}" class="font-bold text-indigo-600 hover:underline">Buat akun siswa</a></p>
+            <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? Hubungi administrator sekolah.</p>
         </main>
 
         <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas · Belajar lebih terarah</footer>

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Classroom;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -34,12 +35,16 @@ class ExampleTest extends TestCase
             ->assertDontSee('lms-auth-visual', false);
     }
 
-    public function test_framed_video_layout_is_scoped_to_login_page(): void
+    public function test_public_student_registration_is_disabled(): void
     {
-        $this->get(route('register'))
-            ->assertOk()
-            ->assertDontSee('lms-auth-container', false)
-            ->assertDontSee('lms-auth-page-login', false);
+        $this->assertFalse(Route::has('register'));
+        $this->assertFalse(Route::has('register.store'));
+
+        $this->get('/register')->assertNotFound();
+        $this->post('/register')->assertNotFound();
+        $this->get(route('login'))
+            ->assertSee('Hubungi administrator sekolah')
+            ->assertDontSee('Buat akun siswa');
     }
 
     public function test_student_can_open_the_dashboard(): void

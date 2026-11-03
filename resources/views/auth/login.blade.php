@@ -24,7 +24,7 @@
     </form>
 
     <p class="text-sm text-slate-500 mt-6 text-center">
-        Siswa baru? <a href="{{ route('register') }}" class="text-indigo-700 hover:underline">Daftar di sini</a>
+        Belum memiliki akun? Hubungi administrator sekolah.
     </p>
 </div>
 @endsection

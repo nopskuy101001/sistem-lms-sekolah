@@ -149,4 +149,26 @@ class AdminStudentImportTest extends TestCase
 
         $this->assertDatabaseMissing('users', ['nomor_induk' => 'BARU-001']);
     }
+
+    public function test_import_rejects_future_birth_date_and_corrupt_spreadsheet_cleanly(): void
+    {
+        $futureCsv = "NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin,No. Telepon,Alamat\r\n"
+            .'MASA-DEPAN,Siswa Masa Depan,'.now()->addDay()->format('d/m/Y').",,,,\r\n";
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.users.import'), [
+                'student_file' => UploadedFile::fake()->createWithContent('masa-depan.csv', $futureCsv),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('student_file');
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.users.import'), [
+                'student_file' => UploadedFile::fake()->createWithContent('rusak.xlsx', 'bukan berkas xlsx'),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('student_file');
+
+        $this->assertDatabaseMissing('users', ['nomor_induk' => 'MASA-DEPAN']);
+    }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,29 +37,6 @@ class AuthController extends Controller
         return back()
             ->withErrors(['login' => 'NIS/email atau password salah.'])
             ->onlyInput('login');
-    }
-
-    public function showRegister(): View
-    {
-        return view('auth.register-modern');
-    }
-
-    /** Pendaftaran publik hanya untuk siswa. Akun guru/admin dibuat oleh admin. */
-    public function register(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'nomor_induk' => ['nullable', 'string', 'max:50', 'unique:users,nomor_induk'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        $user = User::create($data + ['role' => 'siswa']);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return redirect()->route('dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
     }
 
     public function logout(Request $request): RedirectResponse

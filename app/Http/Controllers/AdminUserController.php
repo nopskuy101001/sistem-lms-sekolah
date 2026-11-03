@@ -8,6 +8,7 @@ use App\Services\StudentImportTemplateXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -36,19 +37,71 @@ class AdminUserController extends Controller
         return view('admin.users', compact('users'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function storeStaff(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'in:admin,guru,siswa'],
-            'nomor_induk' => ['nullable', 'string', 'max:50', 'unique:users,nomor_induk'],
-            'password' => ['required', 'string', 'min:8'],
+        $request->merge([
+            'name' => trim((string) $request->input('name')),
+            'email' => strtolower(trim((string) $request->input('email'))),
+            'nomor_induk' => filled($request->input('nomor_induk'))
+                ? trim((string) $request->input('nomor_induk'))
+                : null,
         ]);
 
-        User::create($data);
+        $data = $request->validateWithBag('staffCreate', [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', 'in:admin,guru'],
+            'nomor_induk' => ['nullable', 'string', 'max:50', 'regex:/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', 'unique:users,nomor_induk'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
 
-        return back()->with('success', 'Pengguna berhasil ditambahkan.');
+        User::create($data + ['must_change_password' => true]);
+
+        return back()->with('success', 'Akun '.($data['role'] === 'guru' ? 'guru' : 'admin').' berhasil dibuat. Pengguna wajib mengganti password awal saat login pertama.');
+    }
+
+    public function storeStudent(Request $request): RedirectResponse
+    {
+        $request->merge([
+            'name' => trim((string) $request->input('name')),
+            'nomor_induk' => trim((string) $request->input('nomor_induk')),
+            'email' => filled($request->input('email'))
+                ? strtolower(trim((string) $request->input('email')))
+                : null,
+            'phone' => filled($request->input('phone')) ? trim((string) $request->input('phone')) : null,
+            'address' => filled($request->input('address')) ? trim((string) $request->input('address')) : null,
+        ]);
+
+        $data = $request->validateWithBag('studentCreate', [
+            'name' => ['required', 'string', 'max:255'],
+            'nomor_induk' => ['required', 'string', 'max:50', 'regex:/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', 'unique:users,nomor_induk'],
+            'date_of_birth' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before_or_equal:today'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'gender' => ['nullable', 'in:L,P'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'nomor_induk.regex' => 'NIS hanya boleh berisi huruf, angka, titik, garis miring, atau tanda hubung dan harus memiliki minimal satu huruf/angka.',
+            'date_of_birth.before_or_equal' => 'Tanggal lahir tidak boleh melewati hari ini.',
+        ]);
+
+        $birthDate = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $data['date_of_birth']);
+        $email = $data['email'] ?: StudentBatchImportService::generatedEmailFor($data['nomor_induk']);
+        if (User::where('email', $email)->exists()) {
+            return back()
+                ->withErrors(['email' => 'Email otomatis untuk NIS tersebut sudah digunakan. Isi email lain yang valid.'], 'studentCreate')
+                ->withInput();
+        }
+
+        User::create([
+            ...$data,
+            'email' => $email,
+            'role' => 'siswa',
+            'password' => $birthDate->format('dmY'),
+            'must_change_password' => true,
+        ]);
+
+        return back()->with('success', 'Akun siswa berhasil dibuat. Password awal menggunakan tanggal lahir dan wajib diganti saat login pertama.');
     }
 
     public function importStudents(Request $request): RedirectResponse

@@ -6,6 +6,7 @@ use App\Models\User;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -35,9 +36,11 @@ class StudentBatchImportService
         $rows = [];
         $errors = [];
         $headers = null;
+        $opened = false;
 
         try {
             $reader->open($file->getRealPath());
+            $opened = true;
 
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $rowNumber => $row) {
@@ -71,8 +74,16 @@ class StudentBatchImportService
                 }
                 break;
             }
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw ValidationException::withMessages([
+                'student_file' => 'File tidak dapat dibaca. Pastikan file CSV/XLSX tidak rusak dan menggunakan template yang disediakan.',
+            ]);
         } finally {
-            $reader->close();
+            if ($opened) {
+                $reader->close();
+            }
         }
 
         if ($headers === null) {
@@ -91,15 +102,21 @@ class StudentBatchImportService
             ]);
         }
 
-        DB::transaction(function () use ($rows) {
-            foreach ($rows as $row) {
-                User::create($row + [
-                    'role' => 'siswa',
-                    'password' => $row['date_of_birth']->format('dmY'),
-                    'must_change_password' => true,
-                ]);
-            }
-        });
+        try {
+            DB::transaction(function () use ($rows) {
+                foreach ($rows as $row) {
+                    User::create($row + [
+                        'role' => 'siswa',
+                        'password' => $row['date_of_birth']->format('dmY'),
+                        'must_change_password' => true,
+                    ]);
+                }
+            });
+        } catch (QueryException $exception) {
+            throw ValidationException::withMessages([
+                'student_file' => 'Import dibatalkan karena NIS atau email baru saja digunakan. Muat ulang halaman dan periksa kembali data.',
+            ]);
+        }
 
         return ['created' => count($rows)];
     }
@@ -154,14 +171,16 @@ class StudentBatchImportService
         $address = trim((string) $value('alamat'));
         $rowErrors = [];
 
-        if ($nis === '' || mb_strlen($nis) > 50 || ! preg_match('/^[A-Za-z0-9.\-\/]+$/', $nis)) {
-            $rowErrors[] = 'NIS wajib diisi (maks. 50 karakter; huruf, angka, titik, garis miring, atau tanda hubung)';
+        if ($nis === '' || mb_strlen($nis) > 50 || ! preg_match('/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', $nis)) {
+            $rowErrors[] = 'NIS wajib diisi (maks. 50 karakter; minimal satu huruf/angka; boleh memakai titik, garis miring, atau tanda hubung)';
         }
         if ($name === '' || mb_strlen($name) > 255) {
             $rowErrors[] = 'Nama wajib diisi dan maksimal 255 karakter';
         }
         if ($dateOfBirth === null) {
             $rowErrors[] = 'Tanggal Lahir tidak valid; gunakan format dd/mm/yyyy';
+        } elseif ($dateOfBirth < new DateTimeImmutable('1900-01-01') || $dateOfBirth > new DateTimeImmutable('today')) {
+            $rowErrors[] = 'Tanggal Lahir harus berada antara 01/01/1900 dan hari ini';
         }
         if ($email !== '' && (! filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255)) {
             $rowErrors[] = 'Email tidak valid';
@@ -184,7 +203,7 @@ class StudentBatchImportService
 
         return [
             'name' => $name,
-            'email' => $email !== '' ? strtolower($email) : $this->generatedEmail($nis),
+            'email' => $email !== '' ? strtolower($email) : self::generatedEmailFor($nis),
             'nomor_induk' => $nis,
             'date_of_birth' => $dateOfBirth,
             'gender' => $gender,
@@ -257,7 +276,7 @@ class StudentBatchImportService
         };
     }
 
-    private function generatedEmail(string $nis): string
+    public static function generatedEmailFor(string $nis): string
     {
         $local = trim((string) preg_replace('/[^A-Za-z0-9]+/', '.', $nis), '.');
 

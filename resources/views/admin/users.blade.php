@@ -18,39 +18,104 @@
     </div>
 </div>
 
-<details class="mb-6 bg-white border border-slate-200 rounded-xl">
-    <summary class="cursor-pointer px-4 py-3 font-medium text-indigo-700">+ Tambah pengguna (guru / admin / siswa)</summary>
-    <form method="POST" action="{{ route('admin.users.store') }}" class="p-4 grid md:grid-cols-2 gap-4 border-t border-slate-200">
-        @csrf
-        <div>
-            <label class="block text-sm font-medium mb-1">Nama *</label>
-            <input type="text" name="name" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">Email *</label>
-            <input type="email" name="email" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">Role *</label>
-            <select name="role" class="w-full rounded-lg border border-slate-300 px-3 py-2">
-                <option value="guru">Guru</option>
-                <option value="siswa">Siswa</option>
-                <option value="admin">Admin</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">NIP / NIS</label>
-            <input type="text" name="nomor_induk" class="w-full rounded-lg border border-slate-300 px-3 py-2">
-        </div>
-        <div class="md:col-span-2">
-            <label class="block text-sm font-medium mb-1">Password awal * (min. 8 karakter)</label>
-            <input type="text" name="password" required minlength="8" class="w-full rounded-lg border border-slate-300 px-3 py-2">
-        </div>
-        <div class="md:col-span-2">
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Simpan</button>
-        </div>
-    </form>
-</details>
+<div class="mb-6 grid gap-4 xl:grid-cols-2">
+    <details class="bg-white border border-emerald-200 rounded-xl" @if($errors->getBag('studentCreate')->any() || old('account_form') === 'student') open @endif>
+        <summary class="cursor-pointer px-4 py-3 font-semibold text-emerald-700">+ Tambah siswa manual</summary>
+        <form method="POST" action="{{ route('admin.users.students.store') }}" class="p-4 grid sm:grid-cols-2 gap-4 border-t border-slate-200">
+            @csrf
+            <input type="hidden" name="account_form" value="student">
+            <div>
+                <label for="student_name" class="block text-sm font-medium mb-1">Nama lengkap *</label>
+                <input id="student_name" type="text" name="name" value="{{ old('name') }}" required autocomplete="name" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('name', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="student_nis" class="block text-sm font-medium mb-1">NIS *</label>
+                <input id="student_nis" type="text" name="nomor_induk" value="{{ old('nomor_induk') }}" required maxlength="50" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Contoh: 000123">
+                @error('nomor_induk', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="student_birth_date" class="block text-sm font-medium mb-1">Tanggal lahir *</label>
+                <input id="student_birth_date" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" min="1900-01-01" max="{{ now()->format('Y-m-d') }}" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('date_of_birth', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="student_email" class="block text-sm font-medium mb-1">Email <span class="font-normal text-slate-400">(opsional)</span></label>
+                <input id="student_email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Dibuat otomatis jika kosong">
+                @error('email', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="student_gender" class="block text-sm font-medium mb-1">Jenis kelamin</label>
+                <select id="student_gender" name="gender" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                    <option value="">Tidak diisi</option>
+                    <option value="L" @selected(old('gender') === 'L')>Laki-laki</option>
+                    <option value="P" @selected(old('gender') === 'P')>Perempuan</option>
+                </select>
+                @error('gender', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="student_phone" class="block text-sm font-medium mb-1">No. telepon</label>
+                <input id="student_phone" type="text" name="phone" value="{{ old('phone') }}" maxlength="30" inputmode="tel" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('phone', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div class="sm:col-span-2">
+                <label for="student_address" class="block text-sm font-medium mb-1">Alamat</label>
+                <textarea id="student_address" name="address" rows="2" maxlength="2000" class="w-full rounded-lg border border-slate-300 px-3 py-2">{{ old('address') }}</textarea>
+                @error('address', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div class="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                Password awal otomatis memakai tanggal lahir format <code>ddmmyyyy</code>. Siswa wajib menggantinya saat login pertama.
+            </div>
+            <div class="sm:col-span-2">
+                <button class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Simpan akun siswa</button>
+            </div>
+        </form>
+    </details>
+
+    <details class="bg-white border border-indigo-200 rounded-xl" @if($errors->getBag('staffCreate')->any() || old('account_form') === 'staff') open @endif>
+        <summary class="cursor-pointer px-4 py-3 font-semibold text-indigo-700">+ Tambah guru atau admin</summary>
+        <form method="POST" action="{{ route('admin.users.store') }}" class="p-4 grid sm:grid-cols-2 gap-4 border-t border-slate-200">
+            @csrf
+            <input type="hidden" name="account_form" value="staff">
+            <div>
+                <label for="staff_name" class="block text-sm font-medium mb-1">Nama lengkap *</label>
+                <input id="staff_name" type="text" name="name" value="{{ old('name') }}" required autocomplete="name" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('name', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="staff_email" class="block text-sm font-medium mb-1">Email *</label>
+                <input id="staff_email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('email', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="staff_role" class="block text-sm font-medium mb-1">Role *</label>
+                <select id="staff_role" name="role" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                    <option value="guru" @selected(old('role', 'guru') === 'guru')>Guru</option>
+                    <option value="admin" @selected(old('role') === 'admin')>Admin</option>
+                </select>
+                @error('role', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="staff_number" class="block text-sm font-medium mb-1">NIP / nomor induk</label>
+                <input id="staff_number" type="text" name="nomor_induk" value="{{ old('nomor_induk') }}" maxlength="50" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('nomor_induk', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="staff_password" class="block text-sm font-medium mb-1">Password awal *</label>
+                <input id="staff_password" type="password" name="password" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                @error('password', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="staff_password_confirmation" class="block text-sm font-medium mb-1">Ulangi password *</label>
+                <input id="staff_password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+            </div>
+            <div class="sm:col-span-2 text-xs leading-5 text-slate-500">Guru/admin juga wajib mengganti password awal saat login pertama.</div>
+            <div class="sm:col-span-2">
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Simpan akun staf</button>
+            </div>
+        </form>
+    </details>
+</div>
 
 <section class="mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-white">
     <div class="grid gap-5 p-5 lg:grid-cols-[1fr_380px]">
