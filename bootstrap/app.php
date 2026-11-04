@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\RequirePasswordChange::class,
+            \App\Http\Middleware\RejectPendingStudent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -25,6 +25,15 @@ class AuthController extends Controller
         $credentials = [$field => trim($data['login']), 'password' => $data['password']];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            if ($request->user()->role === 'siswa_pending') {
+                $id = $request->user()->id;
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                $request->session()->put('lms_student_registration_pending_id', $id);
+                return redirect()->route('register.verification')
+                    ->with('registration_notice', 'Akun belum terverifikasi. Masukkan kode Gmail atau klik Kirim Ulang Kode.');
+            }
             $request->session()->regenerate();
 
             if ($request->user()->must_change_password) {

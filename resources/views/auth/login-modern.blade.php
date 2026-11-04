@@ -19,6 +19,7 @@
 
         <main class="lms-auth-main">
             <h1>Masuk ke ruang belajarmu</h1>
+            @if(session('success'))<div role="status" class="lms-alert lms-alert-success">{{ session('success') }}</div>@endif
 
             <form method="POST" action="{{ route('login.attempt') }}" class="space-y-4">
                 @csrf
@@ -36,7 +37,7 @@
                 <button class="lms-button lms-button-primary w-full">Masuk ke RuangKelas</button>
             </form>
 
-            <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? Hubungi administrator sekolah.</p>
+            <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? <a href="{{ route('register') }}">Buat akun siswa dengan Gmail</a>. Akun dari sekolah tetap bisa digunakan.</p>
         </main>
 
         <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas · Belajar lebih terarah</footer>

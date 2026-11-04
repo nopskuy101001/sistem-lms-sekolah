@@ -67,6 +67,7 @@ class User extends Authenticatable
         return match ($this->role) {
             'admin' => 'Admin',
             'guru' => 'Guru',
+            'siswa_pending' => 'Siswa - Belum Verifikasi',
             default => 'Siswa',
         };
     }
