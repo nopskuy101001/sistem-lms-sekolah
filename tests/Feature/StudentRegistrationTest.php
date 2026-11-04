@@ -2,115 +2,64 @@
 
 namespace Tests\Feature;
 
-use App\Mail\StudentRegistrationCodeMail;
+use App\Http\Controllers\StudentRegistrationController;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class StudentRegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
+    public function test_no_public_registration_routes_or_links(): void
     {
-        parent::setUp();
-        config(['cache.default' => 'array', 'mail.default' => 'smtp']);
-        Cache::flush();
-        Mail::fake();
+        foreach (['register', 'register.store', 'register.notice', 'register.verification', 'register.verify.code', 'register.resend'] as $name) {
+            $this->assertFalse(Route::has($name), "Public registration route exists: {$name}");
+        }
+        foreach (['/register', '/register/verify', '/register/notice', '/register/resend'] as $path) {
+            $this->get($path)->assertNotFound();
+            $this->post($path)->assertNotFound();
+        }
+        $this->get('/login')->assertOk()->assertSee('Hubungi administrator sekolah')->assertDontSee('Buat akun siswa');
     }
 
-    private function registration(array $overrides = []): array
+    public function test_stale_cached_controller_cannot_create_account(): void
     {
-        return array_merge([
-            'name' => 'Siswa Baru',
-            'nomor_induk' => 'NIS-2026001',
-            'email' => 'Siswa.Baru+test@gmail.com',
-            'password' => 'SandiKuat2026',
-            'password_confirmation' => 'SandiKuat2026',
-        ], $overrides);
+        $this->withoutExceptionHandling();
+        try {
+            app(StudentRegistrationController::class)->store(request());
+            $this->fail('Controller must deny public registration.');
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            $this->assertTrue(true);
+        }
+        $this->assertDatabaseCount('users', 0);
     }
 
-    private function lastSentOtp(): string
+    public function test_pending_external_account_cannot_be_activated_and_cannot_login(): void
     {
-        $code = '';
-        Mail::assertSent(StudentRegistrationCodeMail::class, function (StudentRegistrationCodeMail $mail) use (&$code) {
-            $code = $mail->verificationCode;
-            return true;
-        });
-        $this->assertMatchesRegularExpression('/^[0-9]{6}$/', $code);
-        return $code;
-    }
-
-    public function test_registration_creates_pending_account_then_otp_activates_it(): void
-    {
-        $this->post(route('register.store'), $this->registration(['role' => 'admin']))
-            ->assertRedirect(route('register.verification'));
-        $user = User::where('nomor_induk', 'NIS-2026001')->firstOrFail();
-        $this->assertSame('siswa_pending', $user->role);
-        $this->assertNull($user->email_verified_at);
-        $this->assertSame('siswabaru@gmail.com', $user->email);
-        $this->get(route('register.verification'))->assertOk()->assertSee('Masukkan Kode Gmail');
-        $this->post(route('register.verify.code'), ['code' => $this->lastSentOtp()])
-            ->assertRedirect(route('login'));
-        $user->refresh();
-        $this->assertSame('siswa', $user->role);
-        $this->assertNotNull($user->email_verified_at);
-    }
-
-    public function test_pending_account_cannot_login_but_can_resume_verification(): void
-    {
-        $this->post(route('register.store'), $this->registration());
-        $this->post(route('login.attempt'), ['login'=>'NIS-2026001','password'=>'SandiKuat2026'])
-            ->assertRedirect(route('register.verification'));
+        User::factory()->create([
+            'nomor_induk' => 'NIS-PENDING-88',
+            'role' => 'siswa_pending',
+            'password' => 'Rahasia123456',
+            'email_verified_at' => null,
+        ]);
+        $this->post(route('login.attempt'), [
+            'login' => 'NIS-PENDING-88', 'password' => 'Rahasia123456',
+        ])->assertRedirect(route('login'));
         $this->assertGuest();
-        $this->get(route('register.verification'))->assertOk();
+        $this->assertDatabaseHas('users', ['nomor_induk'=>'NIS-PENDING-88', 'role'=>'siswa_pending', 'email_verified_at'=>null]);
     }
 
-    public function test_invalid_code_is_rejected_and_resend_invalidates_old_code(): void
+    public function test_only_admin_can_create_student_and_used_nis_is_rejected(): void
     {
-        $this->post(route('register.store'), $this->registration());
-        $old = $this->lastSentOtp();
-        $bad = $old === '000000' ? '000001' : '000000';
-        $this->post(route('register.verify.code'), ['code' => $bad])->assertSessionHasErrors('code');
-        $this->assertSame('siswa_pending', User::where('nomor_induk','NIS-2026001')->firstOrFail()->role);
-        $this->travel(61)->seconds();
-        $this->post(route('register.resend'))->assertRedirect(route('register.verification'));
-        Mail::assertSentCount(2);
-        $this->post(route('register.verify.code'), ['code' => $old])->assertSessionHasErrors('code');
-        $this->assertNull(User::where('nomor_induk','NIS-2026001')->firstOrFail()->email_verified_at);
-    }
-
-    public function test_expired_otp_cannot_activate_account(): void
-    {
-        $this->post(route('register.store'), $this->registration());
-        $code = $this->lastSentOtp();
-        $this->travel(11)->minutes();
-        $this->post(route('register.verify.code'), ['code' => $code])->assertSessionHasErrors('code');
-        $this->assertSame('siswa_pending', User::where('nomor_induk', 'NIS-2026001')->firstOrFail()->role);
-    }
-
-    public function test_registration_page_has_no_school_invitation_field(): void
-    {
-        $this->get(route('register'))->assertOk()->assertDontSee('name="invite_code"', false)
-            ->assertSee('Buat Akun &amp; Kirim Kode Gmail', false);
-    }
-
-    public function test_rejects_non_gmail_and_duplicate_nis(): void
-    {
-        $this->post(route('register.store'), $this->registration(['email'=>'siswa@yahoo.com']))->assertSessionHasErrors('email');
-        User::factory()->create(['role'=>'siswa', 'nomor_induk'=>'NIS-2026001']);
-        $this->post(route('register.store'), $this->registration())->assertSessionHasErrors('email');
-    }
-
-    public function test_legacy_admin_created_student_does_not_require_new_otp(): void
-    {
-        $student = User::factory()->create(['role'=>'siswa','nomor_induk'=>'LEGACY-2026', 'email_verified_at'=>null, 'must_change_password'=>true]);
-        $this->assertSame('siswa', $student->role);
-        $this->post(route('login.attempt'), ['login'=>'LEGACY-2026', 'password'=>'password'])
-            ->assertRedirect(route('password.change'));
-        $this->assertAuthenticatedAs($student);
+        $admin = User::factory()->create(['role'=>'admin']);
+        $teacher = User::factory()->create(['role'=>'guru']);
+        User::factory()->create(['role'=>'siswa_pending','nomor_induk'=>'NIS-CLAIMED']);
+        $data = ['name'=>'Siswa Resmi','nomor_induk'=>'NIS-CLAIMED','date_of_birth'=>'2007-01-01'];
+        $this->actingAs($teacher)->post(route('admin.users.students.store'), $data)->assertForbidden();
+        $this->actingAs($admin)->post(route('admin.users.students.store'), $data)
+            ->assertSessionHasErrors('nomor_induk', errorBag:'studentCreate');
+        $this->assertSame(1, User::where('nomor_induk','NIS-CLAIMED')->count());
     }
 }

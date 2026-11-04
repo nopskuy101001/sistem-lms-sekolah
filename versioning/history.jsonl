@@ -1,3 +1,5 @@
 {"at":"2026-11-04T08:47:32+07:00","event":"baseline_registered","version":"0.1.0","status":"verified"}
 {"at":"2026-11-04T10:25:37+07:00","event":"upgraded","from":"0.1.0","to":"0.2.0","package_sha256":"855539b718385557d69803ce443a501a8c213d58fdaf756033c900dc0ed69937","status":"verified"}
 {"at":"2026-11-04T10:57:10+07:00","event":"upgraded","from":"0.2.0","to":"0.3.0","package_sha256":"3c2a36ea80c57049ce8869b83a52166fa429826950fc6c2a86fef0bdea0f1725","status":"verified"}
+{"at":"2026-11-04T12:12:46+07:00","event":"upgraded","from":"0.3.0","to":"0.4.0","package_sha256":"c0eb15d618d544ec964a87be762c7bc5400e918dadb7deea84b88827d20e8bab","status":"verified"}
+{"at":"2026-11-04T13:05:16+07:00","event":"upgraded","from":"0.4.0","to":"0.5.0","package_sha256":"e6e7e8ca88ea68812cc52f95251ad26ada87bf9a0d62b2e19b5811fec55ed5bb","status":"verified"}

@@ -37,7 +37,7 @@
                 <button class="lms-button lms-button-primary w-full">Masuk ke RuangKelas</button>
             </form>
 
-            <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? <a href="{{ route('register') }}">Buat akun siswa dengan Gmail</a>. Akun dari sekolah tetap bisa digunakan.</p>
+            <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? Hubungi administrator sekolah untuk memperoleh akun siswa resmi.</p>
         </main>
 
         <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas · Belajar lebih terarah</footer>

@@ -35,12 +35,16 @@ class ExampleTest extends TestCase
             ->assertDontSee('lms-auth-visual', false);
     }
 
-    public function test_student_registration_page_is_accessible_to_guests(): void
+    public function test_public_student_registration_is_disabled(): void
     {
-        $this->assertTrue(Route::has('register'));
-        $this->assertTrue(Route::has('register.store'));
-        $this->get(route('register'))->assertOk()->assertSee('Buat akun RuangKelas');
-        $this->get(route('login'))->assertSee('Buat akun siswa dengan Gmail');
+        $this->assertFalse(Route::has('register'));
+        $this->assertFalse(Route::has('register.store'));
+
+        $this->get('/register')->assertNotFound();
+        $this->post('/register')->assertNotFound();
+        $this->get(route('login'))
+            ->assertSee('Hubungi administrator sekolah')
+            ->assertDontSee('Buat akun siswa');
     }
 
     public function test_student_can_open_the_dashboard(): void

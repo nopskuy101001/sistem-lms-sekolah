@@ -26,13 +26,12 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             if ($request->user()->role === 'siswa_pending') {
-                $id = $request->user()->id;
+                // Akun registrasi publik lama tidak boleh diaktifkan melalui login.
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
-                $request->session()->put('lms_student_registration_pending_id', $id);
-                return redirect()->route('register.verification')
-                    ->with('registration_notice', 'Akun belum terverifikasi. Masukkan kode Gmail atau klik Kirim Ulang Kode.');
+                return redirect()->route('login')
+                    ->withErrors(['login' => 'Registrasi mandiri sudah ditutup. Hubungi administrator sekolah untuk pemeriksaan akun dan NIS.']);
             }
             $request->session()->regenerate();
 

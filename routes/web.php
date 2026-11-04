@@ -4,7 +4,6 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\StudentRegistrationController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\NotificationController;
@@ -31,13 +30,7 @@ use Illuminate\Support\Facades\Route;
 // ---------- Tamu ----------
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:8,1')->name('login.attempt');
-    Route::get('/register', [StudentRegistrationController::class, 'create'])->name('register');
-    Route::post('/register', [StudentRegistrationController::class, 'store'])->middleware('throttle:4,1')->name('register.store');
-    Route::get('/register/notice', [StudentRegistrationController::class, 'notice'])->name('register.notice');
-    Route::get('/register/verify', [StudentRegistrationController::class, 'verification'])->name('register.verification');
-    Route::post('/register/verify', [StudentRegistrationController::class, 'confirm'])->middleware('throttle:8,1')->name('register.verify.code');
-    Route::post('/register/resend', [StudentRegistrationController::class, 'resend'])->middleware('throttle:4,1')->name('register.resend');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 });
 
 // ---------- Sudah login ----------
@@ -47,6 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile/email', [ProfileController::class, 'requestEmailChange'])->middleware('throttle:5,10')->name('profile.email.request');
+    Route::get('/profile/email/confirm/{user}', [ProfileController::class, 'confirmEmailChange'])->middleware(['signed', 'throttle:10,1'])->name('profile.email.confirm');
     Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 

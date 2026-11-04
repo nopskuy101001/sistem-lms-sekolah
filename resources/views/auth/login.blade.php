@@ -24,7 +24,7 @@
     </form>
 
     <p class="text-sm text-slate-500 mt-6 text-center">
-        Belum memiliki akun? <a href="{{ route('register') }}">Buat akun siswa</a>.
+        Belum memiliki akun? Hubungi administrator sekolah untuk memperoleh akun siswa resmi.
     </p>
 </div>
 @endsection

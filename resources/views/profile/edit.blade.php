@@ -7,7 +7,7 @@
         <div>
             <p class="lms-eyebrow">Akun pengguna</p>
             <h1 class="lms-page-title">Profil Saya</h1>
-            <p class="lms-page-description">Atur foto yang tampil pada navigasi, daftar anggota, kartu kelas, dan pengumuman.</p>
+            <p class="lms-page-description">Kelola foto profil dan email akun. NIS, role, dan identitas siswa tetap dikelola sekolah.</p>
         </div>
     </div>
 
@@ -65,13 +65,47 @@
                 <div class="min-w-0"><strong class="block break-words text-slate-900">{{ $user->name }}</strong><span class="text-xs text-slate-500">{{ $user->roleLabel() }}</span></div>
             </div>
             <dl class="mt-6 grid gap-4 text-sm">
-                <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all text-slate-700">{{ $user->email }}</dd></div>
+                <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all text-slate-700">{{ $user->email ?: 'Belum diatur' }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $user->isSiswa() ? 'NIS' : 'NIP / Nomor induk' }}</dt><dd class="mt-1 text-slate-700">{{ $user->nomor_induk ?: 'Belum diisi' }}</dd></div>
                 @if($user->phone)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Telepon</dt><dd class="mt-1 text-slate-700">{{ $user->phone }}</dd></div>@endif
             </dl>
             <a href="{{ route('password.change') }}" class="lms-button mt-6 w-full border border-slate-300 bg-white text-slate-700">Ganti password</a>
         </aside>
     </div>
+
+    <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="profile-email-heading">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 id="profile-email-heading" class="text-lg font-bold text-slate-900">Email akun</h2>
+                <p class="mt-1 text-sm text-slate-500">Email digunakan untuk login dan notifikasi. NIS/NIP tidak akan ikut berubah.</p>
+                <p class="mt-3 break-all text-sm font-semibold text-slate-800">{{ $user->email ?: 'Belum diisi' }}</p>
+                <p class="mt-1 text-xs {{ $user->email_verified_at ? 'text-emerald-700' : 'text-amber-700' }}">
+                    {{ $user->email_verified_at ? 'Email sudah terverifikasi.' : 'Email belum terverifikasi (termasuk email sementara yang dibuat sistem).' }}
+                </p>
+            </div>
+            <button type="button" id="toggle-profile-email" aria-controls="profile-email-form" aria-expanded="{{ $errors->has('email') || $errors->has('current_password') ? 'true' : 'false' }}"
+                class="lms-button lms-button-primary self-start" onclick="var form=document.getElementById('profile-email-form'); form.hidden=!form.hidden; this.setAttribute('aria-expanded',String(!form.hidden));">
+                {{ str_ends_with((string) $user->email, '@akun.ruangkelas.local') || blank($user->email) ? 'Tambahkan Email Asli' : 'Edit / Ganti Email' }}
+            </button>
+        </div>
+        <form id="profile-email-form" method="POST" action="{{ route('profile.email.request') }}" class="mt-5 space-y-4 border-t border-slate-100 pt-5" @if(!$errors->has('email') && !$errors->has('current_password')) hidden @endif>
+            @csrf
+            <div>
+                <label for="profile_new_email" class="block text-sm font-semibold text-slate-800">Email baru</label>
+                <input id="profile_new_email" type="email" name="email" autocomplete="email" inputmode="email" required maxlength="255"
+                    value="{{ old('email') }}" placeholder="nama@gmail.com" class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
+                @error('email')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="profile_current_password" class="block text-sm font-semibold text-slate-800">Konfirmasi password akun saat ini</label>
+                <input id="profile_current_password" type="password" name="current_password" autocomplete="current-password" required
+                    class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
+                @error('current_password')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <p class="text-xs leading-5 text-slate-500">Sistem mengirim tautan verifikasi ke email baru yang berlaku 30 menit. Email lama tetap aktif hingga konfirmasi berhasil. Jika SMTP belum diaktifkan, perubahan tidak dilakukan agar akun tetap aman.</p>
+            <button type="submit" class="lms-button lms-button-primary">Kirim tautan verifikasi email</button>
+        </form>
+    </section>
 </div>
 @endsection
 
