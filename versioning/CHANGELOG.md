@@ -14,3 +14,9 @@
 
 ## v0.5.0 - 2026-11-04
 - Tombol tambah/ganti email semua role via Profil. Konfirmasi password dan email baru; NIS dan registrasi publik tetap aman.
+
+## v0.6.0 - 2026-11-04
+- Lupa Password via NIS/email + link reset 30 menit. Registrasi publik tetap ditutup.
+
+## v0.6.1 - 2026-11-04
+- Hotfix reset password saat browser masih login; logout setelah reset sukses.

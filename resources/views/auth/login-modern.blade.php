@@ -20,6 +20,9 @@
         <main class="lms-auth-main">
             <h1>Masuk ke ruang belajarmu</h1>
             @if(session('success'))<div role="status" class="lms-alert lms-alert-success">{{ session('success') }}</div>@endif
+            @if(session('status'))
+                <div role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 mt-3">{{ session('status') }}</div>
+            @endif
 
             <form method="POST" action="{{ route('login.attempt') }}" class="space-y-4">
                 @csrf
@@ -30,6 +33,9 @@
                 <div class="lms-field">
                     <label for="password">Kata sandi</label>
                     <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
+                </div>
+                <div class="flex justify-end">
+                    <a href="{{ route('password.request') }}" class="lms-forgot-link">Lupa password?</a>
                 </div>
                 <label class="flex items-center gap-2.5 text-xs text-slate-500 cursor-pointer">
                     <input type="checkbox" name="remember" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Ingat saya di perangkat ini
