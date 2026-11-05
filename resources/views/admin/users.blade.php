@@ -6,7 +6,7 @@
     <div>
         <p class="lms-eyebrow">Administrasi sekolah</p>
         <h1 class="lms-page-title">Kelola Pengguna</h1>
-        <p class="lms-page-description">Buat akun baru, cari pengguna, atau hapus akun yang tidak lagi digunakan.</p>
+        <p class="lms-page-description">Buat akun baru, cari pengguna, reset password guru/siswa, atau hapus akun yang tidak lagi digunakan.</p>
     </div>
 </div>
 
@@ -142,6 +142,42 @@
     </div>
 </section>
 
+@if($resetUser)
+    <section id="reset-password" class="mb-6 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+        <div class="border-b border-amber-100 bg-amber-50 px-5 py-4">
+            <p class="text-xs font-bold uppercase tracking-wider text-amber-700">Reset password oleh admin</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-900">{{ $resetUser->name }}</h2>
+            <p class="mt-1 text-sm text-slate-600">
+                {{ $resetUser->roleLabel() }} · {{ $resetUser->nomor_induk ?: $resetUser->email }}
+            </p>
+        </div>
+        <form method="POST" action="{{ route('admin.users.password.reset', $resetUser) }}" class="grid gap-4 p-5 md:grid-cols-2" data-confirm="{{ 'Reset password '.$resetUser->name.' sekarang?' }}" onsubmit="return confirm(this.dataset.confirm)">
+            @csrf @method('PUT')
+            <div class="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs leading-5 text-amber-900">
+                Password lama akan langsung tidak berlaku, seluruh sesi aktif akun ini akan dicabut, dan pengguna wajib mengganti password sementara saat login berikutnya. Sampaikan password sementara melalui jalur yang aman.
+            </div>
+            <div>
+                <label for="reset_password" class="block text-sm font-medium text-slate-800">Password sementara baru *</label>
+                <input id="reset_password" type="password" name="password" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Minimal 8 karakter">
+                @error('password', 'passwordReset')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="reset_password_confirmation" class="block text-sm font-medium text-slate-800">Ulangi password sementara *</label>
+                <input id="reset_password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+                <label for="admin_password" class="block text-sm font-medium text-slate-800">Konfirmasi password admin Anda *</label>
+                <input id="admin_password" type="password" name="admin_password" required autocomplete="current-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 md:max-w-md" placeholder="Untuk mengesahkan tindakan ini">
+                @error('admin_password', 'passwordReset')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div class="md:col-span-2 flex flex-wrap gap-2">
+                <button class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">Reset password sekarang</button>
+                <a href="{{ route('admin.users.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</a>
+            </div>
+        </form>
+    </section>
+@endif
+
 <form method="GET" class="mb-4 grid gap-2 sm:flex sm:flex-wrap">
     <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nama / email / NIS"
            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-auto sm:flex-1">
@@ -179,13 +215,19 @@
                         </span>
                     </td>
                     <td class="px-4 py-3 text-right">
-                        @if($user->id !== auth()->id())
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            @if(in_array($user->role, ['guru', 'siswa'], true))
+                                <a href="{{ route('admin.users.index', ['reset_user' => $user->id]) }}#reset-password" class="text-xs font-semibold text-amber-700 hover:text-amber-900">Reset password</a>
+                            @endif
+                            @if($user->id !== auth()->id())
                             <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                                  onsubmit="return confirm('Hapus pengguna {{ $user->name }}? Kelas yang ia ajar ikut terhapus.')">
+                                  data-confirm="{{ 'Hapus pengguna '.$user->name.'? Kelas yang ia ajar ikut terhapus.' }}"
+                                  onsubmit="return confirm(this.dataset.confirm)">
                                 @csrf @method('DELETE')
                                 <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
                             </form>
-                        @endif
+                            @endif
+                        </div>
                     </td>
                 </tr>
             @endforeach

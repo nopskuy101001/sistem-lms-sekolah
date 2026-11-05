@@ -34,8 +34,8 @@
                     <label for="password">Kata sandi</label>
                     <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
                 </div>
-                <div class="flex justify-end">
-                    <a href="{{ route('password.request') }}" class="lms-forgot-link">Lupa password?</a>
+                <div class="text-right text-xs text-slate-500">
+                    Lupa password? Hubungi administrator sekolah.
                 </div>
                 <label class="flex items-center gap-2.5 text-xs text-slate-500 cursor-pointer">
                     <input type="checkbox" name="remember" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Ingat saya di perangkat ini

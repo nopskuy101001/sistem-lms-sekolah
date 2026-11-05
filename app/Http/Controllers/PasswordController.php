@@ -28,8 +28,25 @@ class PasswordController extends Controller
         ]);
 
         $request->session()->regenerate();
+        $request->session()->forget('password_change_deferred');
 
         return redirect()->route($wasRequired ? 'dashboard' : 'profile.edit')
             ->with('success', 'Password berhasil diperbarui.');
+    }
+
+    public function defer(Request $request): RedirectResponse
+    {
+        if (! $request->user()->must_change_password) {
+            return redirect()->route('dashboard');
+        }
+
+        // Tetap simpan kewajiban di akun. Pilihan ini hanya berlaku untuk sesi
+        // saat ini sehingga pengingat muncul kembali pada login berikutnya.
+        $request->session()->put('password_change_deferred', true);
+
+        return redirect()->route('dashboard')->with(
+            'success',
+            'Penggantian password ditunda. Kamu akan diminta kembali saat login berikutnya dan tetap dapat menggantinya melalui Profil.'
+        );
     }
 }

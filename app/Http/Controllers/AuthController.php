@@ -36,6 +36,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             if ($request->user()->must_change_password) {
+                $request->session()->forget('password_change_deferred');
                 return redirect()->route('password.change');
             }
 

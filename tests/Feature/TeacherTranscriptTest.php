@@ -87,9 +87,11 @@ class TeacherTranscriptTest extends TestCase
             ->assertSee('80 / 100')
             ->assertSee('40 / 50')
             ->assertSee('Cetak')
+            ->assertSee('Unduh CSV')
+            ->assertSee('Unduh Excel')
             ->assertSee(route('transcripts.print', $this->classroom))
-            ->assertDontSee(route('transcripts.excel', $this->classroom))
-            ->assertDontSee(route('transcripts.csv', $this->classroom));
+            ->assertSee(route('transcripts.excel', $this->classroom))
+            ->assertSee(route('transcripts.csv', $this->classroom));
     }
 
     public function test_print_splits_wide_tables_and_restricts_access_to_the_teacher(): void

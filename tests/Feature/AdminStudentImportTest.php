@@ -133,6 +133,42 @@ class AdminStudentImportTest extends TestCase
         }
     }
 
+    public function test_student_can_defer_initial_password_change_for_current_session_only(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'siswa',
+            'nomor_induk' => 'DEFER-001',
+            'password' => '22032005',
+            'must_change_password' => true,
+        ]);
+
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->post(route('login.attempt'), [
+            'login' => 'DEFER-001',
+            'password' => '22032005',
+        ])->assertRedirect(route('password.change'));
+
+        $this->get(route('password.change'))
+            ->assertOk()
+            ->assertSee('Nanti saja')
+            ->assertSee(route('password.defer'));
+
+        $this->post(route('password.defer'))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('success');
+
+        $this->assertTrue($student->fresh()->must_change_password);
+        $this->get(route('dashboard'))->assertOk();
+        $this->get(route('profile.edit'))->assertOk();
+
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->post(route('login.attempt'), [
+            'login' => 'DEFER-001',
+            'password' => '22032005',
+        ])->assertRedirect(route('password.change'));
+        $this->get(route('dashboard'))->assertRedirect(route('password.change'));
+    }
+
     public function test_invalid_batch_is_rejected_without_partial_import(): void
     {
         User::factory()->create(['role' => 'siswa', 'nomor_induk' => 'DUPLIKAT']);

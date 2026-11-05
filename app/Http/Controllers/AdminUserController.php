@@ -7,7 +7,9 @@ use App\Services\StudentBatchImportService;
 use App\Services\StudentImportTemplateXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -21,6 +23,14 @@ class AdminUserController extends Controller
 
     public function index(Request $request): View
     {
+        $resetUser = null;
+        if ($request->filled('reset_user')) {
+            $resetUser = User::query()
+                ->whereKey($request->integer('reset_user'))
+                ->whereIn('role', ['guru', 'siswa'])
+                ->firstOrFail();
+        }
+
         $users = User::query()
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->role))
             ->when($request->filled('q'), function ($q) use ($request) {
@@ -34,7 +44,7 @@ class AdminUserController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.users', compact('users'));
+        return view('admin.users', compact('users', 'resetUser'));
     }
 
     public function storeStaff(Request $request): RedirectResponse
@@ -147,6 +157,53 @@ class AdminUserController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, no-cache',
         ]);
+    }
+
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        abort_unless(
+            in_array($user->role, ['guru', 'siswa'], true),
+            403,
+            'Password hanya dapat direset untuk akun guru atau siswa.'
+        );
+
+        $data = $request->validateWithBag('passwordReset', [
+            'admin_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::min(8), 'different:admin_password'],
+        ], [
+            'admin_password.current_password' => 'Password admin tidak sesuai.',
+            'password.different' => 'Password sementara harus berbeda dari password admin.',
+        ]);
+
+        DB::transaction(function () use ($request, $user, $data) {
+            $user->forceFill([
+                'password' => $data['password'],
+                'must_change_password' => true,
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            DB::table('admin_password_reset_audits')->insert([
+                'admin_id' => $request->user()->id,
+                'user_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+            if (config('session.driver') === 'database') {
+                DB::table(config('session.table', 'sessions'))
+                    ->where('user_id', $user->id)
+                    ->delete();
+            }
+        });
+
+        return redirect()->route('admin.users.index')->with(
+            'success',
+            "Password {$user->name} berhasil direset. Sampaikan password sementara secara aman; pengguna wajib menggantinya saat login."
+        );
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

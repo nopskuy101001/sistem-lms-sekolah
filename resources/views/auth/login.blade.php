@@ -20,7 +20,7 @@
         <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="remember"> Ingat saya
         </label>
-        <div class="text-right"><a class="lms-forgot-link" href="{{ route('password.request') }}">Lupa password?</a></div>
+        <div class="text-right text-xs text-slate-500">Lupa password? Hubungi administrator sekolah.</div>
         <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 font-medium">Masuk</button>
     </form>
 

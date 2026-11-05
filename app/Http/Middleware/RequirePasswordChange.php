@@ -11,9 +11,9 @@ class RequirePasswordChange
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()?->must_change_password
+            && ! $request->session()->get('password_change_deferred', false)
             && ! $request->routeIs(
-                'password.change', 'password.update', 'logout',
-                'password.request', 'password.email', 'password.reset', 'password.store'
+                'password.change', 'password.update', 'password.defer', 'logout'
             )) {
             return redirect()->route('password.change');
         }
