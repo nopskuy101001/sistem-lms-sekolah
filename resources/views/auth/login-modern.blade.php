@@ -18,7 +18,10 @@
         </a>
 
         <main class="lms-auth-main">
-            <h1>Masuk ke ruang belajarmu</h1>
+            <h1 class="lms-login-heading">
+                <span class="lms-login-typing" data-login-typing data-text="Masuk ke ruang belajarmu" aria-hidden="true">Masuk ke ruang belajarmu</span>
+                <span class="sr-only">Masuk ke ruang belajarmu</span>
+            </h1>
             @if(session('success'))<div role="status" class="lms-alert lms-alert-success">{{ session('success') }}</div>@endif
             @if(session('status'))
                 <div role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 mt-3">{{ session('status') }}</div>
@@ -34,13 +37,13 @@
                     <label for="password">Kata sandi</label>
                     <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
                 </div>
-                <div class="text-right text-xs text-slate-500">
-                    Lupa password? Hubungi administrator sekolah.
+                <div class="flex justify-end">
+                    <a href="{{ route('password.request') }}" class="lms-forgot-link">Lupa password?</a>
                 </div>
                 <label class="flex items-center gap-2.5 text-xs text-slate-500 cursor-pointer">
                     <input type="checkbox" name="remember" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Ingat saya di perangkat ini
                 </label>
-                <button class="lms-button lms-button-primary w-full">Masuk ke RuangKelas</button>
+                <button class="lms-button lms-button-primary lms-login-submit w-full"><span>Masuk ke RuangKelas</span></button>
             </form>
 
             <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? Hubungi administrator sekolah untuk memperoleh akun siswa resmi.</p>
@@ -51,3 +54,41 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const typingText = document.querySelector('[data-login-typing]');
+    if (!typingText || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const fullText = typingText.dataset.text || '';
+    let character = 0;
+    let deleting = false;
+
+    typingText.textContent = '';
+
+    function animateTyping() {
+        if (deleting) {
+            character -= 1;
+        } else {
+            character += 1;
+        }
+
+        typingText.textContent = fullText.slice(0, character);
+
+        let delay = deleting ? 42 : 82;
+        if (!deleting && character === fullText.length) {
+            deleting = true;
+            delay = 1700;
+        } else if (deleting && character === 0) {
+            deleting = false;
+            delay = 450;
+        }
+
+        window.setTimeout(animateTyping, delay);
+    }
+
+    window.setTimeout(animateTyping, 350);
+});
+</script>
+@endpush

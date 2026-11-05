@@ -28,6 +28,8 @@ class ExampleTest extends TestCase
             ->assertOk()
             ->assertSee('RuangKelas')
             ->assertSee('Masuk ke ruang belajarmu')
+            ->assertSee('data-login-typing', false)
+            ->assertSee('lms-login-submit', false)
             ->assertDontSee('Selamat datang kembali')
             ->assertSee('lms-auth-container', false)
             ->assertSee('lms-auth-backdrop', false)
