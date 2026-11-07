@@ -7,7 +7,7 @@
     <div class="lms-auth-container">
         <section class="lms-auth-form-wrap">
             <a href="{{ route('login') }}" class="lms-brand lms-auth-brand">
-                <span class="lms-brand-mark" aria-hidden="true">&#x1F512;</span>
+                <span class="lms-brand-mark" aria-hidden="true"><img src="{{ asset('media/logo-smkn1-cerme.png') }}" alt="" class="lms-brand-logo"></span>
                 <span><span class="lms-brand-title">RuangKelas</span><span class="lms-brand-subtitle">SMK NEGERI 1 CERME</span></span>
             </a>
             <main class="lms-auth-main">

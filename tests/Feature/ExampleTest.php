@@ -27,6 +27,7 @@ class ExampleTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('RuangKelas')
+            ->assertSee('media/logo-smkn1-cerme.png', false)
             ->assertSee('Masuk ke ruang belajarmu')
             ->assertSee('data-login-typing', false)
             ->assertSee('lms-login-submit', false)
@@ -35,6 +36,8 @@ class ExampleTest extends TestCase
             ->assertSee('lms-auth-backdrop', false)
             ->assertDontSee('Satu ruang untuk perjalanan belajar yang lebih berarti.')
             ->assertDontSee('lms-auth-visual', false);
+
+        $this->assertFileExists(public_path('media/logo-smkn1-cerme.png'));
     }
 
     public function test_public_student_registration_is_disabled(): void

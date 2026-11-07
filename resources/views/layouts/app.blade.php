@@ -18,9 +18,7 @@
 
         <aside class="lms-sidebar" id="lms-sidebar" data-sidebar aria-label="Navigasi utama">
             <a href="{{ route('dashboard') }}" class="lms-brand">
-                <span class="lms-brand-mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-6 9 6-9 6-9-6Z"/><path d="M7 13.5V18l5 3 5-3v-4.5"/><path d="M21 10v6"/></svg>
-                </span>
+                <span class="lms-brand-mark" aria-hidden="true"><img src="{{ asset('media/logo-smkn1-cerme.png') }}" alt="" class="lms-brand-logo"></span>
                 <span><span class="lms-brand-title">RuangKelas</span><span class="lms-brand-subtitle">SMK NEGERI 1 CERME</span></span>
             </a>
 
