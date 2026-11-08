@@ -1,4 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const themeRoot = document.documentElement;
+    const themeToggle = document.querySelector('[data-theme-toggle]');
+    const themeColor = document.querySelector('#lms-theme-color');
+
+    const applyTheme = (theme, persist = false) => {
+        const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+        themeRoot.dataset.theme = normalizedTheme;
+        themeRoot.style.colorScheme = normalizedTheme;
+
+        if (themeToggle) {
+            const darkThemeActive = normalizedTheme === 'dark';
+            const actionLabel = darkThemeActive ? 'Aktifkan mode terang' : 'Aktifkan mode gelap';
+            themeToggle.setAttribute('aria-label', actionLabel);
+            themeToggle.setAttribute('title', actionLabel);
+            themeToggle.setAttribute('aria-pressed', String(darkThemeActive));
+        }
+
+        themeColor?.setAttribute('content', normalizedTheme === 'dark' ? '#0d1426' : '#f5f7fb');
+
+        if (persist) {
+            try {
+                localStorage.setItem('lms-theme', normalizedTheme);
+            } catch (_) {}
+        }
+    };
+
+    if (themeToggle) {
+        applyTheme(themeRoot.dataset.theme || 'light');
+        themeToggle.addEventListener('click', () => {
+            applyTheme(themeRoot.dataset.theme === 'dark' ? 'light' : 'dark', true);
+        });
+    }
+
     const sidebar = document.querySelector('[data-sidebar]');
     const overlay = document.querySelector('[data-sidebar-overlay]');
     const toggle = document.querySelector('[data-sidebar-toggle]');
