@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
-
 return [
 
     /*
@@ -129,7 +127,7 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+        'lms_sekolah_session'
     ),
 
     /*
@@ -170,6 +168,9 @@ return [
     */
 
     'secure' => env('SESSION_SECURE_COOKIE'),
+
+    /* Follow the trusted request scheme unless explicitly overridden. */
+    'secure_auto' => env('SESSION_SECURE_COOKIE') === null,
 
     /*
     |--------------------------------------------------------------------------

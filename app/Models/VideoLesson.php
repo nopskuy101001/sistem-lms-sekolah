@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class VideoLesson extends Model
 {
@@ -20,6 +19,6 @@ class VideoLesson extends Model
 
     public function getPlaybackUrlAttribute(): string
     {
-        return $this->file_path ? Storage::disk('public')->url($this->file_path) : $this->source_url;
+        return $this->file_path ? asset('storage/'.$this->file_path) : $this->source_url;
     }
 }
