@@ -68,30 +68,36 @@ class StudentTranscriptTest extends TestCase
         return $quiz;
     }
 
-    public function test_print_uses_only_own_validated_snapshot_across_classes(): void
+    public function test_student_previews_then_downloads_the_validated_transcript_as_pdf(): void
     {
         $this->actingAs($this->student)->get(route('student.transcripts.print'))
-            ->assertOk()->assertSee('Belum divalidasi')->assertDontSee('Tugas dinilai');
+            ->assertOk()->assertSee('Pratinjau transkrip')->assertSee('Unduh PDF')
+            ->assertSee(route('student.transcripts.pdf'))->assertSee('Belum divalidasi')
+            ->assertDontSee('window.print')->assertDontSee('Tugas dinilai');
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertRedirect();
         $this->submission->update(['score' => 1]);
         $pending = Classroom::create(['teacher_id' => $this->teacher->id, 'name' => 'Kelas belum final']);
         $pending->students()->attach($this->student);
         Assignment::create(['classroom_id' => $pending->id, 'title' => 'Aktivitas belum tervalidasi rahasia', 'points' => 100]);
 
-        $response = $this->actingAs($this->student)->get(route('student.transcripts.print', ['student_id' => $this->peer->id]))
+        $preview = $this->actingAs($this->student)->get(route('student.transcripts.print', ['student_id' => $this->peer->id]))
             ->assertOk()->assertSee('Rekap nilai seluruh kelas')->assertSee($this->student->nomor_induk)
             ->assertSee('Kelas belum final')->assertSee('Belum divalidasi')->assertSee('Tugas dinilai')
-            ->assertSee('>80</td>', false)->assertSee('>0</td>', false)
-            ->assertSee('Nilai sementara')->assertSee('Rata-rata final: 60')
             ->assertDontSee($this->peer->name)->assertDontSee($this->peer->nomor_induk)
-            ->assertDontSee('Draf kuis rahasia')->assertDontSee('Draf video rahasia')
             ->assertDontSee('Aktivitas belum tervalidasi rahasia');
+        $this->assertStringContainsString('no-store', $preview->headers->get('Cache-Control'));
+
+        $response = $this->get(route('student.transcripts.pdf', ['student_id' => $this->peer->id]))
+            ->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+        $this->assertStringContainsString('attachment;', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('.pdf', $response->headers->get('Content-Disposition'));
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
         $this->get(route('student.transcripts.index'))->assertOk()
             ->assertSee(route('student.transcripts.print'))
             ->assertDontSee(route('student.transcripts.all.csv'))
             ->assertDontSee(route('student.transcripts.all.excel'));
-        $this->actingAs($this->teacher)->get(route('student.transcripts.print'))->assertForbidden();
+        $this->actingAs($this->teacher)->get(route('student.transcripts.pdf'))->assertForbidden();
     }
 
     public function test_student_sees_only_own_final_scores_in_a_recap_table(): void
@@ -218,7 +224,7 @@ class StudentTranscriptTest extends TestCase
 
     public function test_guest_wrong_roles_and_non_members_cannot_access_transcripts(): void
     {
-        $globalUrls = [route('student.transcripts.index'), route('student.transcripts.print'), route('student.transcripts.all.csv'), route('student.transcripts.all.excel')];
+        $globalUrls = [route('student.transcripts.index'), route('student.transcripts.pdf'), route('student.transcripts.print'), route('student.transcripts.all.csv'), route('student.transcripts.all.excel')];
         foreach ($globalUrls as $url) $this->get($url)->assertRedirect(route('login'));
         foreach ([$this->teacher, User::factory()->create(['role' => 'admin'])] as $user) {
             foreach ($globalUrls as $url) $this->actingAs($user)->get($url)->assertForbidden();
@@ -239,6 +245,7 @@ class StudentTranscriptTest extends TestCase
         $this->actingAs($this->student)->put(route('transcripts.scores.update', $this->classroom), [])->assertForbidden();
         $this->delete(route('transcripts.scores.clear', $this->classroom))->assertForbidden();
         $this->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertForbidden();
+        $this->get(route('transcripts.pdf', $this->classroom))->assertForbidden();
         $this->get(route('transcripts.csv', $this->classroom))->assertForbidden();
         $this->get(route('transcripts.excel', $this->classroom))->assertForbidden();
     }

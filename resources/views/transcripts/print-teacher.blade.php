@@ -16,7 +16,7 @@
             <div><strong>Guru:</strong> {{ $classroom->teacher->name }}<br><strong>Mata pelajaran:</strong> {{ $classroom->subject ?: '—' }}</div>
             <div><strong>Status:</strong> {{ $report['finalized'] ? 'Final / tervalidasi' : 'Draf — belum divalidasi' }}<br>
                 @if($report['finalized'])<strong>Validasi:</strong> {{ $report['finalized_at']?->translatedFormat('d M Y H:i') }}<br>@endif
-                <strong>Dicetak:</strong> {{ now()->translatedFormat('d M Y H:i') }}</div>
+                <strong>Dibuat:</strong> {{ now()->translatedFormat('d M Y H:i') }}</div>
         </div>
         <p class="summary">{{ $report['student_count'] }} siswa · {{ $report['activity_count'] }} komponen nilai · Rata-rata kelas: {{ $fmt($report['class_average']) }} (0–100)</p>
         <table class="teacher-table">

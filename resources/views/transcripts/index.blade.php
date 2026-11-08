@@ -19,7 +19,7 @@
         <div class="max-w-2xl">
             <div class="text-xs uppercase tracking-[.22em] text-indigo-200 font-semibold mb-2">Laporan akademik guru</div>
             <h1 class="text-3xl font-bold">Transkrip Nilai Siswa</h1>
-            <p class="text-sm leading-6 text-indigo-100/80 mt-2">Pantau dan koreksi nilai tugas, kuis, serta video. Cetak atau ekspor rekap setelah semua nilai diverifikasi.</p>
+            <p class="text-sm leading-6 text-indigo-100/80 mt-2">Pantau dan koreksi nilai tugas, kuis, serta video. Buka pratinjau cetak atau ekspor rekap setelah semua nilai diverifikasi.</p>
         </div>
         @if($classrooms->isNotEmpty())
             <form method="GET" action="{{ route('transcripts.index') }}" class="w-full rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm sm:w-auto sm:min-w-64">
@@ -50,14 +50,17 @@
             <p class="text-sm text-slate-500 mt-1">{{ $classroom->subject ?: 'Mata pelajaran belum diisi' }}@if($classroom->section) · {{ $classroom->section }}@endif · diperbarui {{ now()->translatedFormat('d M Y, H:i') }}</p>
         </div>
         <div class="flex w-full flex-wrap gap-2 sm:w-auto">
-            <a href="{{ route('transcripts.csv', $classroom) }}" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:flex-none" title="Unduh transkrip dalam format CSV">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Unduh CSV
+            <a href="{{ route('transcripts.print', $classroom) }}" target="_blank" rel="noopener" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-100 sm:flex-none" title="Buka pratinjau transkrip" aria-label="Buka pratinjau cetak transkrip">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                Cetak
             </a>
-            <a href="{{ route('transcripts.excel', $classroom) }}" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm hover:bg-emerald-100 sm:flex-none" title="Unduh transkrip dalam format Excel">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18M9 15h12"/></svg>Unduh Excel
+            <a href="{{ route('transcripts.excel', $classroom) }}" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100 sm:flex-none" title="Unduh transkrip dalam format Excel" aria-label="Unduh transkrip Excel">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18M9 15h12"/></svg>
+                Unduh Excel
             </a>
-            <a href="{{ route('transcripts.print', $classroom) }}" target="_blank" rel="noopener" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 sm:flex-none" title="Cetak atau simpan transkrip sebagai PDF">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Cetak
+            <a href="{{ route('transcripts.csv', $classroom) }}" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-800 shadow-sm transition hover:border-sky-300 hover:bg-sky-100 sm:flex-none" title="Unduh transkrip dalam format CSV" aria-label="Unduh transkrip CSV">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+                Unduh CSV
             </a>
         </div>
     </div>
@@ -70,7 +73,7 @@
     @endif
     @if($report['finalized'])
         <div class="mb-5 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
-            <strong>Transkrip final — terkunci.</strong> Final Validation dilakukan {{ $report['finalized_at']?->translatedFormat('d M Y H:i') }}. Tabel, hasil cetak, CSV, dan Excel memakai nilai yang disimpan saat validasi; perubahan nilai sumber setelah itu tidak mengubah transkrip final.
+            <strong>Transkrip final — terkunci.</strong> Final Validation dilakukan {{ $report['finalized_at']?->translatedFormat('d M Y H:i') }}. Tabel, PDF, CSV, dan Excel memakai nilai yang disimpan saat validasi; perubahan nilai sumber setelah itu tidak mengubah transkrip final.
         </div>
     @else
         <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -165,7 +168,7 @@
             <form method="POST" action="{{ route('transcripts.finalize', $classroom) }}" class="mt-5 rounded-2xl border-2 border-amber-300 bg-white p-5">
                 @csrf
                 <h3 class="text-base font-bold text-slate-900">Final Validation — kunci transkrip kelas</h3>
-                <p class="mt-1 text-sm text-slate-600">Periksa kembali seluruh nilai, termasuk siswa yang tidak mengerjakan. Setelah dikonfirmasi, nilai transkrip dan hasil cetak dibekukan. Tidak tersedia tombol buka kunci pada fitur ini.</p>
+                <p class="mt-1 text-sm text-slate-600">Periksa kembali seluruh nilai, termasuk siswa yang tidak mengerjakan. Setelah dikonfirmasi, nilai transkrip dan berkas PDF dibekukan. Tidak tersedia tombol buka kunci pada fitur ini.</p>
                 <label class="mt-4 flex items-start gap-3 text-sm text-slate-800">
                     <input type="checkbox" name="final_validation" value="1" required class="mt-1 h-4 w-4 rounded border-slate-400">
                     <span>Saya telah memeriksa nilai dan menyetujui <strong>Final Validation</strong> untuk kelas ini. Saya memahami nilai transkrip tidak dapat diedit lagi.</span>

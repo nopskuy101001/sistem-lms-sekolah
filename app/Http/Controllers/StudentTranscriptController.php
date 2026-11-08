@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\TranscriptState;
 use App\Services\TranscriptReportService;
 use App\Services\TranscriptXlsxExporter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,11 +23,29 @@ class StudentTranscriptController extends Controller
         return view('transcripts.student', $this->overview($request));
     }
 
-    public function print(Request $request): \Illuminate\Http\Response
+    public function pdf(Request $request): Response
+    {
+        return Pdf::loadView('transcripts.print-student', [
+            ...$this->overview($request),
+            'student' => $request->user(),
+            'isPdf' => true,
+        ])->setPaper('a4', 'landscape')
+            ->setOption([
+                'defaultFont' => 'DejaVu Sans',
+                'isPhpEnabled' => false,
+                'isRemoteEnabled' => false,
+            ])
+            ->download($this->allFilename('pdf'))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    public function print(Request $request): Response
     {
         return response()->view('transcripts.print-student', [
             ...$this->overview($request),
             'student' => $request->user(),
+            'isPdf' => false,
+            'pdfUrl' => route('student.transcripts.pdf'),
         ])->header('Cache-Control', 'private, no-store');
     }
 

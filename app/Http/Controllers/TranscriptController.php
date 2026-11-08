@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\TranscriptState;
 use App\Models\TranscriptScoreOverride;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Services\TranscriptReportService;
@@ -43,13 +45,37 @@ class TranscriptController extends Controller
         return view('transcripts.index', compact('classrooms', 'classroom', 'report'));
     }
 
-    public function print(Request $request, Classroom $classroom): \Illuminate\Http\Response
+    public function pdf(Request $request, Classroom $classroom): Response
     {
         $this->authorizeTeacher($request, $classroom);
         $report = $this->reports->build($classroom);
 
-        return response()->view('transcripts.print-teacher', compact('classroom', 'report'))
+        return Pdf::loadView('transcripts.print-teacher', [
+            'classroom' => $classroom,
+            'report' => $report,
+            'isPdf' => true,
+        ])
+            ->setPaper('a4', 'landscape')
+            ->setOption([
+                'defaultFont' => 'DejaVu Sans',
+                'isPhpEnabled' => false,
+                'isRemoteEnabled' => false,
+            ])
+            ->download($this->filename($classroom, 'pdf'))
             ->header('Cache-Control', 'private, no-store');
+    }
+
+    public function print(Request $request, Classroom $classroom): Response
+    {
+        $this->authorizeTeacher($request, $classroom);
+        $report = $this->reports->build($classroom);
+
+        return response()->view('transcripts.print-teacher', [
+            'classroom' => $classroom,
+            'report' => $report,
+            'isPdf' => false,
+            'pdfUrl' => route('transcripts.pdf', $classroom),
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     /** Override transcript-only score, preserving original attempts and submissions. */

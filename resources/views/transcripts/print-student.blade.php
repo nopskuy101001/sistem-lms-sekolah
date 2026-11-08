@@ -12,7 +12,7 @@
     </header>
     <div class="document-meta">
         <div><strong>Nama siswa:</strong> {{ $student->name }}<br><strong>NIS:</strong> {{ $student->nomor_induk ?: '—' }}</div>
-        <div><strong>Kelas tervalidasi:</strong> {{ $validatedCount }} dari {{ $classrooms->count() }}<br><strong>Dicetak:</strong> {{ now()->translatedFormat('d M Y H:i') }}</div>
+        <div><strong>Kelas tervalidasi:</strong> {{ $validatedCount }} dari {{ $classrooms->count() }}<br><strong>Dibuat:</strong> {{ now()->translatedFormat('d M Y H:i') }}</div>
     </div>
     <table>
         <caption>Rekap nilai seluruh kelas — {{ $student->name }}</caption>

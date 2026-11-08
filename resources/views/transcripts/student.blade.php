@@ -13,7 +13,10 @@
     @if($classrooms->isNotEmpty())
         <div class="mt-5 flex flex-wrap items-center gap-3">
             <span class="rounded-xl bg-white/15 px-4 py-2 text-sm">{{ $validatedCount }} dari {{ $classrooms->count() }} kelas tervalidasi</span>
-            <a href="{{ route('student.transcripts.print') }}" target="_blank" rel="noopener" class="lms-button lms-button-light">Cetak</a>
+            <a href="{{ route('student.transcripts.print') }}" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" title="Buka pratinjau transkrip" aria-label="Buka pratinjau cetak transkrip">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                Cetak
+            </a>
         </div>
     @endif
 </header>

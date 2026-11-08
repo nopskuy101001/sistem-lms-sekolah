@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(RoleMiddleware::class.':guru')->prefix('teacher')->group(function () {
         Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');
+        Route::get('/transcripts/{classroom}/pdf', [TranscriptController::class, 'pdf'])->name('transcripts.pdf');
         Route::get('/transcripts/{classroom}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
         Route::get('/transcripts/{classroom}/csv', [TranscriptController::class, 'csv'])->name('transcripts.csv');
         Route::put('/transcripts/{classroom}/scores', [TranscriptController::class, 'updateScore'])->name('transcripts.scores.update');
@@ -82,6 +83,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(RoleMiddleware::class.':siswa')->prefix('student')->name('student.')->group(function () {
         Route::get('/transcripts', [StudentTranscriptController::class, 'index'])->name('transcripts.index');
+        Route::get('/transcripts/pdf', [StudentTranscriptController::class, 'pdf'])->name('transcripts.pdf');
         Route::get('/transcripts/print', [StudentTranscriptController::class, 'print'])->name('transcripts.print');
         Route::get('/transcripts/csv', [StudentTranscriptController::class, 'allCsv'])->name('transcripts.all.csv');
         Route::get('/transcripts/excel', [StudentTranscriptController::class, 'allExcel'])->name('transcripts.all.excel');

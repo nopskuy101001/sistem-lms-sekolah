@@ -1,18 +1,25 @@
 @page { size: A4 landscape; margin: 12mm; }
 * { box-sizing: border-box; }
-body { margin: 0; background: #e5e7eb; color: #111; font: 10pt/1.4 Arial, sans-serif; }
-.print-toolbar { max-width: 1100px; margin: 18px auto; padding: 0 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.print-toolbar button { background: #222; color: white; border: 0; border-radius: 7px; padding: 12px 20px; cursor: pointer; font: bold 14px Arial, sans-serif; }
-.print-toolbar p { flex: 1 1 260px; margin: 0; font-size: 13px; }
-.print-document { max-width: 1100px; margin: 0 auto 24px; background: #fff; padding: 32px; }
-.print-section + .print-section { margin-top: 36px; }
+body { margin: 0; color: #111; font: 10pt/1.4 "DejaVu Sans", sans-serif; }
+.pdf-output { background: #fff; }
+.preview-output { background: #eef2ff; padding: 24px; }
+.preview-toolbar { max-width: 1100px; margin: 0 auto 18px; padding: 16px 18px; background: #fff; border: 1px solid #dbe2f0; border-radius: 14px; box-shadow: 0 8px 24px rgba(15, 23, 42, .08); display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.preview-toolbar strong { display: block; color: #0f172a; font-size: 13pt; }
+.preview-toolbar p { margin: 3px 0 0; color: #64748b; font-size: 9pt; }
+.download-pdf-button { display: inline-block; padding: 11px 16px; border-radius: 10px; background: #be123c; color: #fff; font-weight: bold; text-decoration: none; white-space: nowrap; }
+.download-pdf-button svg { margin-right: 7px; vertical-align: middle; }
+.download-pdf-button:hover { background: #9f1239; }
+.print-document { margin: 0; background: #fff; padding: 0; }
+.preview-output .print-document { max-width: 1100px; margin: 0 auto; padding: 32px; border-radius: 14px; box-shadow: 0 8px 24px rgba(15, 23, 42, .08); }
+.print-section + .print-section { page-break-before: always; }
 .document-heading { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 12px; }
 .document-heading p { margin: 3px 0; }
 .school-name { font-weight: bold; letter-spacing: 1px; }
 h1 { font-size: 17pt; margin: 6px 0; }
 h2 { font-size: 10pt; margin: 10px 0 5px; break-after: avoid; }
-.document-meta { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
-.document-meta > div { flex: 1; overflow-wrap: anywhere; }
+.document-meta { display: table; width: 100%; margin-bottom: 12px; }
+.document-meta > div { display: table-cell; width: 50%; vertical-align: top; overflow-wrap: anywhere; }
+.document-meta > div:last-child { text-align: right; }
 .summary { margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
 caption { text-align: left; font-weight: bold; padding: 0 0 7px; }
@@ -23,19 +30,14 @@ thead th { background: #e5e5e5; color: #111; font-weight: bold; text-align: cent
 small { display: block; font-size: 8pt; color: #444; margin-top: 3px; }
 .activity-legend p { margin: 3px 0; overflow-wrap: anywhere; }
 .document-note { font-size: 8pt; color: #444; margin: 12px 0 0; }
+thead { display: table-header-group; }
+tr { page-break-inside: avoid; }
+.document-heading, .document-meta { page-break-inside: avoid; }
 @media screen and (max-width: 700px) {
-    .print-document { padding: 14px; overflow-x: auto; }
-    table { min-width: 850px; }
-    .document-meta { flex-direction: column; gap: 8px; }
-}
-@media print {
-    body { background: white; }
-    .print-toolbar { display: none; }
-    .print-document { max-width: none; margin: 0; padding: 0; }
-    .print-section + .print-section { break-before: page; margin-top: 0; }
-    thead { display: table-header-group; }
-    tr { break-inside: avoid; page-break-inside: avoid; }
-    .document-heading, .document-meta { break-inside: avoid; }
-    table { min-width: 0; }
-    th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .preview-output { padding: 12px; }
+    .preview-toolbar { display: block; padding: 14px; }
+    .preview-toolbar > div { display: block; }
+    .download-pdf-button { display: block; margin-top: 12px; text-align: center; }
+    .preview-output .print-document { padding: 16px; overflow-x: auto; }
+    .preview-output table { min-width: 850px; }
 }
