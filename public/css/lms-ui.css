@@ -441,7 +441,6 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 .lms-auth-page-login .lms-auth-main { max-width: none; padding: 14px 0 10px; }
 .lms-auth-page-login .lms-auth-main h1 { font-size: 25px; }
 .lms-auth-page-login .lms-login-heading { min-height: 1.3em; }
-.lms-auth-page-login .lms-login-typing::after { content: ''; display: inline-block; width: 2px; height: .92em; margin-left: 4px; border-radius: 999px; background: #4f46e5; vertical-align: -.08em; animation: lms-login-caret .78s steps(1, end) infinite; }
 .lms-auth-page-login .lms-login-submit { position: relative; isolation: isolate; overflow: hidden; color: #fff; background: linear-gradient(115deg, #1d4ed8 0%, #2563eb 25%, #4f46e5 52%, #7c3aed 72%, #1d4ed8 100%); background-size: 240% 100%; box-shadow: 0 10px 26px rgba(37, 99, 235, .34); animation: lms-login-button-gradient 3.8s ease-in-out infinite; }
 .lms-auth-page-login .lms-login-submit::after { content: ''; position: absolute; z-index: 0; inset: -70% auto -70% -38%; width: 28%; pointer-events: none; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.82), transparent); filter: blur(1px); animation: lms-login-button-shine 2.8s ease-in-out infinite; }
 .lms-auth-page-login .lms-login-submit > span { position: relative; z-index: 1; }
@@ -450,11 +449,6 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 .lms-auth-page-login .lms-auth-main > p { margin: 14px 0 0; }
 .lms-auth-page-login .lms-auth-footer { text-align: center; }
 .lms-auth-page-login .lms-auth-visual { margin: 0; border-radius: 0; background: linear-gradient(140deg, rgba(19,28,67,.72), rgba(70,65,174,.58) 58%, rgba(111,87,187,.64)); padding: clamp(42px, 6vw, 72px); }
-
-@keyframes lms-login-caret {
-    0%, 48% { opacity: 1; }
-    49%, 100% { opacity: 0; }
-}
 
 @keyframes lms-login-button-gradient {
     0%, 100% { background-position: 0% 50%; }
@@ -591,7 +585,6 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 
 @media (prefers-reduced-motion: reduce) {
     .lms-auth-page-login .lms-auth-video { display: none; }
-    .lms-auth-page-login .lms-login-typing::after { display: none; animation: none; }
     .lms-auth-page-login .lms-login-submit,
     .lms-auth-page-login .lms-login-submit::after { animation: none; }
 }
