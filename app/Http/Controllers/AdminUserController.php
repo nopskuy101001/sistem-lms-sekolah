@@ -7,6 +7,7 @@ use App\Services\StudentBatchImportService;
 use App\Services\StudentImportTemplateXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -75,27 +76,43 @@ class AdminUserController extends Controller
         $request->merge([
             'name' => trim((string) $request->input('name')),
             'nomor_induk' => trim((string) $request->input('nomor_induk')),
+            'date_of_birth' => trim((string) $request->input('date_of_birth')),
             'email' => filled($request->input('email'))
                 ? strtolower(trim((string) $request->input('email')))
                 : null,
-            'phone' => filled($request->input('phone')) ? trim((string) $request->input('phone')) : null,
-            'address' => filled($request->input('address')) ? trim((string) $request->input('address')) : null,
         ]);
 
         $data = $request->validateWithBag('studentCreate', [
             'name' => ['required', 'string', 'max:255'],
             'nomor_induk' => ['required', 'string', 'max:50', 'regex:/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', 'unique:users,nomor_induk'],
-            'date_of_birth' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before_or_equal:today'],
+            'date_of_birth' => [
+                'required',
+                'date_format:d/m/Y',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    try {
+                        $date = Carbon::createFromFormat('!d/m/Y', (string) $value);
+                    } catch (\Throwable) {
+                        return;
+                    }
+
+                    if (! $date || $date->format('d/m/Y') !== $value) {
+                        return;
+                    }
+                    if ($date->lt(Carbon::create(1900, 1, 1)->startOfDay())) {
+                        $fail('Tanggal lahir tidak boleh sebelum 01/01/1900.');
+                    } elseif ($date->gt(today())) {
+                        $fail('Tanggal lahir tidak boleh melewati hari ini.');
+                    }
+                },
+            ],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'gender' => ['nullable', 'in:L,P'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:2000'],
         ], [
             'nomor_induk.regex' => 'NIS hanya boleh berisi huruf, angka, titik, garis miring, atau tanda hubung dan harus memiliki minimal satu huruf/angka.',
-            'date_of_birth.before_or_equal' => 'Tanggal lahir tidak boleh melewati hari ini.',
+            'date_of_birth.date_format' => 'Tanggal lahir harus menggunakan format dd/mm/yyyy, contoh 22/03/2005.',
         ]);
 
-        $birthDate = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $data['date_of_birth']);
+        $birthDate = Carbon::createFromFormat('!d/m/Y', $data['date_of_birth']);
         $email = $data['email'] ?: StudentBatchImportService::generatedEmailFor($data['nomor_induk']);
         if (User::where('email', $email)->exists()) {
             return back()
@@ -105,6 +122,7 @@ class AdminUserController extends Controller
 
         User::create([
             ...$data,
+            'date_of_birth' => $birthDate->format('Y-m-d'),
             'email' => $email,
             'role' => 'siswa',
             'password' => $birthDate->format('dmY'),

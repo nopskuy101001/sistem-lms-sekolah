@@ -33,7 +33,9 @@ class AdminStudentImportTest extends TestCase
             ->streamedContent();
 
         $this->assertStringStartsWith("\xEF\xBB\xBFsep=,\r\n", $csv);
-        $this->assertStringContainsString('NIS,Nama,"Tanggal Lahir",Email,"Jenis Kelamin","No. Telepon",Alamat', $csv);
+        $this->assertStringContainsString('NIS,Nama,"Tanggal Lahir",Email,"Jenis Kelamin"', $csv);
+        $this->assertStringNotContainsString('Telepon', $csv);
+        $this->assertStringNotContainsString('Alamat', $csv);
 
         $xlsx = $this->actingAs($this->admin)
             ->get(route('admin.users.import.template.xlsx'))
@@ -61,8 +63,8 @@ class AdminStudentImportTest extends TestCase
     public function test_admin_can_import_csv_and_student_must_replace_birth_date_password(): void
     {
         $csv = "\xEF\xBB\xBFsep=,\r\n"
-            .'NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin,No. Telepon,Alamat'."\r\n"
-            .'000123,Siti Aisyah,22/03/2005,,P,08123456789,Jalan Pendidikan'."\r\n";
+            .'NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin'."\r\n"
+            .'000123,Siti Aisyah,22/03/2005,,P'."\r\n";
 
         $this->actingAs($this->admin)
             ->post(route('admin.users.import'), [
@@ -107,7 +109,7 @@ class AdminStudentImportTest extends TestCase
         $writer->addRow(Row::fromValues(StudentImportTemplateXlsxExporter::HEADERS));
         $writer->addRow(Row::fromValues([
             'XLSX-001', 'Budi Santoso', new \DateTimeImmutable('2006-07-15'),
-            'budi@example.test', 'L', '081200000001', 'Jalan Sekolah',
+            'budi@example.test', 'L',
         ]));
         $writer->close();
 
@@ -172,9 +174,9 @@ class AdminStudentImportTest extends TestCase
     public function test_invalid_batch_is_rejected_without_partial_import(): void
     {
         User::factory()->create(['role' => 'siswa', 'nomor_induk' => 'DUPLIKAT']);
-        $csv = "NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin,No. Telepon,Alamat\r\n"
-            ."BARU-001,Siswa Baru,01/01/2007,,,,\r\n"
-            ."DUPLIKAT,Siswa Lama,02/02/2007,,,,\r\n";
+        $csv = "NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin\r\n"
+            ."BARU-001,Siswa Baru,01/01/2007,,\r\n"
+            ."DUPLIKAT,Siswa Lama,02/02/2007,,\r\n";
 
         $this->actingAs($this->admin)
             ->post(route('admin.users.import'), [
@@ -188,8 +190,8 @@ class AdminStudentImportTest extends TestCase
 
     public function test_import_rejects_future_birth_date_and_corrupt_spreadsheet_cleanly(): void
     {
-        $futureCsv = "NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin,No. Telepon,Alamat\r\n"
-            .'MASA-DEPAN,Siswa Masa Depan,'.now()->addDay()->format('d/m/Y').",,,,\r\n";
+        $futureCsv = "NIS,Nama,Tanggal Lahir,Email,Jenis Kelamin\r\n"
+            .'MASA-DEPAN,Siswa Masa Depan,'.now()->addDay()->format('d/m/Y').",,\r\n";
 
         $this->actingAs($this->admin)
             ->post(route('admin.users.import'), [

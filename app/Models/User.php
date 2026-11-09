@@ -20,8 +20,6 @@ class User extends Authenticatable
         'nomor_induk',
         'date_of_birth',
         'gender',
-        'phone',
-        'address',
         'profile_photo_path',
         'profile_photo_zoom',
         'profile_photo_position_x',

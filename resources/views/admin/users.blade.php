@@ -36,7 +36,8 @@
             </div>
             <div>
                 <label for="student_birth_date" class="block text-sm font-medium mb-1">Tanggal lahir *</label>
-                <input id="student_birth_date" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" min="1900-01-01" max="{{ now()->format('Y-m-d') }}" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <input id="student_birth_date" type="text" name="date_of_birth" value="{{ old('date_of_birth') }}" required inputmode="numeric" autocomplete="bday" maxlength="10" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" placeholder="dd/mm/yyyy" aria-describedby="student_birth_date_help" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <p id="student_birth_date_help" class="mt-1 text-xs text-slate-500">Contoh: 22/03/2005. Password awal otomatis menjadi 22032005.</p>
                 @error('date_of_birth', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
@@ -52,16 +53,6 @@
                     <option value="P" @selected(old('gender') === 'P')>Perempuan</option>
                 </select>
                 @error('gender', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div>
-                <label for="student_phone" class="block text-sm font-medium mb-1">No. telepon</label>
-                <input id="student_phone" type="text" name="phone" value="{{ old('phone') }}" maxlength="30" inputmode="tel" class="w-full rounded-lg border border-slate-300 px-3 py-2">
-                @error('phone', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div class="sm:col-span-2">
-                <label for="student_address" class="block text-sm font-medium mb-1">Alamat</label>
-                <textarea id="student_address" name="address" rows="2" maxlength="2000" class="w-full rounded-lg border border-slate-300 px-3 py-2">{{ old('address') }}</textarea>
-                @error('address', 'studentCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
                 Password awal otomatis memakai tanggal lahir format <code>ddmmyyyy</code>. Siswa wajib menggantinya saat login pertama.

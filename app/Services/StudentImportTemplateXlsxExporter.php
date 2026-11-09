@@ -12,7 +12,7 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class StudentImportTemplateXlsxExporter
 {
-    public const HEADERS = ['NIS', 'Nama', 'Tanggal Lahir', 'Email', 'Jenis Kelamin', 'No. Telepon', 'Alamat'];
+    public const HEADERS = ['NIS', 'Nama', 'Tanggal Lahir', 'Email', 'Jenis Kelamin'];
 
     public function write(string $path): void
     {
@@ -23,8 +23,6 @@ class StudentImportTemplateXlsxExporter
         $options->setColumnWidth(18, 3);
         $options->setColumnWidth(30, 4);
         $options->setColumnWidth(16, 5);
-        $options->setColumnWidth(18, 6);
-        $options->setColumnWidth(42, 7);
 
         $writer = new Writer($options);
         $writer->openToFile($path);
@@ -52,10 +50,10 @@ class StudentImportTemplateXlsxExporter
                 'Isi data pada sheet "Data Siswa" tanpa mengubah nama kolom.',
                 'Kolom wajib: NIS, Nama, dan Tanggal Lahir.',
                 'Format Tanggal Lahir: dd/mm/yyyy. Contoh: 22/03/2005.',
-                'Jenis Kelamin diisi L atau P. Email, No. Telepon, dan Alamat boleh dikosongkan.',
+                'Jenis Kelamin diisi L atau P. Email boleh dikosongkan.',
                 'Password awal otomatis memakai tanggal lahir format ddmmyyyy. Contoh: 22032005.',
                 'Siswa wajib mengganti password setelah login pertama.',
-                'Simpan NIS dan No. Telepon sebagai teks agar angka nol di depan tidak hilang.',
+                'Simpan NIS sebagai teks agar angka nol di depan tidak hilang.',
                 'Maksimal 1.000 siswa dalam satu file import.',
             ] as $instruction) {
                 $writer->addRow(Row::fromValues([$instruction], $instructionStyle)->setHeight(24));

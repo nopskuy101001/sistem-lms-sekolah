@@ -24,9 +24,6 @@ class StudentBatchImportService
         'tanggallahir' => 'date_of_birth',
         'email' => 'email',
         'jeniskelamin' => 'gender',
-        'notelepon' => 'phone',
-        'nomortelepon' => 'phone',
-        'alamat' => 'address',
     ];
 
     /** @return array{created:int} */
@@ -167,8 +164,6 @@ class StudentBatchImportService
         $dateOfBirth = $this->parseDate($value('tanggallahir'));
         $email = trim((string) $value('email'));
         $gender = $this->parseGender($value('jeniskelamin'));
-        $phone = trim((string) ($value('notelepon') ?? $value('nomortelepon')));
-        $address = trim((string) $value('alamat'));
         $rowErrors = [];
 
         if ($nis === '' || mb_strlen($nis) > 50 || ! preg_match('/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', $nis)) {
@@ -188,12 +183,6 @@ class StudentBatchImportService
         if ($value('jeniskelamin') !== null && trim((string) $value('jeniskelamin')) !== '' && $gender === null) {
             $rowErrors[] = 'Jenis Kelamin harus L atau P';
         }
-        if (mb_strlen($phone) > 30) {
-            $rowErrors[] = 'No. Telepon maksimal 30 karakter';
-        }
-        if (mb_strlen($address) > 2000) {
-            $rowErrors[] = 'Alamat maksimal 2.000 karakter';
-        }
 
         if ($rowErrors !== []) {
             $errors[] = 'Baris '.$rowNumber.': '.implode('; ', $rowErrors).'.';
@@ -207,8 +196,6 @@ class StudentBatchImportService
             'nomor_induk' => $nis,
             'date_of_birth' => $dateOfBirth,
             'gender' => $gender,
-            'phone' => $phone !== '' ? $phone : null,
-            'address' => $address !== '' ? $address : null,
             '_row' => $rowNumber,
         ];
     }

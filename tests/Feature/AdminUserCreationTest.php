@@ -15,11 +15,19 @@ class AdminUserCreationTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($admin)->post(route('admin.users.students.store'), [
+        $this->actingAs($admin)->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertDontSee('student_phone', false)
+            ->assertDontSee('No. telepon')
+            ->assertDontSee('student_address', false)
+            ->assertSee('placeholder="dd/mm/yyyy"', false)
+            ->assertDontSee('id="student_birth_date" type="date"', false);
+
+        $this->post(route('admin.users.students.store'), [
             'account_form' => 'student',
             'name' => '  Siti Aisyah  ',
             'nomor_induk' => '  000456  ',
-            'date_of_birth' => '2006-04-03',
+            'date_of_birth' => '03/04/2006',
             'email' => '',
             'gender' => 'P',
             'phone' => ' 08123456789 ',
@@ -31,7 +39,8 @@ class AdminUserCreationTest extends TestCase
         $this->assertSame('siswa', $student->role);
         $this->assertSame('siswa.000456@akun.ruangkelas.local', $student->email);
         $this->assertSame('2006-04-03', $student->date_of_birth->format('Y-m-d'));
-        $this->assertSame('08123456789', $student->phone);
+        $this->assertNull($student->phone);
+        $this->assertNull($student->address);
         $this->assertTrue($student->must_change_password);
         $this->assertTrue(Hash::check('03042006', $student->password));
     }
@@ -44,11 +53,20 @@ class AdminUserCreationTest extends TestCase
             'account_form' => 'student',
             'name' => 'Siswa Tidak Valid',
             'nomor_induk' => '///',
-            'date_of_birth' => now()->addDay()->format('Y-m-d'),
+            'date_of_birth' => now()->addDay()->format('d/m/Y'),
         ])->assertRedirect()
             ->assertSessionHasErrors(['nomor_induk', 'date_of_birth'], errorBag: 'studentCreate');
 
+        $this->post(route('admin.users.students.store'), [
+            'account_form' => 'student',
+            'name' => 'Siswa Format Salah',
+            'nomor_induk' => 'FORMAT-SALAH',
+            'date_of_birth' => '2006-04-03',
+        ])->assertRedirect()
+            ->assertSessionHasErrors('date_of_birth', errorBag: 'studentCreate');
+
         $this->assertDatabaseMissing('users', ['name' => 'Siswa Tidak Valid']);
+        $this->assertDatabaseMissing('users', ['nomor_induk' => 'FORMAT-SALAH']);
     }
 
     public function test_manual_student_reports_generated_email_collision_without_server_error(): void
@@ -64,7 +82,7 @@ class AdminUserCreationTest extends TestCase
             'account_form' => 'student',
             'name' => 'Siswa Email Bentrok',
             'nomor_induk' => '000777',
-            'date_of_birth' => '2007-01-01',
+            'date_of_birth' => '01/01/2007',
             'email' => '',
         ])->assertRedirect()
             ->assertSessionHasErrors('email', errorBag: 'studentCreate');
@@ -118,7 +136,7 @@ class AdminUserCreationTest extends TestCase
         $this->actingAs($teacher)->post(route('admin.users.students.store'), [
             'name' => 'Tidak Berizin',
             'nomor_induk' => 'NO-AUTH',
-            'date_of_birth' => '2007-01-01',
+            'date_of_birth' => '01/01/2007',
         ])->assertForbidden();
 
         $this->assertDatabaseMissing('users', ['email' => 'salah@example.test']);

@@ -67,7 +67,6 @@
             <dl class="mt-6 grid gap-4 text-sm">
                 <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all text-slate-700">{{ $user->email ?: 'Belum diatur' }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $user->isSiswa() ? 'NIS' : 'NIP / Nomor induk' }}</dt><dd class="mt-1 text-slate-700">{{ $user->nomor_induk ?: 'Belum diisi' }}</dd></div>
-                @if($user->phone)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Telepon</dt><dd class="mt-1 text-slate-700">{{ $user->phone }}</dd></div>@endif
             </dl>
             <a href="{{ route('password.change') }}" class="lms-button mt-6 w-full border border-slate-300 bg-white text-slate-700">Ganti password</a>
         </aside>
