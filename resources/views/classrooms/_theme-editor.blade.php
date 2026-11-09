@@ -14,10 +14,10 @@
     </label>
     @error('theme_image')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
 
-    <div class="lms-theme-preview {{ $themeUrl ? 'lms-has-theme-image' : '' }}" data-theme-preview data-color="{{ old('color', $themeClassroom?->color ?? 'indigo') }}">
+    <div class="lms-theme-preview {{ $themeUrl ? 'lms-has-theme-image' : '' }}" data-theme-preview data-color="{{ old('color', $themeClassroom?->color ?? 'indigo') }}" data-theme-style="{{ old('theme_style', $themeClassroom?->themeStyle() ?? 'orb') }}">
         <img class="lms-theme-image" data-theme-preview-image @if($themeUrl) src="{{ $themeUrl }}" @else hidden @endif alt="Pratinjau gambar tema">
         <span class="lms-theme-preview-title">Pratinjau sampul kelas</span>
-        <span class="lms-theme-preview-empty" data-theme-empty @if($themeUrl) hidden @endif>Pilih gambar untuk melihat ukurannya di kartu kelas.</span>
+        <span class="lms-theme-preview-empty" data-theme-empty @if($themeUrl) hidden @endif>Warna dan gaya ini akan digunakan jika tidak ada gambar.</span>
     </div>
 
     <div class="lms-theme-sliders">
@@ -37,5 +37,5 @@
 </div>
 
 @once
-    <script defer src="{{ asset('js/classroom-theme-editor.js') }}?v=1"></script>
+    <script defer src="{{ asset('js/classroom-theme-editor.js') }}?v=2"></script>
 @endonce

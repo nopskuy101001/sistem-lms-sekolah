@@ -21,7 +21,8 @@ class ClassroomThemeTest extends TestCase
 
         $this->actingAs($teacher)->post(route('classrooms.store'), [
             'name' => 'Kelas Seni',
-            'color' => 'indigo',
+            'color' => 'teal',
+            'theme_style' => 'waves',
             'theme_image' => UploadedFile::fake()->image('tema-pertama.jpg', 1200, 400),
             'theme_zoom' => 150,
             'theme_position_x' => 25,
@@ -31,11 +32,15 @@ class ClassroomThemeTest extends TestCase
         $classroom = Classroom::sole();
         $firstImage = $classroom->theme_image_path;
         $this->assertNotNull($firstImage);
+        $this->assertSame('teal', $classroom->color);
+        $this->assertSame('waves', $classroom->themeStyle());
         $this->assertSame('object-position: 25% 75%; transform: translate(12.5%, -12.5%) scale(1.5);', $classroom->themeImageStyle());
         Storage::disk('public')->assertExists($firstImage);
         $this->get(route('dashboard'))->assertOk()
             ->assertSee('lms-theme-image', false)
             ->assertSee('data-theme-editor', false)
+            ->assertSee('data-color="teal"', false)
+            ->assertSee('data-theme-style="waves"', false)
             ->assertSee('scale(1.5)', false);
         $classroom->students()->attach($student);
         $this->actingAs($student)->get(route('classrooms.show', $classroom))
@@ -44,7 +49,8 @@ class ClassroomThemeTest extends TestCase
 
         $this->actingAs($teacher)->put(route('classrooms.update', $classroom), [
             'name' => 'Kelas Seni',
-            'color' => 'emerald',
+            'color' => 'coral',
+            'theme_style' => 'grid',
             'theme_image' => UploadedFile::fake()->image('tema-baru.png', 900, 300),
             'theme_zoom' => 200,
             'theme_position_x' => 80,
@@ -52,6 +58,8 @@ class ClassroomThemeTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
         $classroom->refresh();
         $this->assertNotSame($firstImage, $classroom->theme_image_path);
+        $this->assertSame('coral', $classroom->color);
+        $this->assertSame('grid', $classroom->themeStyle());
         $this->assertSame(200, $classroom->theme_zoom);
         $this->assertSame(80, $classroom->theme_position_x);
         $this->assertSame(20, $classroom->theme_position_y);
@@ -61,20 +69,23 @@ class ClassroomThemeTest extends TestCase
         $secondImage = $classroom->theme_image_path;
         $this->put(route('classrooms.update', $classroom), [
             'name' => 'Kelas Seni',
-            'color' => 'emerald',
+            'color' => 'coral',
+            'theme_style' => 'minimal',
             'theme_zoom' => 125,
             'theme_position_x' => 60,
             'theme_position_y' => 40,
         ])->assertRedirect()->assertSessionHasNoErrors();
         $classroom->refresh();
         $this->assertSame($secondImage, $classroom->theme_image_path);
+        $this->assertSame('minimal', $classroom->themeStyle());
         $this->assertSame(125, $classroom->theme_zoom);
         $this->assertSame(60, $classroom->theme_position_x);
         $this->assertSame(40, $classroom->theme_position_y);
 
         $this->put(route('classrooms.update', $classroom), [
             'name' => 'Kelas Seni',
-            'color' => 'emerald',
+            'color' => 'coral',
+            'theme_style' => 'orb',
             'remove_theme_image' => 1,
         ])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertNull($classroom->refresh()->theme_image_path);
@@ -106,6 +117,29 @@ class ClassroomThemeTest extends TestCase
             'color' => 'indigo',
             'theme_zoom' => 300,
         ])->assertSessionHasErrors('theme_zoom');
+        $this->put(route('classrooms.update', $classroom), [
+            'name' => 'Kelas Seni',
+            'color' => 'indigo',
+            'theme_style' => 'unknown-pattern',
+        ])->assertSessionHasErrors('theme_style');
         $this->assertNull($classroom->refresh()->theme_image_path);
+    }
+
+    public function test_theme_picker_exposes_extended_colors_and_design_styles(): void
+    {
+        $teacher = User::factory()->create(['role' => 'guru']);
+
+        $this->actingAs($teacher)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('value="teal"', false)
+            ->assertSee('value="coral"', false)
+            ->assertSee('value="navy"', false)
+            ->assertSee('value="fuchsia"', false)
+            ->assertSee('value="lime"', false)
+            ->assertSee('value="waves"', false)
+            ->assertSee('value="grid"', false)
+            ->assertSee('value="minimal"', false)
+            ->assertSee('lms-color-swatch', false)
+            ->assertSee('lms-style-thumbnail', false);
     }
 }

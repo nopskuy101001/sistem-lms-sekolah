@@ -69,6 +69,9 @@
             <nav class="lms-nav">
                 <a href="{{ route('dashboard') }}#agenda" class="lms-nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
                 <a href="{{ route('dashboard') }}#ringkasan" class="lms-nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-7"/></svg><span>Ringkasan</span></a>
+                <a href="{{ route('guide.index') }}" class="lms-nav-link {{ request()->routeIs('guide.*') ? 'active' : '' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-2.92 2-2.92 4"/><path d="M12 17h.01"/></svg><span>Panduan</span>
+                </a>
             </nav>
 
             <div class="lms-semester-card"><small>Tahun Ajaran</small><strong>Semester Ganjil</strong><span>2026 / 2027</span></div>

@@ -34,7 +34,7 @@
                     <a href="{{ route('classrooms.people', $classroom) }}" class="lms-button bg-slate-100 text-slate-600">Lihat anggota kelas</a>
                 </div>
             </section>
-            <details class="lms-panel" @if($errors->hasAny(['name', 'section', 'subject', 'room', 'description', 'color', 'theme_image', 'theme_zoom', 'theme_position_x', 'theme_position_y'])) open @endif>
+            <details class="lms-panel" @if($errors->hasAny(['name', 'section', 'subject', 'room', 'description', 'color', 'theme_style', 'theme_image', 'theme_zoom', 'theme_position_x', 'theme_position_y'])) open @endif>
                 <summary class="cursor-pointer text-sm font-semibold text-slate-800">Ubah tema dan detail kelas</summary>
                 <form method="POST" action="{{ route('classrooms.update', $classroom) }}" enctype="multipart/form-data" class="mt-4 grid gap-3 text-xs">
                     @csrf @method('PUT')
@@ -42,7 +42,7 @@
                     <label class="grid gap-1 font-medium">Rombel / bagian<input name="section" value="{{ old('section', $classroom->section) }}" maxlength="50" class="w-full rounded-lg border border-slate-300 p-2"></label>
                     <label class="grid gap-1 font-medium">Mata pelajaran<input name="subject" value="{{ old('subject', $classroom->subject) }}" maxlength="100" class="w-full rounded-lg border border-slate-300 p-2"></label>
                     <label class="grid gap-1 font-medium">Ruangan<input name="room" value="{{ old('room', $classroom->room) }}" maxlength="50" class="w-full rounded-lg border border-slate-300 p-2"></label>
-                    <label class="grid gap-1 font-medium">Warna dasar<select name="color" class="w-full rounded-lg border border-slate-300 p-2">@foreach(\App\Models\Classroom::COLORS as $color)<option value="{{ $color }}" @selected(old('color', $classroom->color) === $color)>{{ ucfirst($color) }}</option>@endforeach</select></label>
+                    @include('classrooms._theme-choices', ['themeClassroom' => $classroom])
                     @include('classrooms._theme-editor', ['themeClassroom' => $classroom])
                     @if($classroom->theme_image_path)<label class="flex items-center gap-2 font-normal"><input type="checkbox" name="remove_theme_image" value="1"> Hapus gambar dan gunakan warna dasar</label>@endif
                     <label class="grid gap-1 font-medium">Deskripsi<textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 p-2">{{ old('description', $classroom->description) }}</textarea></label>

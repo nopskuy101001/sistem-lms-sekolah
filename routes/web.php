@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 
     Route::get('/dashboard', [ClassroomController::class, 'index'])->name('dashboard');
+    Route::view('/panduan', 'guide.index')->name('guide.index');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/{notification}', [NotificationController::class, 'open'])->name('notifications.open');

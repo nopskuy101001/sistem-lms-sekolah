@@ -8,7 +8,9 @@
         const x = editor.querySelector('[data-theme-x]');
         const y = editor.querySelector('[data-theme-y]');
         const remove = editor.closest('form')?.querySelector('[name="remove_theme_image"]');
-        const color = editor.closest('form')?.querySelector('[name="color"]');
+        const form = editor.closest('form');
+        const colors = [...(form?.querySelectorAll('[name="color"]') ?? [])];
+        const styles = [...(form?.querySelectorAll('[name="theme_style"]') ?? [])];
         const originalSource = image.getAttribute('src');
         let objectUrl = null;
 
@@ -45,6 +47,13 @@
             updateAdjustment();
         }
 
+        function updatePreset() {
+            const selectedColor = colors.find(control => control.matches('select') || control.checked);
+            const selectedStyle = styles.find(control => control.matches('select') || control.checked);
+            if (selectedColor) preview.dataset.color = selectedColor.value;
+            if (selectedStyle) preview.dataset.themeStyle = selectedStyle.value;
+        }
+
         for (const control of [zoom, x, y]) control.addEventListener('input', updateAdjustment);
         fileInput.addEventListener('change', () => {
             if (fileInput.files?.length && remove) remove.checked = false;
@@ -54,10 +63,11 @@
             if (remove.checked) fileInput.value = '';
             updateSource();
         });
-        color?.addEventListener('change', () => { preview.dataset.color = color.value; });
+        for (const control of [...colors, ...styles]) control.addEventListener('change', updatePreset);
         window.addEventListener('pagehide', () => {
             if (objectUrl) URL.revokeObjectURL(objectUrl);
         }, {once: true});
+        updatePreset();
         updateSource();
     }
 })();

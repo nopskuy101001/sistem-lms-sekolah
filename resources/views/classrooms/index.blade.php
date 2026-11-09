@@ -36,14 +36,7 @@
                 <label class="block text-sm font-medium mb-1">Ruangan</label>
                 <input type="text" name="room" class="w-full rounded-lg border border-slate-300 px-3 py-2">
             </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Warna</label>
-                <select name="color" class="w-full rounded-lg border border-slate-300 px-3 py-2">
-                    @foreach(\App\Models\Classroom::COLORS as $color)
-                        <option value="{{ $color }}">{{ ucfirst($color) }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <div class="md:col-span-2">@include('classrooms._theme-choices', ['themeClassroom' => null])</div>
             <div class="md:col-span-2">@include('classrooms._theme-editor', ['themeClassroom' => null])</div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1">Deskripsi</label>

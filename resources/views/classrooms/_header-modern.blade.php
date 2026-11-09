@@ -8,7 +8,7 @@
     $canManage = $classroom->canManage(auth()->user());
 @endphp
 
-<section class="lms-class-hero {{ $classroom->bannerClass() }} {{ $classroom->theme_image_path ? 'lms-has-theme-image' : '' }}">
+<section class="lms-class-hero {{ $classroom->bannerClass() }} {{ $classroom->theme_image_path ? 'lms-has-theme-image' : '' }}" data-color="{{ $classroom->color }}" data-theme-style="{{ $classroom->themeStyle() }}">
     @if($classroom->theme_image_path)<img class="lms-theme-image" src="{{ asset('storage/'.$classroom->theme_image_path) }}" alt="" style="{{ $classroom->themeImageStyle() }}">@endif
     <div class="lms-class-hero-content">
         <div>

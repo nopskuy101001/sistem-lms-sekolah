@@ -10,10 +10,37 @@ use Illuminate\Support\Str;
 
 class Classroom extends Model
 {
-    public const COLORS = ['indigo', 'emerald', 'rose', 'amber', 'sky', 'violet'];
+    public const COLOR_LABELS = [
+        'indigo' => 'Indigo',
+        'emerald' => 'Zamrud',
+        'rose' => 'Mawar',
+        'amber' => 'Amber',
+        'sky' => 'Langit',
+        'violet' => 'Violet',
+        'teal' => 'Teal',
+        'coral' => 'Koral',
+        'navy' => 'Navy',
+        'slate' => 'Slate',
+        'fuchsia' => 'Fuchsia',
+        'lime' => 'Limau',
+    ];
+
+    public const COLORS = [
+        'indigo', 'emerald', 'rose', 'amber', 'sky', 'violet',
+        'teal', 'coral', 'navy', 'slate', 'fuchsia', 'lime',
+    ];
+
+    public const THEME_STYLE_LABELS = [
+        'orb' => 'Orbital',
+        'waves' => 'Gelombang',
+        'grid' => 'Grid',
+        'minimal' => 'Minimal',
+    ];
+
+    public const THEME_STYLES = ['orb', 'waves', 'grid', 'minimal'];
 
     protected $fillable = [
-        'teacher_id', 'name', 'section', 'subject', 'room', 'description', 'color', 'code', 'theme_image_path',
+        'teacher_id', 'name', 'section', 'subject', 'room', 'description', 'color', 'theme_style', 'code', 'theme_image_path',
         'theme_zoom', 'theme_position_x', 'theme_position_y',
     ];
 
@@ -113,8 +140,19 @@ class Classroom extends Model
             'amber' => 'bg-amber-600',
             'sky' => 'bg-sky-600',
             'violet' => 'bg-violet-600',
+            'teal' => 'bg-teal-700',
+            'coral' => 'bg-orange-600',
+            'navy' => 'bg-slate-800',
+            'slate' => 'bg-slate-600',
+            'fuchsia' => 'bg-fuchsia-700',
+            'lime' => 'bg-lime-700',
             default => 'bg-indigo-600',
         };
+    }
+
+    public function themeStyle(): string
+    {
+        return in_array($this->theme_style, self::THEME_STYLES, true) ? $this->theme_style : 'orb';
     }
 
     public function themeImageStyle(): string
