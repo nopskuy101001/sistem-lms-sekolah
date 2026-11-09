@@ -21,5 +21,9 @@
     <main class="print-document">
         @yield('content')
     </main>
+    <footer class="document-copyright">
+        <span>© 2026 Muhammad Misfalah Saputra. Seluruh hak cipta dilindungi.</span>
+        <span>RuangKelas dikembangkan oleh Nanonie untuk SMK NEGERI 1 CERME GRESIK.</span>
+    </footer>
 </body>
 </html>

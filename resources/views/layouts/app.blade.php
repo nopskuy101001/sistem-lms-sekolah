@@ -137,6 +137,9 @@
                 @endif
                 @yield('content')
             </main>
+            <footer class="lms-app-footer">
+                <x-copyright />
+            </footer>
         </div>
     </div>
 @else

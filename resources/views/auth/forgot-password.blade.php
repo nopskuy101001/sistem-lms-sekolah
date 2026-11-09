@@ -28,7 +28,7 @@
                 <p class="text-xs text-slate-500 mt-4">Belum memiliki email asli pada akun? Hubungi administrator sekolah. NIS saja tidak cukup untuk menerima email.</p>
                 <p class="text-center mt-5"><a href="{{ route('login') }}" class="lms-forgot-link">Kembali ke Login</a></p>
             </main>
-            <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas</footer>
+            <footer class="lms-auth-footer"><x-copyright :compact="true" /></footer>
         </section>
     </div>
 </div>

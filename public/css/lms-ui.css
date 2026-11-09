@@ -139,7 +139,7 @@ input, select, textarea { min-width: 0; }
 .lms-semester-card strong { display: block; margin: 5px 0 3px; font-size: 13px; }
 .lms-semester-card span { color: #aeb9d1; font-size: 11px; }
 
-.lms-app { min-width: 0; min-height: 100vh; margin-left: 260px; }
+.lms-app { min-width: 0; min-height: 100vh; margin-left: 260px; display: flex; flex-direction: column; }
 
 .lms-topbar {
     position: sticky;
@@ -242,7 +242,11 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 .lms-user-popover a, .lms-user-popover button { width: 100%; padding: 10px 11px; border: 0; border-radius: 9px; color: #536078; background: transparent; display: block; text-align: left; font: inherit; font-size: 12px; text-decoration: none; cursor: pointer; }
 .lms-user-popover a:hover, .lms-user-popover button:hover { color: var(--primary); background: var(--primary-soft); }
 
-.lms-content { width: 100%; min-width: 0; max-width: 1480px; margin: 0 auto; padding: 32px 34px 54px; }
+.lms-content { width: 100%; min-width: 0; max-width: 1480px; margin: 0 auto; padding: 32px 34px 54px; flex: 1 0 auto; }
+.lms-app-footer { width: 100%; max-width: 1480px; margin: 0 auto; padding: 0 34px 24px; }
+.lms-copyright { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; color: var(--muted); font-size: 10px; line-height: 1.6; text-align: center; }
+.lms-copyright.is-compact { display: block; font-size: 9px; line-height: 1.5; }
+.lms-copyright.is-compact span { display: block; }
 .lms-overlay { display: none; }
 
 .lms-alert { margin-bottom: 20px; padding: 14px 16px; border-radius: 14px; display: flex; gap: 11px; align-items: flex-start; font-size: 13px; box-shadow: var(--shadow-sm); }
@@ -692,6 +696,9 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 @media (max-width: 620px) {
     .lms-topbar { height: 62px; padding-inline: 12px; gap: 10px; }
     .lms-content { padding: 18px 12px calc(34px + env(safe-area-inset-bottom)); }
+    .lms-app-footer { padding: 0 12px 18px; }
+    .lms-copyright { display: block; font-size: 9px; }
+    .lms-copyright span { display: block; }
     .lms-alert { margin-bottom: 14px; padding: 12px; font-size: 12px; }
     .lms-page-heading { gap: 12px; margin-bottom: 18px; }
     .lms-page-title { font-size: 25px; }

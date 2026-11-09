@@ -106,6 +106,7 @@ class TeacherTranscriptTest extends TestCase
             ->assertSee(route('transcripts.pdf', $this->classroom))
             ->assertSee('Bagian 1 dari 2')
             ->assertSee('Bagian 2 dari 2')
+            ->assertSee('© 2026 Muhammad Misfalah Saputra')
             ->assertDontSee('window.print');
         $this->assertSame(2, substr_count($preview->getContent(), 'class="teacher-table"'));
 

@@ -46,7 +46,7 @@
             <p class="text-xs text-slate-500 text-center mt-7">Belum memiliki akun? Hubungi administrator sekolah untuk memperoleh akun siswa resmi.</p>
         </main>
 
-        <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas · Belajar lebih terarah</footer>
+        <footer class="lms-auth-footer"><x-copyright :compact="true" /></footer>
     </section>
     </div>
 </div>

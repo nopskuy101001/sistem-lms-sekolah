@@ -29,6 +29,8 @@ class ExampleTest extends TestCase
             ->assertSee('RuangKelas')
             ->assertSee('media/logo-smkn1-cerme.png', false)
             ->assertSee('Masuk ke ruang belajarmu')
+            ->assertSee('© 2026 Muhammad Misfalah Saputra')
+            ->assertSee('RuangKelas dikembangkan oleh Nanonie untuk SMK NEGERI 1 CERME GRESIK')
             ->assertDontSee('data-login-typing', false)
             ->assertDontSee('lms-login-typing', false)
             ->assertSee('lms-login-submit', false)
@@ -61,7 +63,8 @@ class ExampleTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Kelas Saya')
-            ->assertSee('Agenda Terdekat');
+            ->assertSee('Agenda Terdekat')
+            ->assertSee('© 2026 Muhammad Misfalah Saputra');
     }
 
     public function test_teacher_can_open_dashboard_and_class_home(): void

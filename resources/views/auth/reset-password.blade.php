@@ -31,7 +31,7 @@
                 </form>
                 <p class="text-center mt-5"><a href="{{ route('password.request') }}" class="lms-forgot-link">Minta tautan baru</a></p>
             </main>
-            <footer class="lms-auth-footer">© {{ date('Y') }} RuangKelas</footer>
+            <footer class="lms-auth-footer"><x-copyright :compact="true" /></footer>
         </section>
     </div>
 </div>

@@ -30,6 +30,10 @@ thead th { background: #e5e5e5; color: #111; font-weight: bold; text-align: cent
 small { display: block; font-size: 8pt; color: #444; margin-top: 3px; }
 .activity-legend p { margin: 3px 0; overflow-wrap: anywhere; }
 .document-note { font-size: 8pt; color: #444; margin: 12px 0 0; }
+.document-copyright { color: #64748b; font-size: 7pt; line-height: 1.45; text-align: center; }
+.document-copyright span { display: block; }
+.pdf-output .document-copyright { position: fixed; right: 0; bottom: -8mm; left: 0; }
+.preview-output .document-copyright { max-width: 1100px; margin: 14px auto 0; }
 thead { display: table-header-group; }
 tr { page-break-inside: avoid; }
 .document-heading, .document-meta { page-break-inside: avoid; }
