@@ -32,6 +32,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        const field = button.closest('.lms-password-field');
+        const input = field?.querySelector('input');
+        const showIcon = button.querySelector('[data-password-icon="show"]');
+        const hideIcon = button.querySelector('[data-password-icon="hide"]');
+
+        if (!input) return;
+
+        button.addEventListener('click', () => {
+            const passwordWillBeVisible = input.type === 'password';
+            input.type = passwordWillBeVisible ? 'text' : 'password';
+            showIcon?.toggleAttribute('hidden', !passwordWillBeVisible);
+            hideIcon?.toggleAttribute('hidden', passwordWillBeVisible);
+
+            const actionLabel = passwordWillBeVisible ? 'Sembunyikan password' : 'Tampilkan password';
+            button.setAttribute('aria-label', actionLabel);
+            button.setAttribute('title', actionLabel);
+            button.setAttribute('aria-pressed', String(passwordWillBeVisible));
+            input.focus({preventScroll: true});
+
+            const cursorPosition = input.value.length;
+            input.setSelectionRange?.(cursorPosition, cursorPosition);
+        });
+    });
+
     const sidebar = document.querySelector('[data-sidebar]');
     const overlay = document.querySelector('[data-sidebar-overlay]');
     const toggle = document.querySelector('[data-sidebar-toggle]');

@@ -33,10 +33,10 @@
                     <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email" maxlength="255" placeholder="contoh@gmail.com">
                 </div>
                 <div class="lms-field"><label for="password">Kata sandi (minimal 10 karakter, huruf dan angka)</label>
-                    <input type="password" id="password" name="password" required minlength="10" autocomplete="new-password">
+                    <x-password-input id="password" name="password" required minlength="10" autocomplete="new-password" />
                 </div>
                 <div class="lms-field"><label for="password_confirmation">Ulangi kata sandi</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation" required minlength="10" autocomplete="new-password">
+                    <x-password-input id="password_confirmation" name="password_confirmation" required minlength="10" autocomplete="new-password" />
                 </div>
                 <button type="submit" class="lms-button lms-button-primary w-full">Buat Akun &amp; Kirim Kode Gmail</button>
             </form>

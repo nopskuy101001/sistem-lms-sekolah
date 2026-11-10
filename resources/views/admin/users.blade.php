@@ -93,12 +93,12 @@
             </div>
             <div>
                 <label for="staff_password" class="block text-sm font-medium mb-1">Password awal *</label>
-                <input id="staff_password" type="password" name="password" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <x-password-input id="staff_password" name="password" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
                 @error('password', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label for="staff_password_confirmation" class="block text-sm font-medium mb-1">Ulangi password *</label>
-                <input id="staff_password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <x-password-input id="staff_password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
             </div>
             <div class="sm:col-span-2 text-xs leading-5 text-slate-500">Guru/admin juga wajib mengganti password awal saat login pertama.</div>
             <div class="sm:col-span-2">
@@ -149,16 +149,16 @@
             </div>
             <div>
                 <label for="reset_password" class="block text-sm font-medium text-slate-800">Password sementara baru *</label>
-                <input id="reset_password" type="password" name="password" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Minimal 8 karakter">
+                <x-password-input id="reset_password" name="password" required minlength="8" autocomplete="new-password" wrapper-class="mt-1" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Minimal 8 karakter" />
                 @error('password', 'passwordReset')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label for="reset_password_confirmation" class="block text-sm font-medium text-slate-800">Ulangi password sementara *</label>
-                <input id="reset_password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                <x-password-input id="reset_password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password" wrapper-class="mt-1" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
             </div>
             <div class="md:col-span-2">
                 <label for="admin_password" class="block text-sm font-medium text-slate-800">Konfirmasi password admin Anda *</label>
-                <input id="admin_password" type="password" name="admin_password" required autocomplete="current-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 md:max-w-md" placeholder="Untuk mengesahkan tindakan ini">
+                <x-password-input id="admin_password" name="admin_password" required autocomplete="current-password" wrapper-class="mt-1 md:max-w-md" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Untuk mengesahkan tindakan ini" />
                 @error('admin_password', 'passwordReset')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="md:col-span-2 flex flex-wrap gap-2">

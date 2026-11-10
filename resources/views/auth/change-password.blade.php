@@ -13,15 +13,15 @@
         @csrf @method('PUT')
         <div>
             <label for="current_password" class="block text-sm font-medium mb-1">{{ auth()->user()->must_change_password ? 'Password awal' : 'Password saat ini' }}</label>
-            <input id="current_password" type="password" name="current_password" required autocomplete="current-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Tanggal lahir format ddmmyyyy">
+            <x-password-input id="current_password" name="current_password" required autocomplete="current-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Tanggal lahir format ddmmyyyy" />
         </div>
         <div>
             <label for="password" class="block text-sm font-medium mb-1">Password baru</label>
-            <input id="password" type="password" name="password" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Minimal 8 karakter">
+            <x-password-input id="password" name="password" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Minimal 8 karakter" />
         </div>
         <div>
             <label for="password_confirmation" class="block text-sm font-medium mb-1">Ulangi password baru</label>
-            <input id="password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+            <x-password-input id="password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
         </div>
         <button class="lms-button lms-button-primary w-full">{{ auth()->user()->must_change_password ? 'Simpan password dan lanjutkan' : 'Simpan password baru' }}</button>
     </form>

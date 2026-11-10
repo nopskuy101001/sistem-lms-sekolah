@@ -18,11 +18,11 @@
     </div>
 </header>
 
-<nav aria-label="Daftar isi panduan" class="guide-toc mb-7 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-    <a href="#mulai" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m13 2-9 11h7l-1 9 9-12h-7z"/></svg><span>Mulai cepat</span></a>
-    <a href="#panduan-role" class="bg-slate-50 text-slate-700 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Panduan {{ $user->roleLabel() }}</span></a>
-    <a href="#akun" class="bg-slate-50 text-slate-700 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg><span>Akun &amp; keamanan</span></a>
-    <a href="#faq" class="bg-slate-50 text-slate-700 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-2.92 2-2.92 4M12 17h.01"/></svg><span>Pertanyaan umum</span></a>
+<nav aria-label="Daftar isi panduan" class="guide-toc mb-7 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" data-guide-toc>
+    <a href="#mulai" class="is-active" data-guide-link aria-current="location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m13 2-9 11h7l-1 9 9-12h-7z"/></svg><span>Mulai cepat</span></a>
+    <a href="#panduan-role" data-guide-link><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Panduan {{ $user->roleLabel() }}</span></a>
+    <a href="#akun" data-guide-link><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg><span>Akun &amp; keamanan</span></a>
+    <a href="#faq" data-guide-link><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-2.92 2-2.92 4M12 17h.01"/></svg><span>Pertanyaan umum</span></a>
 </nav>
 
 <section id="mulai" aria-labelledby="mulai-heading" class="mb-6 scroll-mt-24">
@@ -110,3 +110,7 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/guide-navigation.js') }}?v={{ filemtime(public_path('js/guide-navigation.js')) }}"></script>
+@endpush

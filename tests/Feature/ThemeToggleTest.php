@@ -28,6 +28,24 @@ class ThemeToggleTest extends TestCase
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertDontSee('data-theme-toggle', false);
+            ->assertDontSee('data-theme-toggle', false)
+            ->assertSee('class="lms-password-field', false)
+            ->assertSee('data-password-toggle', false)
+            ->assertSee('aria-controls="password"', false)
+            ->assertSee('Tampilkan password');
+    }
+
+    public function test_password_visibility_controls_are_available_on_authenticated_forms(): void
+    {
+        $student = User::factory()->create(['role' => 'siswa']);
+
+        $response = $this->actingAs($student)->get(route('password.change'));
+
+        $response->assertOk()
+            ->assertSee('aria-controls="current_password"', false)
+            ->assertSee('aria-controls="password"', false)
+            ->assertSee('aria-controls="password_confirmation"', false);
+
+        $this->assertSame(3, substr_count($response->getContent(), 'data-password-toggle'));
     }
 }

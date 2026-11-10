@@ -32,7 +32,7 @@
                 </div>
                 <div class="lms-field">
                     <label for="password">Kata sandi</label>
-                    <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
+                    <x-password-input id="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi" />
                 </div>
                 <div class="flex justify-end">
                     <a href="{{ route('password.request') }}" class="lms-forgot-link">Lupa password?</a>

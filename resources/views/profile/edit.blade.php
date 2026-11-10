@@ -97,8 +97,8 @@
             </div>
             <div>
                 <label for="profile_current_password" class="block text-sm font-semibold text-slate-800">Konfirmasi password akun saat ini</label>
-                <input id="profile_current_password" type="password" name="current_password" autocomplete="current-password" required
-                    class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
+                <x-password-input id="profile_current_password" name="current_password" autocomplete="current-password" required
+                    wrapper-class="mt-2" class="block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm" />
                 @error('current_password')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <p class="text-xs leading-5 text-slate-500">Sistem mengirim tautan verifikasi ke email baru yang berlaku 30 menit. Email lama tetap aktif hingga konfirmasi berhasil. Jika SMTP belum diaktifkan, perubahan tidak dilakukan agar akun tetap aman.</p>

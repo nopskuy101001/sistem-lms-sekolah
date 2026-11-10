@@ -115,8 +115,9 @@ class AdminUserCreationTest extends TestCase
             ->assertOk()
             ->assertSee('Tambah siswa manual')
             ->assertSee('Tambah guru atau admin')
-            ->assertSee('type="password" name="password"', false)
-            ->assertDontSee('type="text" name="password"', false);
+            ->assertSee('type="password" id="staff_password" name="password"', false)
+            ->assertSee('aria-controls="staff_password"', false)
+            ->assertDontSee('type="text" id="staff_password"', false);
     }
 
     public function test_staff_endpoint_rejects_student_role_and_non_admin_cannot_create_accounts(): void

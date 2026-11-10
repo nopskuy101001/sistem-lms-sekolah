@@ -14,8 +14,8 @@
                    class="w-full rounded-lg border-slate-300 border px-3 py-2">
         </div>
         <div>
-            <label class="block text-sm font-medium mb-1">Password</label>
-            <input type="password" name="password" required class="w-full rounded-lg border-slate-300 border px-3 py-2">
+            <label for="password" class="block text-sm font-medium mb-1">Password</label>
+            <x-password-input id="password" name="password" required autocomplete="current-password" class="w-full rounded-lg border-slate-300 border px-3 py-2" />
         </div>
         <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="remember"> Ingat saya

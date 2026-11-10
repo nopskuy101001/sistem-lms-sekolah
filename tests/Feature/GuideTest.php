@@ -45,6 +45,11 @@ class GuideTest extends TestCase
             ->assertOk()
             ->assertSee('class="lms-nav-link active"', false)
             ->assertSee('M9.09 9a3 3', false)
+            ->assertSee('data-guide-toc', false)
+            ->assertSee('href="#mulai" class="is-active" data-guide-link aria-current="location"', false)
+            ->assertSee('href="#panduan-role" data-guide-link', false)
+            ->assertSee('href="#akun" data-guide-link', false)
+            ->assertSee('js/guide-navigation.js', false)
             ->assertSee('guide-step-card', false)
             ->assertSee('guide-faq', false);
     }

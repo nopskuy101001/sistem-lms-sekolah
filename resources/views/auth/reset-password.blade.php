@@ -20,12 +20,12 @@
                     @error('email')<p role="alert" class="text-xs text-red-600">{{ $message }}</p>@enderror
                     <div class="lms-field">
                         <label for="password">Password Baru</label>
-                        <input id="password" type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter">
+                        <x-password-input id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter" />
                         @error('password')<p role="alert" class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="lms-field">
                         <label for="password_confirmation">Konfirmasi Password Baru</label>
-                        <input id="password_confirmation" type="password" name="password_confirmation" required minlength="8" autocomplete="new-password" placeholder="Ulangi password baru">
+                        <x-password-input id="password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password" placeholder="Ulangi password baru" />
                     </div>
                     <button type="submit" class="lms-button lms-button-primary w-full">Simpan Password Baru</button>
                 </form>
