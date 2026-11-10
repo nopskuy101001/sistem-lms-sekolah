@@ -48,4 +48,15 @@ class ThemeToggleTest extends TestCase
 
         $this->assertSame(3, substr_count($response->getContent(), 'data-password-toggle'));
     }
+
+    public function test_dark_theme_maps_translucent_academic_panels_to_dark_surfaces(): void
+    {
+        $css = file_get_contents(public_path('css/lms-ui.css'));
+
+        $this->assertStringContainsString('[class~="bg-indigo-50/70"]', $css);
+        $this->assertStringContainsString('[class~="bg-amber-50/70"]', $css);
+        $this->assertStringContainsString('[class~="bg-slate-50/70"]', $css);
+        $this->assertStringContainsString('background-color: #272b55 !important', $css);
+        $this->assertStringContainsString('background-color: #1c2840 !important', $css);
+    }
 }
