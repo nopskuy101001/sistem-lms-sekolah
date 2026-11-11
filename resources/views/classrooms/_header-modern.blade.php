@@ -15,6 +15,9 @@
             <span class="lms-hero-kicker">{{ $classroom->subject ?: 'Ruang belajar' }}</span>
             <h1>{{ $classroom->name }}</h1>
             <p>{{ $classroom->section ?: 'Kelas umum' }}{{ $classroom->room ? ' · Ruang '.$classroom->room : '' }} · {{ $classroom->teacher->name }}</p>
+            <div class="lms-class-academic-tags is-hero">
+                @forelse($classroom->academicTags() as $tag)<span>{{ $tag }}</span>@empty<span class="is-unassigned">Periode belum diatur</span>@endforelse
+            </div>
         </div>
         @if($canManage)
             <div class="lms-class-code-panel">

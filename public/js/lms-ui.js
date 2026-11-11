@@ -105,22 +105,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const search = document.querySelector('[data-class-search]');
+    const yearFilter = document.querySelector('[data-class-year-filter]');
     const cards = [...document.querySelectorAll('[data-class-card]')];
     const noResults = document.querySelector('[data-no-results]');
 
-    if (search && cards.length) {
-        search.addEventListener('input', () => {
-            const query = search.value.toLocaleLowerCase('id').trim();
+    if (cards.length && (search || yearFilter)) {
+        const filterCards = () => {
+            const query = search?.value.toLocaleLowerCase('id').trim() ?? '';
+            const selectedYear = yearFilter?.value ?? '';
             let visible = 0;
 
             cards.forEach((card) => {
-                const match = card.textContent.toLocaleLowerCase('id').includes(query);
+                const matchesQuery = card.textContent.toLocaleLowerCase('id').includes(query);
+                const matchesYear = !selectedYear || card.dataset.academicYear === selectedYear;
+                const match = matchesQuery && matchesYear;
                 card.style.display = match ? '' : 'none';
                 if (match) visible += 1;
             });
 
             if (noResults) noResults.style.display = visible ? 'none' : 'block';
-        });
+        };
+
+        search?.addEventListener('input', filterCards);
+        yearFilter?.addEventListener('change', filterCards);
     }
 
     document.querySelectorAll('[data-copy-code]').forEach((button) => {

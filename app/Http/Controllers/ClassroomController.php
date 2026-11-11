@@ -97,8 +97,15 @@ class ClassroomController extends Controller
             ];
         }
 
+        $academicYearOptions = $classrooms->pluck('academic_year')
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
+        $hasUnassignedAcademicYear = $classrooms->contains(fn (Classroom $classroom) => blank($classroom->academic_year));
+
         return view('classrooms.dashboard', compact(
-            'classrooms', 'upcomingAssignments', 'dashboardStats'
+            'classrooms', 'upcomingAssignments', 'dashboardStats', 'academicYearOptions', 'hasUnassignedAcademicYear'
         ));
     }
 
@@ -107,6 +114,8 @@ class ClassroomController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'section' => ['nullable', 'string', 'max:50'],
+            'grade_level' => ['nullable', Rule::in(array_keys(Classroom::GRADE_LEVEL_LABELS))],
+            'academic_year' => $this->academicYearRules(),
             'subject' => ['nullable', 'string', 'max:100'],
             'room' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -165,6 +174,8 @@ class ClassroomController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'section' => ['nullable', 'string', 'max:50'],
+            'grade_level' => ['nullable', Rule::in(array_keys(Classroom::GRADE_LEVEL_LABELS))],
+            'academic_year' => $this->academicYearRules(),
             'subject' => ['nullable', 'string', 'max:100'],
             'room' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -200,6 +211,20 @@ class ClassroomController extends Controller
         }
 
         return back()->with('success', 'Kelas diperbarui.');
+    }
+
+    private function academicYearRules(): array
+    {
+        return [
+            'nullable',
+            'string',
+            'max:9',
+            function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! Classroom::isValidAcademicYear($value)) {
+                    $fail('Tahun ajaran harus berurutan, misalnya 2026/2027.');
+                }
+            },
+        ];
     }
 
     public function destroy(Classroom $classroom): RedirectResponse

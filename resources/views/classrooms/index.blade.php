@@ -36,6 +36,7 @@
                 <label class="block text-sm font-medium mb-1">Ruangan</label>
                 <input type="text" name="room" class="w-full rounded-lg border border-slate-300 px-3 py-2">
             </div>
+            @include('classrooms._academic-fields', ['academicClassroom' => null, 'wrapperClass' => 'md:col-span-2'])
             <div class="md:col-span-2">@include('classrooms._theme-choices', ['themeClassroom' => null])</div>
             <div class="md:col-span-2">@include('classrooms._theme-editor', ['themeClassroom' => null])</div>
             <div class="md:col-span-2">

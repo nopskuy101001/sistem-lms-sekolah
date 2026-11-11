@@ -49,7 +49,7 @@
 </section>
 
 @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
-    <details class="lms-create-panel" id="buat-kelas" @if($errors->hasAny(['name', 'section', 'subject', 'room', 'color', 'theme_style', 'description', 'theme_image', 'theme_zoom', 'theme_position_x', 'theme_position_y'])) open @endif>
+    <details class="lms-create-panel" id="buat-kelas" @if($errors->hasAny(['name', 'section', 'grade_level', 'academic_year', 'subject', 'room', 'color', 'theme_style', 'description', 'theme_image', 'theme_zoom', 'theme_position_x', 'theme_position_y'])) open @endif>
         <summary>＋ Buat ruang kelas baru</summary>
         <form method="POST" action="{{ route('classrooms.store') }}" enctype="multipart/form-data" class="lms-form-grid">
             @csrf
@@ -57,6 +57,7 @@
             <div class="lms-field"><label>Rombel / bagian</label><input type="text" name="section" value="{{ old('section') }}" placeholder="Contoh: X-A"></div>
             <div class="lms-field"><label>Mata pelajaran</label><input type="text" name="subject" value="{{ old('subject') }}" placeholder="Contoh: Matematika"></div>
             <div class="lms-field"><label>Ruangan</label><input type="text" name="room" value="{{ old('room') }}" placeholder="Contoh: R-12"></div>
+            @include('classrooms._academic-fields', ['academicClassroom' => null, 'wrapperClass' => 'lms-span-2'])
             <div class="lms-span-2">@include('classrooms._theme-choices', ['themeClassroom' => null])</div>
             <div class="lms-span-2">@include('classrooms._theme-editor', ['themeClassroom' => null])</div>
             <div class="lms-field lms-span-2"><label>Deskripsi</label><textarea name="description" rows="3" placeholder="Tujuan belajar atau informasi singkat kelas">{{ old('description') }}</textarea></div>
@@ -67,7 +68,18 @@
 
 <div class="lms-dashboard-grid">
     <section id="kelas">
-        <div class="lms-section-head"><h2>Kelas Saya</h2><span>{{ $classrooms->count() }} kelas aktif</span></div>
+        <div class="lms-section-head lms-class-section-head">
+            <div><h2>Kelas Saya</h2><span>{{ $classrooms->count() }} kelas tersimpan</span></div>
+            @if($classrooms->isNotEmpty())
+                <label class="lms-year-filter">Tahun ajaran
+                    <select data-class-year-filter aria-label="Filter kelas berdasarkan tahun ajaran">
+                        <option value="">Semua tahun</option>
+                        @foreach($academicYearOptions as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
+                        @if($hasUnassignedAcademicYear)<option value="__unassigned">Belum ditandai</option>@endif
+                    </select>
+                </label>
+            @endif
+        </div>
 
         @if($classrooms->isEmpty())
             <div class="lms-empty-state">
@@ -78,7 +90,7 @@
         @else
             <div class="lms-class-grid">
                 @foreach($classrooms as $classroom)
-                    <a href="{{ route('classrooms.show', $classroom) }}" class="lms-class-card" data-class-card data-color="{{ $classroom->color }}" data-theme-style="{{ $classroom->themeStyle() }}">
+                    <a href="{{ route('classrooms.show', $classroom) }}" class="lms-class-card" data-class-card data-academic-year="{{ $classroom->academic_year ?: '__unassigned' }}" data-color="{{ $classroom->color }}" data-theme-style="{{ $classroom->themeStyle() }}">
                         <div class="lms-class-cover {{ $classroom->theme_image_path ? 'lms-has-theme-image' : '' }}">
                             @if($classroom->theme_image_path)<img class="lms-theme-image" src="{{ asset('storage/'.$classroom->theme_image_path) }}" alt="" loading="lazy" style="{{ $classroom->themeImageStyle() }}">@endif
                             <span class="lms-class-label">{{ $classroom->subject ?: 'Ruang belajar' }}</span>
@@ -86,6 +98,9 @@
                             <p>{{ $classroom->section ?: 'Kelas umum' }}{{ $classroom->room ? ' · Ruang '.$classroom->room : '' }}</p>
                         </div>
                         <div class="lms-class-body">
+                            <div class="lms-class-academic-tags">
+                                @forelse($classroom->academicTags() as $tag)<span>{{ $tag }}</span>@empty<span class="is-unassigned">Periode belum diatur</span>@endforelse
+                            </div>
                             <div class="lms-class-teacher"><x-user-avatar :user="$classroom->teacher" class="lms-mini-avatar" /><span>{{ $classroom->teacher->name }}</span></div>
                             <div class="lms-class-meta">
                                 <span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 11a4 4 0 0 1 4 4v2"/></svg>{{ $classroom->students_count }} siswa</span>
@@ -96,7 +111,7 @@
                     </a>
                 @endforeach
             </div>
-            <div class="lms-no-results" data-no-results>Tidak ada kelas yang cocok dengan pencarianmu.</div>
+            <div class="lms-no-results" data-no-results>Tidak ada kelas yang cocok dengan pencarian atau tahun ajaran yang dipilih.</div>
         @endif
     </section>
 

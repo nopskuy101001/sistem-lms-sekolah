@@ -39,8 +39,14 @@ class Classroom extends Model
 
     public const THEME_STYLES = ['orb', 'waves', 'grid', 'minimal'];
 
+    public const GRADE_LEVEL_LABELS = [
+        'X' => 'Kelas X',
+        'XI' => 'Kelas XI',
+        'XII' => 'Kelas XII',
+    ];
+
     protected $fillable = [
-        'teacher_id', 'name', 'section', 'subject', 'room', 'description', 'color', 'theme_style', 'code', 'theme_image_path',
+        'teacher_id', 'name', 'section', 'grade_level', 'academic_year', 'subject', 'room', 'description', 'color', 'theme_style', 'code', 'theme_image_path',
         'theme_zoom', 'theme_position_x', 'theme_position_y',
     ];
 
@@ -56,7 +62,49 @@ class Classroom extends Model
             if (empty($classroom->code)) {
                 $classroom->code = static::generateUniqueCode();
             }
+            if (empty($classroom->academic_year)) {
+                $classroom->academic_year = static::currentAcademicYear();
+            }
         });
+    }
+
+    public static function currentAcademicYear(): string
+    {
+        $year = (int) now()->format('Y');
+        $startYear = (int) now()->format('n') >= 7 ? $year : $year - 1;
+
+        return $startYear.'/'.($startYear + 1);
+    }
+
+    /** Pilihan bergerak mengikuti tahun berjalan, tanpa perlu diperbarui manual setiap tahun. */
+    public static function academicYearOptions(int $pastYears = 4, int $futureYears = 2): array
+    {
+        $currentStart = (int) explode('/', static::currentAcademicYear())[0];
+        $options = [];
+
+        for ($start = $currentStart + $futureYears; $start >= $currentStart - $pastYears; $start--) {
+            $value = $start.'/'.($start + 1);
+            $options[$value] = $value;
+        }
+
+        return $options;
+    }
+
+    public static function isValidAcademicYear(?string $value): bool
+    {
+        if (! is_string($value) || ! preg_match('/^(\d{4})\/(\d{4})$/', $value, $matches)) {
+            return false;
+        }
+
+        return (int) $matches[2] === (int) $matches[1] + 1;
+    }
+
+    public function academicTags(): array
+    {
+        return array_values(array_filter([
+            self::GRADE_LEVEL_LABELS[$this->grade_level] ?? null,
+            $this->academic_year,
+        ]));
     }
 
     public static function generateUniqueCode(): string

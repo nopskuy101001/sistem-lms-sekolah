@@ -74,7 +74,7 @@
                 </a>
             </nav>
 
-            <div class="lms-semester-card"><small>Tahun Ajaran</small><strong>Semester Ganjil</strong><span>2026 / 2027</span></div>
+            <div class="lms-academic-year-card"><small>Periode Aktif</small><strong>Tahun Ajaran</strong><span>{{ str_replace('/', ' / ', \App\Models\Classroom::currentAcademicYear()) }}</span></div>
         </aside>
 
         <div class="lms-app">
