@@ -92,6 +92,7 @@ class QuestionBankTest extends TestCase
     {
         Storage::fake('local');
         Storage::disk('local')->put('quiz-stimuli/source-chart.png', 'image-content');
+        Storage::disk('local')->put('quiz-stimulus-videos/source-video.mp4', 'video-content');
 
         $teacher = User::factory()->create(['role' => 'guru']);
         $classroom = Classroom::create([
@@ -120,6 +121,10 @@ class QuestionBankTest extends TestCase
             'media_name' => 'grafik.png',
             'media_alt' => 'Grafik penjualan bulanan',
             'table_data' => [['Bulan', 'Nilai'], ['Januari', '20']],
+            'video_type' => 'upload',
+            'video_path' => 'quiz-stimulus-videos/source-video.mp4',
+            'video_name' => 'penjelasan.mp4',
+            'video_caption' => 'Video penjelasan grafik',
         ]);
         $quiz->questions()->create([
             'question_group_id' => $group->id,
@@ -153,8 +158,11 @@ class QuestionBankTest extends TestCase
         $this->assertSame(50, $bank->total_points);
         $this->assertSame('Matematika XI', $bank->source_classroom);
         $bankMedia = $bank->payload['groups'][0]['media_path'];
+        $bankVideo = $bank->payload['groups'][0]['video_path'];
         $this->assertNotSame($group->media_path, $bankMedia);
+        $this->assertNotSame($group->video_path, $bankVideo);
         Storage::disk('local')->assertExists($bankMedia);
+        Storage::disk('local')->assertExists($bankVideo);
 
         $this->get(route('question-banks.index'))
             ->assertOk()
@@ -170,15 +178,22 @@ class QuestionBankTest extends TestCase
             ->assertSee('Tentukan benar atau salah.')
             ->assertSee('Januari')
             ->assertSee('20')
-            ->assertSee(route('question-banks.media', ['questionBank' => $bank, 'groupKey' => 'group-1']), false);
+            ->assertSee('Video penjelasan grafik')
+            ->assertSee(route('question-banks.media', ['questionBank' => $bank, 'groupKey' => 'group-1']), false)
+            ->assertSee(route('question-banks.video', ['questionBank' => $bank, 'groupKey' => 'group-1']), false);
         $this->get(route('question-banks.media', ['questionBank' => $bank, 'groupKey' => 'group-1']))
             ->assertOk()
             ->assertHeader('content-disposition', 'inline; filename=grafik.png');
+        $this->get(route('question-banks.video', ['questionBank' => $bank, 'groupKey' => 'group-1']))
+            ->assertOk()
+            ->assertHeader('content-type', 'video/mp4');
 
         // Paket bank harus tetap utuh meskipun kuis sumber dihapus.
         $this->delete(route('quizzes.destroy', $quiz))->assertRedirect();
         Storage::disk('local')->assertMissing('quiz-stimuli/source-chart.png');
+        Storage::disk('local')->assertMissing('quiz-stimulus-videos/source-video.mp4');
         Storage::disk('local')->assertExists($bankMedia);
+        Storage::disk('local')->assertExists($bankVideo);
 
         $this->post(route('question-banks.quizzes.store', $bank), [
             'classroom_id' => $classroom->id,
@@ -198,12 +213,18 @@ class QuestionBankTest extends TestCase
         $this->assertSame($newQuiz->questionGroups->first()->id, $newQuiz->questions->first()->question_group_id);
         $this->assertSame([['Bulan', 'Nilai'], ['Januari', '20']], $newQuiz->questionGroups->first()->table_data);
         $importedMedia = $newQuiz->questionGroups->first()->media_path;
+        $importedVideo = $newQuiz->questionGroups->first()->video_path;
         $this->assertNotSame($bankMedia, $importedMedia);
+        $this->assertNotSame($bankVideo, $importedVideo);
+        $this->assertSame('Video penjelasan grafik', $newQuiz->questionGroups->first()->video_caption);
         Storage::disk('local')->assertExists($importedMedia);
+        Storage::disk('local')->assertExists($importedVideo);
 
         $this->delete(route('question-banks.destroy', $bank))->assertRedirect();
         Storage::disk('local')->assertMissing($bankMedia);
+        Storage::disk('local')->assertMissing($bankVideo);
         Storage::disk('local')->assertExists($importedMedia);
+        Storage::disk('local')->assertExists($importedVideo);
     }
 
     public function test_question_bank_is_private_to_its_teacher(): void

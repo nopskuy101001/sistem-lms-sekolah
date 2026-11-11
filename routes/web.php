@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/question-banks/{questionBank}/excel', [QuestionBankController::class, 'excel'])->name('question-banks.excel');
         Route::get('/question-banks/{questionBank}', [QuestionBankController::class, 'show'])->name('question-banks.show');
         Route::get('/question-banks/{questionBank}/stimuli/{groupKey}/media', [QuestionBankController::class, 'media'])->name('question-banks.media');
+        Route::get('/question-banks/{questionBank}/stimuli/{groupKey}/video', [QuestionBankController::class, 'video'])->name('question-banks.video');
         Route::post('/quizzes/{quiz}/question-banks', [QuestionBankController::class, 'store'])->name('question-banks.store');
         Route::post('/question-banks/{questionBank}/quizzes', [QuestionBankController::class, 'createQuiz'])->name('question-banks.quizzes.store');
         Route::delete('/question-banks/{questionBank}', [QuestionBankController::class, 'destroy'])->name('question-banks.destroy');
@@ -135,6 +136,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store'])->name('questions.store');
     Route::post('/quizzes/{quiz}/question-groups', [QuestionController::class, 'storeGroup'])->name('question-groups.store');
     Route::get('/question-groups/{questionGroup}/media', [QuestionController::class, 'groupMedia'])->name('question-groups.media');
+    Route::get('/question-groups/{questionGroup}/video', [QuestionController::class, 'groupVideo'])->name('question-groups.video');
     Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
     Route::delete('/question-groups/{questionGroup}', [QuestionController::class, 'destroyGroup'])->name('question-groups.destroy');
 

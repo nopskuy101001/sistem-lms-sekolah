@@ -157,10 +157,9 @@ class QuizController extends Controller
         $classroom = $quiz->classroom;
         $this->authorizeManage($classroom);
 
-        $quiz->questionGroups()
-            ->whereNotNull('media_path')
-            ->pluck('media_path')
-            ->each(fn ($path) => Storage::disk('local')->delete($path));
+        $quiz->questionGroups()->get(['media_path', 'video_path'])->each(function ($group): void {
+            Storage::disk('local')->delete(array_filter([$group->media_path, $group->video_path]));
+        });
         $quiz->delete();
 
         return redirect()->route('classrooms.classwork', $classroom)->with('success', 'Kuis dihapus.');

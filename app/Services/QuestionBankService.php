@@ -44,6 +44,10 @@ class QuestionBankService
                 if ($mediaPath) {
                     $copiedMedia[] = $mediaPath;
                 }
+                $videoPath = $this->copyMedia($group->video_path, 'question-bank-stimulus-videos');
+                if ($videoPath) {
+                    $copiedMedia[] = $videoPath;
+                }
 
                 return [
                     'key' => $key,
@@ -53,6 +57,11 @@ class QuestionBankService
                     'media_name' => $group->media_name,
                     'media_alt' => $group->media_alt,
                     'table_data' => $group->table_data,
+                    'video_type' => $group->video_type,
+                    'video_url' => $group->video_url,
+                    'video_path' => $videoPath,
+                    'video_name' => $group->video_name,
+                    'video_caption' => $group->video_caption,
                 ];
             })->all();
 
@@ -122,6 +131,10 @@ class QuestionBankService
                     if ($mediaPath) {
                         $copiedMedia[] = $mediaPath;
                     }
+                    $videoPath = $this->copyMedia($groupData['video_path'] ?? null, 'quiz-stimulus-videos');
+                    if ($videoPath) {
+                        $copiedMedia[] = $videoPath;
+                    }
 
                     $group = $quiz->questionGroups()->create([
                         'title' => $groupData['title'] ?? null,
@@ -130,6 +143,11 @@ class QuestionBankService
                         'media_name' => $groupData['media_name'] ?? null,
                         'media_alt' => $groupData['media_alt'] ?? null,
                         'table_data' => $groupData['table_data'] ?? null,
+                        'video_type' => $groupData['video_type'] ?? null,
+                        'video_url' => $groupData['video_url'] ?? null,
+                        'video_path' => $videoPath,
+                        'video_name' => $groupData['video_name'] ?? null,
+                        'video_caption' => $groupData['video_caption'] ?? null,
                     ]);
                     $groupIds[$groupData['key']] = $group->id;
                 }
@@ -152,7 +170,10 @@ class QuestionBankService
 
     public function delete(QuestionBank $bank): void
     {
-        $paths = collect($bank->payload['groups'] ?? [])->pluck('media_path')->filter()->all();
+        $paths = collect($bank->payload['groups'] ?? [])->flatMap(fn ($group) => [
+            $group['media_path'] ?? null,
+            $group['video_path'] ?? null,
+        ])->filter()->all();
         $bank->delete();
         $this->deleteMedia($paths);
     }

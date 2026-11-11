@@ -95,6 +95,9 @@ class QuestionBankXlsxExporter
             $writer->addRow(Row::fromValues(['Informasi Paket Bank Soal'], $headerStyle)->setHeight(32));
             $quiz = $bank->payload['quiz'] ?? [];
             $hasImages = collect($bank->payload['groups'] ?? [])->contains(fn ($group) => filled($group['media_path'] ?? null));
+            $hasVideos = collect($bank->payload['groups'] ?? [])->contains(fn ($group) =>
+                filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null)
+            );
             foreach ([
                 ['Nama paket', $bank->title],
                 ['Judul kuis', $quiz['title'] ?? $bank->title],
@@ -103,6 +106,7 @@ class QuestionBankXlsxExporter
                 ['Jumlah soal', $bank->question_count],
                 ['Total poin', $bank->total_points],
                 ['Gambar stimulus', $hasImages ? 'Gambar tidak disertakan. Simpan gambar secara terpisah sebelum mengimpor ulang.' : 'Tidak ada'],
+                ['Video stimulus', $hasVideos ? 'Video tidak disertakan di Excel. Gunakan paket bank soal di RuangKelas agar video tetap tersedia.' : 'Tidak ada'],
             ] as $item) {
                 $writer->addRow(new Row([
                     new StringCell((string) $item[0], null),

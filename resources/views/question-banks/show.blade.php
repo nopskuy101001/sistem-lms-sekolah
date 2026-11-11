@@ -32,8 +32,8 @@
     </div>
 </div>
 
-@if($groups->contains(fn ($group) => filled($group['media_path'] ?? null)))
-    <p class="mb-5 text-xs text-amber-700">File Excel memuat soal, teks, dan tabel stimulus. Simpan gambar stimulus secara terpisah jika paket ini akan dipakai di luar sistem.</p>
+@if($groups->contains(fn ($group) => filled($group['media_path'] ?? null) || filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null)))
+    <p class="mb-5 text-xs text-amber-700">File Excel memuat soal, teks, dan tabel stimulus. Gambar serta video tidak disertakan di Excel; media tetap tersimpan saat paket digunakan kembali di dalam RuangKelas.</p>
 @endif
 
 <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -87,6 +87,30 @@
                                  class="max-h-[32rem] rounded-xl border border-slate-200 bg-white">
                             @if(filled($group['media_alt'] ?? null))
                                 <figcaption class="quiz-readable-text mt-1.5 text-xs text-slate-500">{{ $group['media_alt'] }}</figcaption>
+                            @endif
+                        </figure>
+                    @endif
+                    @if(filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null))
+                        @php
+                            $youtubeId = ($group['video_type'] ?? null) === 'youtube'
+                                ? \App\Support\VideoSource::youtubeId($group['video_url'] ?? null)
+                                : null;
+                        @endphp
+                        <figure class="quiz-stimulus-video mt-4">
+                            <div class="quiz-stimulus-video-frame overflow-hidden rounded-xl border border-slate-200 bg-black">
+                                @if($youtubeId)
+                                    <iframe src="https://www.youtube-nocookie.com/embed/{{ $youtubeId }}"
+                                            title="{{ $group['video_caption'] ?? ($group['title'] ?? 'Video stimulus') }}"
+                                            loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                                @else
+                                    <video controls preload="metadata" playsinline
+                                           src="{{ ($group['video_type'] ?? null) === 'upload' ? route('question-banks.video', ['questionBank' => $questionBank, 'groupKey' => $groupKey]) : ($group['video_url'] ?? '') }}">
+                                        Browser Anda tidak mendukung pemutaran video.
+                                    </video>
+                                @endif
+                            </div>
+                            @if(filled($group['video_caption'] ?? null))
+                                <figcaption class="quiz-readable-text mt-1.5 text-xs text-slate-500">{{ $group['video_caption'] }}</figcaption>
                             @endif
                         </figure>
                     @endif

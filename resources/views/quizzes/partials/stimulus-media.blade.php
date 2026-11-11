@@ -17,6 +17,33 @@
     </figure>
 @endif
 
+@if($group->hasVideo())
+    @php $youtubeId = $group->youtubeVideoId(); @endphp
+    @if($compact)
+        <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700">
+            <span aria-hidden="true">&#9654;</span> Video stimulus tersedia
+        </div>
+    @else
+        <figure class="quiz-stimulus-video mt-4">
+            <div class="quiz-stimulus-video-frame overflow-hidden rounded-xl border border-slate-200 bg-black">
+                @if($youtubeId)
+                    <iframe src="https://www.youtube-nocookie.com/embed/{{ $youtubeId }}"
+                            title="{{ $group->video_caption ?: ($group->title ? 'Video stimulus '.$group->title : 'Video stimulus TKA') }}"
+                            loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                @else
+                    <video controls preload="metadata" playsinline
+                           src="{{ $group->video_type === 'upload' ? route('question-groups.video', $group) : $group->video_url }}">
+                        Browser Anda tidak mendukung pemutaran video.
+                    </video>
+                @endif
+            </div>
+            @if($group->video_caption)
+                <figcaption class="quiz-readable-text mt-1.5 text-xs text-slate-500">{{ $group->video_caption }}</figcaption>
+            @endif
+        </figure>
+    @endif
+@endif
+
 @if($tableRows->isNotEmpty())
     <div class="quiz-stimulus-table {{ $compact ? 'mt-3' : 'mt-4' }} rounded-xl border border-slate-200 bg-white" role="region" aria-label="Tabel stimulus" tabindex="0">
         <table class="min-w-full text-sm">

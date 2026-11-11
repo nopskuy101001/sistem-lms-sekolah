@@ -280,6 +280,88 @@ class TkaQuizFormatTest extends TestCase
             ->assertSee('Berapa jumlah penduduk?');
     }
 
+    public function test_video_url_can_be_used_as_information_for_multiple_questions(): void
+    {
+        $this->actingAs($this->teacher)
+            ->post(route('question-groups.store', $this->quiz), [
+                'title' => 'Video perubahan iklim',
+                'stimulus_video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_caption' => 'Simak video sebelum menjawab dua soal berikut.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $group = QuestionGroup::firstOrFail();
+        $this->assertSame('youtube', $group->video_type);
+        $this->makeQuestion('Apa informasi utama video?', $group->id);
+        $this->makeQuestion('Simpulan mana yang sesuai?', $group->id);
+
+        $attempt = QuizAttempt::create([
+            'quiz_id' => $this->quiz->id,
+            'user_id' => $this->student->id,
+            'started_at' => now(),
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('attempts.take', $attempt))
+            ->assertOk()
+            ->assertSee('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', false)
+            ->assertSee('Simak video sebelum menjawab dua soal berikut.')
+            ->assertSee('Apa informasi utama video?')
+            ->assertSee('Simpulan mana yang sesuai?');
+    }
+
+    public function test_uploaded_stimulus_video_is_private_and_removed_with_its_group(): void
+    {
+        Storage::fake('local');
+
+        $this->actingAs($this->teacher)
+            ->post(route('question-groups.store', $this->quiz), [
+                'title' => 'Video eksperimen',
+                'stimulus_video' => UploadedFile::fake()->create('eksperimen.mp4', 512, 'video/mp4'),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $group = QuestionGroup::firstOrFail();
+        $videoPath = $group->video_path;
+        $this->assertSame('upload', $group->video_type);
+        Storage::disk('local')->assertExists($videoPath);
+
+        $this->actingAs($this->student)
+            ->get(route('question-groups.video', $group))
+            ->assertOk()
+            ->assertHeader('content-type', 'video/mp4');
+
+        $outsider = User::factory()->create(['role' => 'siswa']);
+        $this->actingAs($outsider)
+            ->get(route('question-groups.video', $group))
+            ->assertForbidden();
+
+        $this->actingAs($this->teacher)
+            ->delete(route('question-groups.destroy', $group))
+            ->assertRedirect();
+        Storage::disk('local')->assertMissing($videoPath);
+    }
+
+    public function test_stimulus_rejects_unsupported_or_duplicate_video_sources(): void
+    {
+        $this->actingAs($this->teacher)
+            ->post(route('question-groups.store', $this->quiz), [
+                'stimulus_video_url' => 'https://example.com/watch/video',
+            ])
+            ->assertSessionHasErrors('stimulus_video_url');
+
+        $this->actingAs($this->teacher)
+            ->post(route('question-groups.store', $this->quiz), [
+                'stimulus_video_url' => 'https://example.com/video.mp4',
+                'stimulus_video' => UploadedFile::fake()->create('video.mp4', 20, 'video/mp4'),
+            ])
+            ->assertSessionHasErrors('stimulus_video_url');
+
+        $this->assertDatabaseCount('question_groups', 0);
+    }
+
     private function makeQuestion(string $body, ?int $groupId = null): Question
     {
         return Question::create([

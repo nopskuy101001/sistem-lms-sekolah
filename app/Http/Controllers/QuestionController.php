@@ -6,10 +6,12 @@ use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\Quiz;
+use App\Support\VideoSource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class QuestionController extends Controller
@@ -127,11 +129,38 @@ class QuestionController extends Controller
             'stimulus_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'media_alt' => ['nullable', 'string', 'max:255'],
             'table_text' => ['nullable', 'string', 'max:20000'],
+            'stimulus_video_url' => ['nullable', 'string', 'max:2000'],
+            'stimulus_video' => ['nullable', 'file', 'mimes:mp4', 'max:102400'],
+            'video_caption' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (blank($data['stimulus'] ?? null) && ! $request->hasFile('stimulus_image') && blank($data['table_text'] ?? null)) {
+        $videoUrl = trim((string) ($data['stimulus_video_url'] ?? ''));
+        if ($videoUrl !== '' && $request->hasFile('stimulus_video')) {
             return back()->withErrors([
-                'stimulus' => 'Isi minimal salah satu: teks, gambar/grafik, atau tabel stimulus.',
+                'stimulus_video_url' => 'Pilih salah satu sumber video: URL atau unggah MP4.',
+            ])->withInput();
+        }
+
+        $videoType = null;
+        if ($videoUrl !== '') {
+            $videoType = VideoSource::youtubeId($videoUrl)
+                ? 'youtube'
+                : (VideoSource::isMp4Url($videoUrl) ? 'mp4_url' : null);
+
+            if ($videoType === null) {
+                return back()->withErrors([
+                    'stimulus_video_url' => 'Gunakan URL YouTube atau tautan langsung yang berakhiran .mp4.',
+                ])->withInput();
+            }
+        }
+
+        if (blank($data['stimulus'] ?? null)
+            && ! $request->hasFile('stimulus_image')
+            && blank($data['table_text'] ?? null)
+            && $videoUrl === ''
+            && ! $request->hasFile('stimulus_video')) {
+            return back()->withErrors([
+                'stimulus' => 'Isi minimal salah satu: teks, gambar/grafik, tabel, atau video stimulus.',
             ])->withInput();
         }
 
@@ -145,15 +174,34 @@ class QuestionController extends Controller
             'stimulus' => trim((string) ($data['stimulus'] ?? '')),
             'media_alt' => $data['media_alt'] ?? null,
             'table_data' => $tableData,
+            'video_type' => $videoType,
+            'video_url' => $videoUrl !== '' ? $videoUrl : null,
+            'video_caption' => $data['video_caption'] ?? null,
         ];
+
+        $storedPaths = [];
 
         if ($request->hasFile('stimulus_image')) {
             $file = $request->file('stimulus_image');
             $groupData['media_path'] = $file->store('quiz-stimuli', 'local');
             $groupData['media_name'] = $file->getClientOriginalName();
+            $storedPaths[] = $groupData['media_path'];
         }
 
-        $quiz->questionGroups()->create($groupData);
+        if ($request->hasFile('stimulus_video')) {
+            $file = $request->file('stimulus_video');
+            $groupData['video_type'] = 'upload';
+            $groupData['video_path'] = $file->store('quiz-stimulus-videos', 'local');
+            $groupData['video_name'] = $file->getClientOriginalName();
+            $storedPaths[] = $groupData['video_path'];
+        }
+
+        try {
+            $quiz->questionGroups()->create($groupData);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+            throw $exception;
+        }
 
         return back()->with('success', 'Stimulus TKA ditambahkan.');
     }
@@ -184,6 +232,9 @@ class QuestionController extends Controller
         if ($questionGroup->media_path) {
             Storage::disk('local')->delete($questionGroup->media_path);
         }
+        if ($questionGroup->video_path) {
+            Storage::disk('local')->delete($questionGroup->video_path);
+        }
         $questionGroup->delete();
 
         return back()->with('success', 'Stimulus dihapus. Soal terkait tetap tersimpan tanpa stimulus.');
@@ -203,6 +254,24 @@ class QuestionController extends Controller
             ['Cache-Control' => 'private, max-age=3600'],
             'inline'
         );
+    }
+
+    public function groupVideo(QuestionGroup $questionGroup): BinaryFileResponse
+    {
+        $this->authorizeAccess($questionGroup->quiz->classroom);
+        abort_unless(
+            $questionGroup->video_type === 'upload'
+                && $questionGroup->video_path
+                && Storage::disk('local')->exists($questionGroup->video_path),
+            404
+        );
+
+        return response()->file(Storage::disk('local')->path($questionGroup->video_path), [
+            'Content-Type' => 'video/mp4',
+            'Content-Disposition' => 'inline; filename="'.basename($questionGroup->video_name ?: 'stimulus.mp4').'"',
+            'Cache-Control' => 'private, max-age=3600',
+            'Accept-Ranges' => 'bytes',
+        ]);
     }
 
     /** @return array<int, array<int, string>>|null|RedirectResponse */

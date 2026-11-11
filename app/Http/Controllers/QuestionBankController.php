@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class QuestionBankController extends Controller
 {
@@ -63,6 +64,22 @@ class QuestionBankController extends Controller
             ['Cache-Control' => 'private, max-age=3600'],
             'inline'
         );
+    }
+
+    public function video(Request $request, QuestionBank $questionBank, string $groupKey): BinaryFileResponse
+    {
+        $this->authorizeBank($request, $questionBank);
+        $group = collect($questionBank->payload['groups'] ?? [])->firstWhere('key', $groupKey);
+        $path = $group['video_path'] ?? null;
+
+        abort_unless($group && $path && Storage::disk('local')->exists($path), 404);
+
+        return response()->file(Storage::disk('local')->path($path), [
+            'Content-Type' => 'video/mp4',
+            'Content-Disposition' => 'inline; filename="'.basename($group['video_name'] ?? 'stimulus.mp4').'"',
+            'Cache-Control' => 'private, max-age=3600',
+            'Accept-Ranges' => 'bytes',
+        ]);
     }
 
     public function store(Request $request, Quiz $quiz): RedirectResponse
