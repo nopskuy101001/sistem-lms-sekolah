@@ -94,12 +94,12 @@
                                     @if($transcriptScore['manual'] ?? false)
                                         <span class="block text-[10px] text-violet-600">koreksi guru</span>
                                     @elseif(!$transcriptScore['final'])
-                                        <span class="block text-xs text-amber-600">menunggu esai</span>
+                                        <span class="block text-xs text-amber-600">menunggu esai · nilai sementara dihitung</span>
                                     @endif
                                 @elseif(!$transcript['finalized'] && $att && $att->isFinished())
                                     {{ $fmt($att->score) }}
                                     @unless($att->is_graded)
-                                        <span class="block text-xs text-amber-600">menunggu esai</span>
+                                        <span class="block text-xs text-amber-600">menunggu esai · nilai sementara dihitung</span>
                                     @endunless
                                 @else
                                     <span class="text-slate-300">–</span>

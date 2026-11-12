@@ -120,7 +120,7 @@ class TranscriptXlsxExporter
         $options->SHOULD_USE_INLINE_STRINGS = false;
         $options->setProperties(new Properties(
             title: 'Transkrip Nilai Seluruh Kelas',
-            subject: 'Rekap nilai final seluruh kelas siswa',
+            subject: 'Rekap nilai terhitung seluruh kelas siswa',
             application: 'RuangKelas',
             creator: 'RuangKelas',
         ));
@@ -158,7 +158,7 @@ class TranscriptXlsxExporter
                 'Kelas tervalidasi', $overview['validatedCount'], 'Total kelas', $overview['classrooms']->count(),
             ], $metaStyle));
             $writer->addRow(Row::fromValuesWithStyles([
-                'Rata-rata nilai final (0-100)', $overview['average'] !== null ? (float) $overview['average'] : null,
+                'Rata-rata nilai terhitung (0-100)', $overview['average'] !== null ? (float) $overview['average'] : null,
             ], null, [1 => $averageStyle]));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues([

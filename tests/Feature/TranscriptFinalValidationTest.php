@@ -124,6 +124,49 @@ class TranscriptFinalValidationTest extends TestCase
         $this->assertSame('Sedang mengerjakan', $score['status']);
     }
 
+    public function test_provisional_essay_score_is_counted_and_remains_correctable_by_teacher(): void
+    {
+        Question::create([
+            'quiz_id' => $this->quiz->id,
+            'type' => Question::TYPE_ESAI,
+            'body' => 'Jelaskan proses perhitungan.',
+            'points' => 50,
+        ]);
+        QuizAttempt::create([
+            'quiz_id' => $this->quiz->id,
+            'user_id' => $this->student->id,
+            'started_at' => now()->subHours(2),
+            'finished_at' => now()->subHour(),
+            'score' => 20,
+            'is_graded' => false,
+        ]);
+
+        $report = app(TranscriptReportService::class)->build($this->classroom);
+        $score = $report['rows'][0]['scores']['quiz-'.$this->quiz->id];
+        $this->assertSame(20.0, $score['score']);
+        $this->assertSame(20.0, $score['percentage']);
+        $this->assertFalse($score['final']);
+        $this->assertTrue($score['counted']);
+        $this->assertSame('Menunggu penilaian esai · nilai sementara dihitung', $score['status']);
+        $this->assertSame(1, $report['rows'][0]['completed']);
+        $this->assertSame(20.0, $report['rows'][0]['average']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('transcripts.index', ['classroom' => $this->classroom->id]))
+            ->assertOk()
+            ->assertSee('20 / 100')
+            ->assertSee('sementara, sudah dihitung');
+
+        $this->put(route('transcripts.scores.update', $this->classroom), $this->scorePayload(75))
+            ->assertRedirect();
+        $corrected = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['quiz-'.$this->quiz->id];
+        $this->assertSame(75.0, $corrected['score']);
+        $this->assertTrue($corrected['final']);
+        $this->assertTrue($corrected['counted']);
+        $this->assertTrue($corrected['manual']);
+        $this->assertSame('Koreksi guru', $corrected['status']);
+    }
+
     public function test_overdue_unsubmitted_assignment_gets_an_explained_zero_and_can_be_corrected(): void
     {
         $assignment = Assignment::create([

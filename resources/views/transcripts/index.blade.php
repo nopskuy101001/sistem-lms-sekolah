@@ -118,7 +118,7 @@
                                     <td class="px-4 py-3 text-center">
                                         @if($score['score'] !== null)
                                             <span class="font-semibold text-slate-800">{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</span>
-                                            <span class="block text-[11px] {{ $score['final'] ? 'text-emerald-600' : 'text-amber-600' }}">{{ $fmt($score['percentage']) }}%{{ !$score['final'] ? ' · sementara' : '' }}</span>
+                                            <span class="block text-[11px] {{ $score['final'] ? 'text-emerald-600' : 'text-amber-600' }}">{{ $fmt($score['percentage']) }}%{{ !$score['final'] ? ' · sementara, sudah dihitung' : '' }}</span>
                                             @if($score['automatic_zero'] ?? false)
                                                 <span class="mt-1 block text-[10px] font-medium leading-4 text-rose-600">{{ $score['status'] }}</span>
                                             @elseif($score['late_label'] ?? false)
@@ -160,14 +160,14 @@
                                 <td class="score-average bg-indigo-50 px-4 py-3 text-center">
                                     <strong class="text-lg text-indigo-800">{{ $row['average'] !== null ? $fmt($row['average']) : '—' }}</strong>
                                     <span class="mt-1 block rounded-full px-2 py-0.5 text-[10px] {{ $badgeClass }}">{{ $label }}</span>
-                                    <span class="block text-[10px] text-slate-400 mt-1">{{ $row['completed'] }}/{{ $report['activity_count'] }} final</span>
+                                    <span class="block text-[10px] text-slate-400 mt-1">{{ $row['completed'] }}/{{ $report['activity_count'] }} nilai terhitung</span>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs leading-5 text-slate-500">Rata-rata dihitung dari nilai final dalam skala 0–100, termasuk nilai otomatis 0 setelah tenggat. Koreksi guru dianggap sebagai nilai final komponen. Kuis yang menunggu penilaian esai tidak masuk rata-rata kecuali diberi koreksi guru.</div>
+            <div class="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs leading-5 text-slate-500">Rata-rata dihitung dari seluruh nilai yang sudah tersedia dalam skala 0–100, termasuk nilai otomatis 0 dan nilai sementara kuis yang menunggu penilaian esai. Guru tetap dapat mengoreksi nilai sebelum Final Validation.</div>
         </section>
         @unless($report['finalized'])
             <form method="POST" action="{{ route('transcripts.finalize', $classroom) }}" class="mt-5 rounded-2xl border-2 border-amber-300 bg-white p-5">

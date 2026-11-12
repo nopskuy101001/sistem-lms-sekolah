@@ -64,7 +64,7 @@ class StudentTranscriptController extends Controller
             $write(['TRANSKRIP NILAI SELURUH KELAS']);
             $write(['Nama', $student->name, 'NIS', (string) ($student->nomor_induk ?? '')]);
             $write(['Kelas divalidasi', $overview['validatedCount'], 'Total kelas', $overview['classrooms']->count()]);
-            $write(['Rata-rata nilai final (0-100)', $overview['average']]);
+            $write(['Rata-rata nilai terhitung (0-100)', $overview['average']]);
             $write(['No.', 'Kelas', 'Nilai', 'Status', 'Aktivitas', 'Jenis', 'Guru', 'Maksimum', 'Persentase (%)']);
             foreach ($overview['entries'] as $index => $entry) {
                 $score = $entry['score'];
@@ -130,7 +130,7 @@ class StudentTranscriptController extends Controller
             foreach ($report['activities'] as $activity) {
                 $score = $row['scores'][$activity['key']];
                 $entries->push(['classroom' => $classroom, 'activity' => $activity, 'score' => $score, 'status' => $score['status']]);
-                if ($score['final'] && $score['percentage'] !== null) {
+                if (($score['counted'] ?? $score['final']) && $score['percentage'] !== null) {
                     $percentages->push($score['percentage']);
                 }
             }

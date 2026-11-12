@@ -120,6 +120,7 @@ class TranscriptReportService
                     'status' => $automaticZeroReason ?? (($score !== null ? 'Dinilai' : ($submission ? 'Belum dinilai' : 'Belum dikumpulkan'))
                         .($lateLabel ? ' · Terlambat '.$lateLabel : '')),
                     'final' => $score !== null || $hasAutomaticZero,
+                    'counted' => $score !== null || $hasAutomaticZero,
                     'automatic_zero' => $hasAutomaticZero,
                     'late_label' => $lateLabel,
                     'reason' => $automaticZeroReason,
@@ -145,8 +146,9 @@ class TranscriptReportService
                         ? 'Belum dikerjakan'
                         : (! $attempt->isFinished()
                             ? 'Sedang mengerjakan'
-                            : ($attempt->is_graded ? 'Dinilai' : 'Menunggu esai'))),
+                            : ($attempt->is_graded ? 'Dinilai' : 'Menunggu penilaian esai · nilai sementara dihitung'))),
                     'final' => $hasAutomaticZero || ($hasScore && (bool) $attempt->is_graded),
+                    'counted' => $hasAutomaticZero || (bool) $hasScore,
                     'automatic_zero' => $hasAutomaticZero,
                     'reason' => $automaticZeroReason,
                 ];
@@ -169,6 +171,7 @@ class TranscriptReportService
                     'status' => $automaticZeroReason ?? ((! $attempt ? 'Belum dikerjakan' : ($finished ? 'Dinilai' : 'Sedang mengerjakan'))
                         .($lateLabel ? ' · Terlambat '.$lateLabel : '')),
                     'final' => (bool) $finished || $hasAutomaticZero,
+                    'counted' => (bool) $finished || $hasAutomaticZero,
                     'automatic_zero' => $hasAutomaticZero,
                     'late_label' => $lateLabel,
                     'reason' => $automaticZeroReason,
@@ -184,6 +187,7 @@ class TranscriptReportService
                         : null;
                     $item['status'] = 'Koreksi guru';
                     $item['final'] = true;
+                    $item['counted'] = true;
                     $item['manual'] = true;
                     $item['automatic_zero'] = false;
                     $item['reason'] = $manual->reason;
@@ -194,15 +198,15 @@ class TranscriptReportService
             }
             unset($item);
 
-            $finalPercentages = collect($scores)
-                ->filter(fn ($item) => $item['final'] && $item['percentage'] !== null)
+            $countedPercentages = collect($scores)
+                ->filter(fn ($item) => ($item['counted'] ?? $item['final']) && $item['percentage'] !== null)
                 ->pluck('percentage');
 
             return [
                 'student' => $student,
                 'scores' => $scores,
-                'completed' => $finalPercentages->count(),
-                'average' => $finalPercentages->isNotEmpty() ? round($finalPercentages->average(), 2) : null,
+                'completed' => $countedPercentages->count(),
+                'average' => $countedPercentages->isNotEmpty() ? round($countedPercentages->average(), 2) : null,
             ];
         });
 
@@ -238,7 +242,9 @@ class TranscriptReportService
         $report['rows'] = $report['rows']->filter(fn ($row) => (int) $row['student']->id === $studentId)
             ->map(function ($row) use ($keys) {
                 $row['scores'] = array_intersect_key($row['scores'], $keys);
-                $percentages = collect($row['scores'])->filter(fn ($score) => $score['final'] && $score['percentage'] !== null)->pluck('percentage');
+                $percentages = collect($row['scores'])
+                    ->filter(fn ($score) => ($score['counted'] ?? $score['final']) && $score['percentage'] !== null)
+                    ->pluck('percentage');
                 $row['completed'] = $percentages->count();
                 $row['average'] = $percentages->isEmpty() ? null : round($percentages->avg(), 2);
                 return $row;

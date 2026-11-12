@@ -29,14 +29,14 @@
                     <td class="number">{{ $fmt($score['score'] ?? null) }}</td>
                     <td class="number">{{ $fmt($score['maximum'] ?? null) }}</td>
                     <td class="number">{{ ($score['percentage'] ?? null) !== null ? $fmt($score['percentage']).'%' : '—' }}</td>
-                    <td>{{ $entry['status'] }}@if($score && !$score['final'] && $score['score'] !== null)<small>Nilai sementara</small>@endif</td>
+                    <td>{{ $entry['status'] }}@if($score && !$score['final'] && $score['score'] !== null)<small>Nilai sementara · sudah dihitung</small>@endif</td>
                 </tr>
             @empty
                 <tr><td colspan="8">Belum ada kelas yang diikuti.</td></tr>
             @endforelse
         </tbody>
     </table>
-    <p class="summary"><strong>Rata-rata final: {{ $fmt($average) }} (0–100)</strong> · {{ $completed }} nilai final dari kelas tervalidasi.</p>
-    <p class="document-note">Nilai muncul setelah validasi guru. Kelas yang belum divalidasi tetap tercantum tanpa nilai. Nilai sementara tidak masuk rata-rata. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
+    <p class="summary"><strong>Rata-rata terhitung: {{ $fmt($average) }} (0–100)</strong> · {{ $completed }} nilai terhitung dari kelas tervalidasi.</p>
+    <p class="document-note">Nilai muncul setelah validasi guru. Nilai sementara kuis yang menunggu penilaian esai sudah masuk rata-rata dan tetap ditandai sebagai sementara. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
 </section>
 @endsection

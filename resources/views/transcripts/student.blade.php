@@ -31,12 +31,12 @@
     <div class="mb-5 grid gap-3 sm:grid-cols-3">
         <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs text-slate-500">Kelas diikuti</p><strong class="mt-2 block text-2xl text-slate-900">{{ $classrooms->count() }}</strong></div>
         <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs text-slate-500">Sudah divalidasi</p><strong class="mt-2 block text-2xl text-slate-900">{{ $validatedCount }}</strong></div>
-        <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><p class="text-xs text-indigo-700">Rata-rata nilai final</p><strong class="mt-2 block text-2xl text-indigo-950">{{ $average !== null ? $fmt($average) : '—' }}</strong><span class="text-xs text-indigo-700"> / 100</span></div>
+        <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><p class="text-xs text-indigo-700">Rata-rata nilai terhitung</p><strong class="mt-2 block text-2xl text-indigo-950">{{ $average !== null ? $fmt($average) : '—' }}</strong><span class="text-xs text-indigo-700"> / 100</span></div>
     </div>
 
     <section aria-labelledby="student-transcript-details" class="min-w-0">
         <h2 id="student-transcript-details" class="text-lg font-bold text-slate-900">Rekap nilai seluruh kelas</h2>
-        <p class="mt-1 text-xs text-slate-500">Kelas yang belum divalidasi tetap tercantum dengan kolom nilai kosong. Rata-rata dihitung dari {{ $completed }} nilai final pada kelas tervalidasi.</p>
+        <p class="mt-1 text-xs text-slate-500">Kelas yang belum divalidasi tetap tercantum dengan kolom nilai kosong. Rata-rata dihitung dari {{ $completed }} nilai yang tersedia pada kelas tervalidasi.</p>
         <p id="student-transcript-scroll-help" class="mb-2 mt-3 text-xs text-slate-500">Pada layar kecil, geser tabel ke samping untuk melihat semua kolom.</p>
         <div class="mobile-data-table overflow-x-auto rounded-2xl border border-slate-200 bg-white" role="region" aria-label="Rekap nilai seluruh kelas" aria-describedby="student-transcript-scroll-help" tabindex="0">
             <table class="min-w-[980px] w-full text-sm">
@@ -60,7 +60,7 @@
                             <td class="px-3 py-3 text-center text-slate-500">{{ $loop->iteration }}</td>
                             <td class="px-3 py-3 font-medium text-slate-900"><span class="quiz-readable-text block">{{ $entry['classroom']->name }}</span></td>
                             <td class="px-3 py-3 text-center font-semibold text-slate-900">{{ ($score['score'] ?? null) !== null ? $fmt($score['score']) : '—' }}</td>
-                            <td class="px-3 py-3 {{ $entry['status'] === 'Belum divalidasi' ? 'font-semibold text-amber-700' : 'text-slate-600' }}">{{ $entry['status'] }}@if($score && !$score['final'] && $score['score'] !== null)<span class="block text-xs text-amber-700">Nilai sementara</span>@endif</td>
+                            <td class="px-3 py-3 {{ $entry['status'] === 'Belum divalidasi' ? 'font-semibold text-amber-700' : 'text-slate-600' }}">{{ $entry['status'] }}@if($score && !$score['final'] && $score['score'] !== null)<span class="block text-xs text-amber-700">Nilai sementara · sudah dihitung</span>@endif</td>
                             <td class="px-3 py-3 text-slate-800"><span class="quiz-readable-text block">{{ $entry['activity']['title'] ?? '—' }}</span></td>
                             <td class="px-3 py-3 text-slate-600">{{ $entry['activity']['type'] ?? '—' }}</td>
                             <td class="px-3 py-3 text-slate-600"><span class="quiz-readable-text block">{{ $entry['classroom']->teacher->name }}</span></td>
@@ -71,14 +71,14 @@
                 </tbody>
                 <tfoot>
                     <tr class="border-t border-indigo-200 bg-indigo-50 font-semibold text-indigo-950">
-                        <th colspan="2" scope="row" class="px-3 py-4 text-right">Rata-rata final</th>
+                        <th colspan="2" scope="row" class="px-3 py-4 text-right">Rata-rata terhitung</th>
                         <td class="px-3 py-4 text-center">{{ $average !== null ? $fmt($average).'%' : '—' }}</td>
-                        <td colspan="6" class="px-3 py-4 text-left">{{ $completed }} nilai final dari kelas tervalidasi</td>
+                        <td colspan="6" class="px-3 py-4 text-left">{{ $completed }} nilai terhitung dari kelas tervalidasi</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-        <p class="mt-3 text-xs leading-5 text-slate-500">Nilai kosong berbeda dari 0. Kuis yang menunggu penilaian esai belum masuk rata-rata; nilai kuis mengikuti penalti jika berlaku.</p>
+        <p class="mt-3 text-xs leading-5 text-slate-500">Nilai kosong berbeda dari 0. Nilai sementara kuis yang menunggu penilaian esai sudah masuk rata-rata dan masih dapat dikoreksi guru; nilai kuis mengikuti penalti jika berlaku.</p>
     </section>
 @endif
 @endsection

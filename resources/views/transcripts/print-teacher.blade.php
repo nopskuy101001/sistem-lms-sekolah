@@ -23,7 +23,7 @@
         <table class="teacher-table">
             <caption>{{ $classroom->name }} — Rekap nilai @if($parts->count() > 1) · Bagian {{ $loop->iteration }} dari {{ $parts->count() }}@endif</caption>
             <colgroup><col style="width:4%"><col style="width:12%"><col style="width:21%">@foreach($part as $activity)<col>@endforeach<col style="width:10%"></colgroup>
-            <thead><tr><th scope="col">No.</th><th scope="col">NIS</th><th scope="col">Nama siswa</th>@foreach($part as $activityIndex => $activity)<th scope="col">K{{ $activityIndex + 1 }}<small>Maks. {{ $fmt($activity['maximum']) }}</small></th>@endforeach<th scope="col">Rata-rata final<small>0–100</small></th></tr></thead>
+            <thead><tr><th scope="col">No.</th><th scope="col">NIS</th><th scope="col">Nama siswa</th>@foreach($part as $activityIndex => $activity)<th scope="col">K{{ $activityIndex + 1 }}<small>Maks. {{ $fmt($activity['maximum']) }}</small></th>@endforeach<th scope="col">Rata-rata terhitung<small>0–100</small></th></tr></thead>
             <tbody>
                 @forelse($report['rows'] as $row)
                     <tr>
@@ -35,7 +35,7 @@
                             <td class="number">
                                 @if($score['score'] !== null)
                                     <strong>{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</strong>
-                                    <small>{{ $score['percentage'] !== null ? $fmt($score['percentage']).'%' : '—' }}{{ !$score['final'] ? ' · sementara' : '' }}</small>
+                                    <small>{{ $score['percentage'] !== null ? $fmt($score['percentage']).'%' : '—' }}{{ !$score['final'] ? ' · sementara, dihitung' : '' }}</small>
                                     @if($score['automatic_zero'] ?? false)<small>{{ $score['status'] }}</small>@endif
                                     @if(($score['late_label'] ?? false) && !($score['automatic_zero'] ?? false))<small>Terlambat {{ $score['late_label'] }}</small>@endif
                                 @else
@@ -43,7 +43,7 @@
                                 @endif
                             </td>
                         @endforeach
-                        <td class="number"><strong>{{ $fmt($row['average']) }}</strong><small>{{ $row['completed'] }}/{{ $report['activity_count'] }} final</small></td>
+                        <td class="number"><strong>{{ $fmt($row['average']) }}</strong><small>{{ $row['completed'] }}/{{ $report['activity_count'] }} terhitung</small></td>
                     </tr>
                 @empty
                     <tr><td colspan="{{ $part->count() + 4 }}">Belum ada siswa di kelas ini.</td></tr>
@@ -58,7 +58,7 @@
         @else
             <p>Belum ada komponen nilai.</p>
         @endif
-        <p class="document-note">Rata-rata dihitung dari seluruh nilai final dalam skala 0–100, termasuk nilai otomatis 0 setelah tenggat. Nilai sementara tidak masuk rata-rata. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
+        <p class="document-note">Rata-rata menghitung seluruh nilai yang tersedia, termasuk nilai otomatis 0 dan nilai sementara kuis yang menunggu penilaian esai. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
     </section>
 @endforeach
 @endsection
