@@ -151,7 +151,11 @@ class ClassroomController extends Controller
         $this->authorizeAccess($classroom);
 
         $classroom->load('teacher');
-        $announcements = $classroom->announcements()->with('user')->latest()->get();
+        $announcements = $classroom->announcements()
+            ->with(['user', 'comments.user'])
+            ->withCount('comments')
+            ->latest()
+            ->get();
 
         $upcoming = collect();
         if (auth()->user()->isSiswa()) {

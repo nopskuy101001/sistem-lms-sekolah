@@ -77,7 +77,7 @@
         @endif
 
         @forelse($announcements as $announcement)
-            <article class="lms-feed-card">
+            <article id="announcement-{{ $announcement->id }}" class="lms-feed-card scroll-mt-24">
                 <div class="lms-feed-head">
                     <div class="lms-feed-user">
                         <x-user-avatar :user="$announcement->user" class="lms-mini-avatar" />
@@ -91,6 +91,55 @@
                     @endif
                 </div>
                 <p class="lms-feed-body whitespace-pre-line">{{ $announcement->body }}</p>
+                <section class="mt-5 border-t border-slate-200 pt-4" aria-label="Diskusi pengumuman">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-slate-800">Diskusi kelas</h3>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{{ $announcement->comments_count }} pesan</span>
+                    </div>
+
+                    @if($announcement->comments->isNotEmpty())
+                        <div class="space-y-3">
+                            @foreach($announcement->comments as $comment)
+                                <div id="announcement-comment-{{ $comment->id }}" class="flex min-w-0 items-start gap-3 rounded-xl bg-slate-50 p-3">
+                                    <x-user-avatar :user="$comment->user" class="lms-mini-avatar shrink-0" />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-start justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <strong class="text-xs text-slate-900">{{ $comment->user->name }}</strong>
+                                                    <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500">{{ $comment->user_id === $classroom->teacher_id ? 'Guru' : $comment->user->roleLabel() }}</span>
+                                                </div>
+                                                <time class="mt-0.5 block text-[10px] text-slate-400" datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->diffForHumans() }}</time>
+                                            </div>
+                                            @if($classroom->canManage(auth()->user()) || $comment->user_id === auth()->id())
+                                                <form method="POST" action="{{ route('announcement-comments.destroy', $comment) }}" onsubmit="return confirm('Hapus pesan ini?')">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="text-[11px] font-semibold text-slate-400 hover:text-red-600">Hapus</button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                        <p class="mt-2 whitespace-pre-line break-words text-sm leading-6 text-slate-700">{{ $comment->body }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="rounded-xl border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400">Belum ada balasan. Mulai diskusi tentang pengumuman ini.</p>
+                    @endif
+
+                    <form method="POST" action="{{ route('announcement-comments.store', $announcement) }}" class="mt-4 flex min-w-0 items-start gap-3">
+                        @csrf
+                        <x-user-avatar :user="auth()->user()" class="lms-mini-avatar shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <label for="announcement-comment-body-{{ $announcement->id }}" class="sr-only">Tulis pesan pada diskusi pengumuman</label>
+                            <textarea id="announcement-comment-body-{{ $announcement->id }}" name="body" rows="2" maxlength="2000" required placeholder="Tulis tanggapan atau pertanyaan..." class="w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"></textarea>
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                <span class="text-[10px] text-slate-400">Pesan dapat dibaca oleh seluruh anggota kelas.</span>
+                                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Kirim pesan</button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
             </article>
         @empty
             <div class="lms-empty-state">

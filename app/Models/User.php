@@ -107,4 +107,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(DiscussionMessage::class);
     }
+
+    public function announcementComments(): HasMany
+    {
+        return $this->hasMany(AnnouncementComment::class);
+    }
 }

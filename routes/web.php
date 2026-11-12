@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AnnouncementCommentController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
@@ -131,6 +132,11 @@ Route::middleware('auth')->group(function () {
     // Pengumuman
     Route::post('/classrooms/{classroom}/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    Route::post('/announcements/{announcement}/comments', [AnnouncementCommentController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('announcement-comments.store');
+    Route::delete('/announcement-comments/{announcementComment}', [AnnouncementCommentController::class, 'destroy'])
+        ->name('announcement-comments.destroy');
 
     // Materi
     Route::post('/classrooms/{classroom}/materials', [MaterialController::class, 'store'])->name('materials.store');
