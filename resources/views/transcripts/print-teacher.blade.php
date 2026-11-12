@@ -2,8 +2,8 @@
 @section('title', 'Transkrip Nilai - '.$classroom->name)
 @php
     $fmt = fn ($value) => $value === null ? '—' : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
-    $columnsPerPage = 10;
-    $parts = $report['activities']->isEmpty() ? collect([collect()]) : $report['activities']->chunk($columnsPerPage);
+    // Seluruh komponen nilai dipertahankan dalam satu tabel tanpa pemisahan horizontal.
+    $parts = collect([$report['activities']]);
 @endphp
 @section('content')
 @foreach($parts as $part)
