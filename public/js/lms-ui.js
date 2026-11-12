@@ -144,6 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('[data-question-bank-excel-download]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            const warning = link.dataset.warning || 'Periksa isi soal sebelum mengunduh Excel.';
+            if (!window.confirm(warning)) event.preventDefault();
+        });
+    });
+
     const discussionBadge = document.querySelector('[data-discussion-unread-badge]');
     if (discussionBadge) {
         const renderDiscussionUnread = (data) => {

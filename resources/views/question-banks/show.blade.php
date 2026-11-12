@@ -28,7 +28,7 @@
     <div class="flex flex-wrap items-center gap-3">
         <span class="rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700">{{ $questionBank->question_count }} soal · {{ $questionBank->total_points }} poin</span>
         <a href="{{ route('question-banks.package', $questionBank) }}" class="lms-button border border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"><span aria-hidden="true">&#128230;</span> Unduh Paket ZIP</a>
-        <a href="{{ route('question-banks.excel', $questionBank) }}" class="text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja</a>
+        <x-question-bank-excel-link :question-bank="$questionBank" class="text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja</x-question-bank-excel-link>
         <a href="#bank-use-package" class="lms-button lms-button-primary">Gunakan paket ini</a>
     </div>
 </div>

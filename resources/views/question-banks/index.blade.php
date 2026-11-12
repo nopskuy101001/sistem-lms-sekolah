@@ -54,7 +54,7 @@
                     <a href="{{ route('question-banks.package', $bank) }}" class="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">
                         <span aria-hidden="true">&#128230;</span> Unduh Paket ZIP
                     </a>
-                    <a href="{{ route('question-banks.excel', $bank) }}" class="mt-2 block text-center text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja (tanpa file media)</a>
+                    <x-question-bank-excel-link :question-bank="$bank" class="mt-2 block text-center text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja (tanpa file media)</x-question-bank-excel-link>
                     <p class="mt-2 text-xs text-slate-500">Paket ZIP berisi Excel, gambar, dan MP4. URL YouTube/MP4 dicatat di Excel.</p>
                 </div>
                 <form method="POST" action="{{ route('question-banks.quizzes.store', $bank) }}" class="space-y-3 bg-slate-50/70 p-5">
