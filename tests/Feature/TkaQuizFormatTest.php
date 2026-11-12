@@ -92,6 +92,44 @@ class TkaQuizFormatTest extends TestCase
             ->assertSee('Data Penjualan');
     }
 
+    public function test_student_sees_quiz_opening_and_closing_timeline_separately_from_duration(): void
+    {
+        $start = now()->addDay()->startOfHour();
+        $end = $start->copy()->addHours(3);
+        $this->quiz->update([
+            'duration_minutes' => 45,
+            'start_at' => $start,
+            'end_at' => $end,
+        ]);
+
+        $classwork = $this->actingAs($this->student)
+            ->get(route('classrooms.classwork', $this->classroom))
+            ->assertOk()
+            ->assertSee('Mulai:')
+            ->assertSee('Tutup:')
+            ->assertSee($start->translatedFormat('d M Y, H:i'))
+            ->assertSee($end->translatedFormat('d M Y, H:i'));
+        $this->assertStringContainsString($start->toIso8601String(), $classwork->getContent());
+
+        $detail = $this->get(route('quizzes.show', $this->quiz))
+            ->assertOk()
+            ->assertSee('Timeline pelaksanaan kuis')
+            ->assertSee('Durasi pengerjaan')
+            ->assertSee('45 menit')
+            ->assertSee('Mulai kuis')
+            ->assertSee('Kuis ditutup')
+            ->assertSee($start->translatedFormat('d F Y, H:i'))
+            ->assertSee($end->translatedFormat('d F Y, H:i'))
+            ->assertSee('Status: Belum dibuka');
+        $this->assertStringContainsString($end->toIso8601String(), $detail->getContent());
+
+        $this->quiz->update(['start_at' => null, 'end_at' => null]);
+        $this->get(route('quizzes.show', $this->quiz))
+            ->assertOk()
+            ->assertSee('Sejak dipublikasikan')
+            ->assertSee('Tanpa tanggal penutupan');
+    }
+
     public function test_tka_answers_are_autoscored_by_their_question_format(): void
     {
         $multi = Question::create([

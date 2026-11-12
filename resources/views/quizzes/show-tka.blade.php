@@ -14,6 +14,7 @@
                 <h1 class="text-2xl font-bold">{{ $quiz->title }}</h1>
                 @if($quiz->description)<p class="text-sm text-indigo-100 mt-2 whitespace-pre-line">{{ $quiz->description }}</p>@endif
                 <p class="text-sm text-indigo-100 mt-3">{{ $quiz->questions->count() }} soal · {{ $quiz->totalPoints() }} poin · {{ $quiz->duration_minutes ? $quiz->duration_minutes.' menit' : 'tanpa batas waktu' }}</p>
+                <p class="mt-2 text-xs text-indigo-100">Mulai: {{ $quiz->start_at?->translatedFormat('d M Y, H:i') ?? 'sejak dipublikasikan' }} · Tutup: {{ $quiz->end_at?->translatedFormat('d M Y, H:i') ?? 'tanpa tanggal penutupan' }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-full bg-white/15 px-3 py-1.5 text-xs">{{ $quiz->statusLabel() }}</span>
@@ -242,7 +243,46 @@
 @else
     <div class="max-w-2xl bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div class="bg-gradient-to-br from-indigo-700 to-violet-600 p-6 text-white"><div class="text-xs uppercase tracking-widest text-indigo-100 mb-2">Asesmen format TKA</div><h1 class="text-2xl font-bold">{{ $quiz->title }}</h1>@if($quiz->description)<p class="text-indigo-100 mt-2 text-sm">{{ $quiz->description }}</p>@endif</div>
-        <div class="p-6"><div class="grid grid-cols-2 gap-3 text-sm mb-5"><div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Jumlah soal</span><b class="block text-lg">{{ $questionCount }}</b></div><div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Waktu</span><b class="block text-lg">{{ $quiz->duration_minutes ? $quiz->duration_minutes.' menit' : 'Tanpa batas' }}</b></div></div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 gap-3 text-sm mb-5">
+                <div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Jumlah soal</span><b class="block text-lg">{{ $questionCount }}</b></div>
+                <div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Durasi pengerjaan</span><b class="block text-lg">{{ $quiz->duration_minutes ? $quiz->duration_minutes.' menit' : 'Tanpa batas' }}</b></div>
+            </div>
+            <section aria-labelledby="quiz-schedule-title" class="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 id="quiz-schedule-title" class="text-sm font-bold text-indigo-950">Timeline pelaksanaan kuis</h2>
+                    <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">Status: {{ $quiz->statusLabel() }}</span>
+                </div>
+                <div class="relative mt-4 grid gap-4 sm:grid-cols-2 sm:gap-6">
+                    <div class="relative flex gap-3">
+                        <span aria-hidden="true" class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7Z"/></svg>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Mulai kuis</p>
+                            @if($quiz->start_at)
+                                <time datetime="{{ $quiz->start_at->toIso8601String() }}" class="mt-1 block text-sm font-bold text-slate-900">{{ $quiz->start_at->translatedFormat('d F Y, H:i') }}</time>
+                            @else
+                                <p class="mt-1 text-sm font-bold text-slate-900">Sejak dipublikasikan</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="relative flex gap-3">
+                        <span aria-hidden="true" class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-rose-700">Kuis ditutup</p>
+                            @if($quiz->end_at)
+                                <time datetime="{{ $quiz->end_at->toIso8601String() }}" class="mt-1 block text-sm font-bold text-slate-900">{{ $quiz->end_at->translatedFormat('d F Y, H:i') }}</time>
+                            @else
+                                <p class="mt-1 text-sm font-bold text-slate-900">Tanpa tanggal penutupan</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-4 border-t border-indigo-100 pt-3 text-xs leading-5 text-indigo-800">Durasi pengerjaan mulai berjalan setelah kamu menekan tombol mulai. Kuis tetap tidak dapat dimulai sebelum jadwal buka atau setelah jadwal tutup.</p>
+            </section>
             <div class="space-y-2 text-sm text-slate-600 mb-6">@if($quiz->shuffle_questions)<p>• Urutan soal diacak; blok stimulus tetap utuh.</p>@endif @if($quiz->monitoring_enabled)<p>• Perpindahan tab dan fokus dicatat untuk ditinjau guru.</p>@endif @if($quiz->require_fullscreen)<p>• Kuis wajib dikerjakan dalam mode layar penuh; keluar dari layar penuh menambah peringatan.</p>@endif<p>• Kesempatan mengerjakan satu kali.</p></div>
             @if($quiz->penalty_enabled)<div class="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><b>Penalti nilai aktif.</b> Setiap peringatan mengurangi {{ $quiz->penalty_percent_per_violation }}% dari total poin, maksimal {{ \App\Models\Quiz::MAX_VIOLATION_PENALTY_PERCENT }}%.</div>@endif
             @if($attempt && $attempt->isFinished())<a href="{{ route('attempts.show',$attempt) }}" class="lms-button lms-button-primary">Lihat hasil</a>@elseif($attempt)<a href="{{ route('attempts.take',$attempt) }}" class="lms-button lms-button-primary">Lanjutkan mengerjakan</a>@elseif($quiz->isOpen())<form method="POST" action="{{ route('attempts.start',$quiz) }}" onsubmit="return confirm('Mulai kuis sekarang? Waktu langsung berjalan.')">@csrf<button class="lms-button lms-button-primary">Mulai asesmen</button></form>@else<p class="text-amber-700 text-sm">Kuis saat ini: {{ $quiz->statusLabel() }}.</p>@endif

@@ -177,6 +177,28 @@
                     {{ $quiz->questions_count }} soal
                     · {{ $quiz->duration_minutes ? $quiz->duration_minutes.' menit' : 'tanpa batas waktu' }}
                 </div>
+                <div class="mt-2 grid gap-1 text-[11px] leading-4 text-slate-500 sm:grid-cols-2 sm:gap-x-4">
+                    <span class="flex items-start gap-1.5">
+                        <span aria-hidden="true" class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                        <span><strong class="text-slate-700">Mulai:</strong>
+                            @if($quiz->start_at)
+                                <time datetime="{{ $quiz->start_at->toIso8601String() }}">{{ $quiz->start_at->translatedFormat('d M Y, H:i') }}</time>
+                            @else
+                                Sejak dipublikasikan
+                            @endif
+                        </span>
+                    </span>
+                    <span class="flex items-start gap-1.5">
+                        <span aria-hidden="true" class="mt-1 h-2 w-2 shrink-0 rounded-full bg-rose-500"></span>
+                        <span><strong class="text-slate-700">Tutup:</strong>
+                            @if($quiz->end_at)
+                                <time datetime="{{ $quiz->end_at->toIso8601String() }}">{{ $quiz->end_at->translatedFormat('d M Y, H:i') }}</time>
+                            @else
+                                Tanpa tanggal penutupan
+                            @endif
+                        </span>
+                    </span>
+                </div>
             </div>
             @if($isManager)
                 <span class="text-xs px-2 py-1 rounded-full {{ $quiz->is_published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">

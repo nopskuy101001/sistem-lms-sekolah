@@ -140,10 +140,12 @@ class QuizController extends Controller
         $quiz->update(['is_published' => ! $quiz->is_published]);
 
         if ($quiz->is_published) {
+            $schedule = ' Mulai: '.($quiz->start_at?->translatedFormat('d M Y, H:i') ?? 'sejak dipublikasikan')
+                .'. Tutup: '.($quiz->end_at?->translatedFormat('d M Y, H:i') ?? 'tanpa tanggal penutupan').'.';
             AcademicNotifier::students(
                 $quiz->classroom,
                 'Kuis dipublikasikan',
-                $quiz->title.' sudah tersedia di kelas '.$quiz->classroom->name.'.',
+                $quiz->title.' sudah tersedia di kelas '.$quiz->classroom->name.'.'.$schedule,
                 route('quizzes.show', $quiz, false),
                 'quiz',
             );
