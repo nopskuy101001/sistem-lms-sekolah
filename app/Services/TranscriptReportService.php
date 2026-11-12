@@ -106,12 +106,20 @@ class TranscriptReportService
                 $submission = $submissions->get($student->id)?->get($assignment->id);
                 $score = $submission?->score;
                 $maximum = (float) $assignment->points;
+                $hasAutomaticZero = ! $submission && $assignment->isOverdue() && $maximum > 0;
+                $automaticZeroReason = $hasAutomaticZero
+                    ? 'Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu.'
+                    : null;
                 $scores['assignment-'.$assignment->id] = [
-                    'score' => $score !== null ? (float) $score : null,
+                    'score' => $score !== null ? (float) $score : ($hasAutomaticZero ? 0.0 : null),
                     'maximum' => $maximum,
-                    'percentage' => $score !== null && $maximum > 0 ? round(((float) $score / $maximum) * 100, 2) : null,
-                    'status' => $score !== null ? 'Dinilai' : ($submission ? 'Belum dinilai' : 'Belum dikumpulkan'),
-                    'final' => $score !== null,
+                    'percentage' => $score !== null && $maximum > 0
+                        ? round(((float) $score / $maximum) * 100, 2)
+                        : ($hasAutomaticZero ? 0.0 : null),
+                    'status' => $automaticZeroReason ?? ($score !== null ? 'Dinilai' : ($submission ? 'Belum dinilai' : 'Belum dikumpulkan')),
+                    'final' => $score !== null || $hasAutomaticZero,
+                    'automatic_zero' => $hasAutomaticZero,
+                    'reason' => $automaticZeroReason,
                 ];
             }
 

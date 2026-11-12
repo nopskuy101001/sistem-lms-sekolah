@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
 use App\Models\Classroom;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\Submission;
 use App\Models\TranscriptScoreOverride;
 use App\Models\User;
 use App\Services\TranscriptReportService;
@@ -120,6 +122,82 @@ class TranscriptFinalValidationTest extends TestCase
         $this->assertFalse($score['final']);
         $this->assertFalse($score['automatic_zero']);
         $this->assertSame('Sedang mengerjakan', $score['status']);
+    }
+
+    public function test_overdue_unsubmitted_assignment_gets_an_explained_zero_and_can_be_corrected(): void
+    {
+        $assignment = Assignment::create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Tugas terlambat',
+            'due_at' => now()->subHour(),
+            'points' => 100,
+        ]);
+
+        $report = app(TranscriptReportService::class)->build($this->classroom);
+        $score = $report['rows'][0]['scores']['assignment-'.$assignment->id];
+        $this->assertSame(0.0, $score['score']);
+        $this->assertSame(0.0, $score['percentage']);
+        $this->assertTrue($score['final']);
+        $this->assertTrue($score['automatic_zero']);
+        $this->assertSame('Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu.', $score['status']);
+        $this->assertSame($score['status'], $score['reason']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('transcripts.index', ['classroom' => $this->classroom->id]))
+            ->assertOk()
+            ->assertSee('0 / 100')
+            ->assertSee($score['status']);
+
+        $this->put(route('transcripts.scores.update', $this->classroom), [
+            'student_id' => $this->student->id,
+            'activity_type' => 'assignment',
+            'activity_id' => $assignment->id,
+            'score' => 75,
+            'reason' => 'Guru menerima tugas susulan',
+        ])->assertRedirect();
+
+        $corrected = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['assignment-'.$assignment->id];
+        $this->assertSame(75.0, $corrected['score']);
+        $this->assertTrue($corrected['manual']);
+        $this->assertFalse($corrected['automatic_zero']);
+        $this->assertSame('Koreksi guru', $corrected['status']);
+        $this->assertSame('Guru menerima tugas susulan', $corrected['reason']);
+    }
+
+    public function test_assignment_before_deadline_or_waiting_for_grading_does_not_get_automatic_zero(): void
+    {
+        $openAssignment = Assignment::create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Tugas masih terbuka',
+            'due_at' => now()->addHour(),
+            'points' => 100,
+        ]);
+        $submittedAssignment = Assignment::create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Tugas menunggu penilaian',
+            'due_at' => now()->subHour(),
+            'points' => 100,
+        ]);
+        Submission::create([
+            'assignment_id' => $submittedAssignment->id,
+            'user_id' => $this->student->id,
+            'content' => 'Sudah dikumpulkan',
+            'submitted_at' => now()->subHours(2),
+            'score' => null,
+        ]);
+
+        $scores = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores'];
+        $openScore = $scores['assignment-'.$openAssignment->id];
+        $this->assertNull($openScore['score']);
+        $this->assertFalse($openScore['final']);
+        $this->assertFalse($openScore['automatic_zero']);
+        $this->assertSame('Belum dikumpulkan', $openScore['status']);
+
+        $submittedScore = $scores['assignment-'.$submittedAssignment->id];
+        $this->assertNull($submittedScore['score']);
+        $this->assertFalse($submittedScore['final']);
+        $this->assertFalse($submittedScore['automatic_zero']);
+        $this->assertSame('Belum dinilai', $submittedScore['status']);
     }
 
     public function test_teacher_can_edit_then_clear_override_without_touching_original_attempt(): void

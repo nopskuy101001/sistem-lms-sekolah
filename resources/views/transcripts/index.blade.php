@@ -77,7 +77,7 @@
         </div>
     @else
         <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            <strong>Draft transkrip (dapat diedit).</strong> Kuis yang melewati tenggat otomatis bernilai 0 jika tidak dikerjakan atau belum diselesaikan. Klik "Koreksi nilai" pada sel siswa untuk meninjau atau mengubahnya. Koreksi tidak menimpa jawaban, tugas, atau rekaman video asli.
+            <strong>Draft transkrip (dapat diedit).</strong> Tugas atau kuis yang melewati tenggat otomatis bernilai 0 jika belum dikumpulkan atau belum diselesaikan. Pekerjaan yang sudah dikumpulkan dan menunggu penilaian tetap kosong. Klik "Koreksi nilai" pada sel siswa untuk meninjau atau mengubahnya. Koreksi tidak menimpa jawaban, tugas, atau rekaman video asli.
         </div>
     @endif
 
