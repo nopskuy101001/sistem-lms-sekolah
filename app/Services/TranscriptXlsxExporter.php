@@ -124,10 +124,10 @@ class TranscriptXlsxExporter
             application: 'RuangKelas',
             creator: 'RuangKelas',
         ));
-        foreach ([7, 25, 13, 30, 38, 19, 25, 13, 18] as $index => $width) {
+        foreach ([7, 28, 25, 28, 23, 22] as $index => $width) {
             $options->setColumnWidth($width, $index + 1);
         }
-        $options->mergeCells(0, 1, 8, 1);
+        $options->mergeCells(0, 1, 5, 1);
 
         $writer = new Writer($options);
         $writer->openToFile($path);
@@ -158,28 +158,24 @@ class TranscriptXlsxExporter
                 'Kelas tervalidasi', $overview['validatedCount'], 'Total kelas', $overview['classrooms']->count(),
             ], $metaStyle));
             $writer->addRow(Row::fromValuesWithStyles([
-                'Rata-rata nilai terhitung (0-100)', $overview['average'] !== null ? (float) $overview['average'] : null,
+                'Rata-rata seluruh kelas tervalidasi (0-100)', $overview['average'] !== null ? (float) $overview['average'] : null,
             ], null, [1 => $averageStyle]));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues([
-                'No.', 'Kelas', 'Nilai', 'Status', 'Aktivitas', 'Jenis', 'Guru', 'Maksimum', 'Persentase (%)',
+                'No.', 'Kelas', 'Guru', 'Status', 'Rata-rata akhir (0-100)', 'Tanggal validasi',
             ], $headerStyle)->setHeight(30));
 
             foreach ($overview['entries'] as $index => $entry) {
-                $score = $entry['score'];
                 $writer->addRow(Row::fromValuesWithStyles([
                     $index + 1,
                     $entry['classroom']->name,
-                    ($score['score'] ?? null) !== null ? (float) $score['score'] : null,
-                    $entry['status'],
-                    $entry['activity']['title'] ?? '',
-                    $entry['activity']['type'] ?? '',
                     $entry['classroom']->teacher->name,
-                    ($score['maximum'] ?? null) !== null ? (float) $score['maximum'] : null,
-                    ($score['percentage'] ?? null) !== null ? (float) $score['percentage'] : null,
-                ], null, [0 => $integerStyle, 2 => $numberStyle, 7 => $numberStyle, 8 => $numberStyle])->setHeight(36));
+                    $entry['status'],
+                    $entry['average'] !== null ? (float) $entry['average'] : null,
+                    $entry['finalized_at']?->format('d-m-Y H:i'),
+                ], null, [0 => $integerStyle, 4 => $numberStyle])->setHeight(28));
             }
-            $sheet->setAutoFilter(new AutoFilter(0, 6, 8, max(6, 6 + $overview['entries']->count())));
+            $sheet->setAutoFilter(new AutoFilter(0, 6, 5, max(6, 6 + $overview['entries']->count())));
         } finally {
             $writer->close();
         }

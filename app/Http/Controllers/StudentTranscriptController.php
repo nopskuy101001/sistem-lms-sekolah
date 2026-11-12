@@ -64,14 +64,16 @@ class StudentTranscriptController extends Controller
             $write(['TRANSKRIP NILAI SELURUH KELAS']);
             $write(['Nama', $student->name, 'NIS', (string) ($student->nomor_induk ?? '')]);
             $write(['Kelas divalidasi', $overview['validatedCount'], 'Total kelas', $overview['classrooms']->count()]);
-            $write(['Rata-rata nilai terhitung (0-100)', $overview['average']]);
-            $write(['No.', 'Kelas', 'Nilai', 'Status', 'Aktivitas', 'Jenis', 'Guru', 'Maksimum', 'Persentase (%)']);
+            $write(['Rata-rata seluruh kelas tervalidasi (0-100)', $overview['average']]);
+            $write(['No.', 'Kelas', 'Guru', 'Status', 'Rata-rata akhir (0-100)', 'Tanggal validasi']);
             foreach ($overview['entries'] as $index => $entry) {
-                $score = $entry['score'];
                 $write([
-                    $index + 1, $entry['classroom']->name, $score['score'] ?? null,
-                    $entry['status'], $entry['activity']['title'] ?? '', $entry['activity']['type'] ?? '',
-                    $entry['classroom']->teacher->name, $score['maximum'] ?? null, $score['percentage'] ?? null,
+                    $index + 1,
+                    $entry['classroom']->name,
+                    $entry['classroom']->teacher->name,
+                    $entry['status'],
+                    $entry['average'],
+                    $entry['finalized_at']?->format('d-m-Y H:i'),
                 ]);
             }
             fclose($output);
@@ -106,13 +108,18 @@ class StudentTranscriptController extends Controller
         $classrooms = $request->user()->joinedClassrooms()->with('teacher')->orderBy('name')->get();
         $states = TranscriptState::whereIn('classroom_id', $classrooms->pluck('id'))->get()->keyBy('classroom_id');
         $entries = collect();
-        $percentages = collect();
+        $classAverages = collect();
         $validatedCount = 0;
 
         foreach ($classrooms as $classroom) {
             $state = $states->get($classroom->id);
             if (! $state?->finalized_at || ! is_array($state->snapshot)) {
-                $entries->push(['classroom' => $classroom, 'activity' => null, 'score' => null, 'status' => 'Belum divalidasi']);
+                $entries->push([
+                    'classroom' => $classroom,
+                    'average' => null,
+                    'status' => 'Belum divalidasi',
+                    'finalized_at' => null,
+                ]);
                 continue;
             }
 
@@ -120,19 +127,33 @@ class StudentTranscriptController extends Controller
             $report = $this->reports->buildForStudent($classroom, $request->user());
             $row = $report['rows']->first();
             if (! $row) {
-                $entries->push(['classroom' => $classroom, 'activity' => null, 'score' => null, 'status' => 'Belum tercantum dalam transkrip final']);
+                $entries->push([
+                    'classroom' => $classroom,
+                    'average' => null,
+                    'status' => 'Belum tercantum dalam transkrip final',
+                    'finalized_at' => $report['finalized_at'],
+                ]);
                 continue;
             }
             if ($report['activities']->isEmpty()) {
-                $entries->push(['classroom' => $classroom, 'activity' => null, 'score' => null, 'status' => 'Belum ada komponen nilai']);
+                $entries->push([
+                    'classroom' => $classroom,
+                    'average' => null,
+                    'status' => 'Belum ada komponen nilai',
+                    'finalized_at' => $report['finalized_at'],
+                ]);
                 continue;
             }
-            foreach ($report['activities'] as $activity) {
-                $score = $row['scores'][$activity['key']];
-                $entries->push(['classroom' => $classroom, 'activity' => $activity, 'score' => $score, 'status' => $score['status']]);
-                if (($score['counted'] ?? $score['final']) && $score['percentage'] !== null) {
-                    $percentages->push($score['percentage']);
-                }
+
+            $average = $row['average'];
+            $entries->push([
+                'classroom' => $classroom,
+                'average' => $average,
+                'status' => $average !== null ? 'Tervalidasi' : 'Belum ada nilai terhitung',
+                'finalized_at' => $report['finalized_at'],
+            ]);
+            if ($average !== null) {
+                $classAverages->push($average);
             }
         }
 
@@ -140,8 +161,8 @@ class StudentTranscriptController extends Controller
             'classrooms' => $classrooms,
             'entries' => $entries,
             'validatedCount' => $validatedCount,
-            'completed' => $percentages->count(),
-            'average' => $percentages->isEmpty() ? null : round($percentages->avg(), 2),
+            'scoredClassCount' => $classAverages->count(),
+            'average' => $classAverages->isEmpty() ? null : round($classAverages->avg(), 2),
         ];
     }
 

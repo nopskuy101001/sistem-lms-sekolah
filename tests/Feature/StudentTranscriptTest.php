@@ -82,8 +82,9 @@ class StudentTranscriptTest extends TestCase
 
         $preview = $this->actingAs($this->student)->get(route('student.transcripts.print', ['student_id' => $this->peer->id]))
             ->assertOk()->assertSee('Rekap nilai seluruh kelas')->assertSee($this->student->nomor_induk)
-            ->assertSee('Kelas belum final')->assertSee('Belum divalidasi')->assertSee('Tugas dinilai')
+            ->assertSee('Kelas belum final')->assertSee('Belum divalidasi')->assertSee('52 / 100')
             ->assertDontSee($this->peer->name)->assertDontSee($this->peer->nomor_induk)
+            ->assertDontSee('Tugas dinilai')->assertDontSee('Kuis dengan penalti')
             ->assertDontSee('Aktivitas belum tervalidasi rahasia');
         $this->assertStringContainsString('no-store', $preview->headers->get('Cache-Control'));
 
@@ -100,24 +101,26 @@ class StudentTranscriptTest extends TestCase
         $this->actingAs($this->teacher)->get(route('student.transcripts.pdf'))->assertForbidden();
     }
 
-    public function test_student_sees_only_own_final_scores_in_a_recap_table(): void
+    public function test_student_sees_one_final_average_for_each_class(): void
     {
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertRedirect();
         $response = $this->actingAs($this->student)->get(route('student.transcripts.index', [
             'classroom' => $this->classroom->id, 'student_id' => $this->peer->id,
         ]))->assertOk()->assertSee('Transkrip Saya')->assertSee('Rekap nilai seluruh kelas')
             ->assertSee('role="region"', false)->assertSee('<table', false)
-            ->assertSee('Kuis dengan penalti')->assertSee('Nilai sementara')
-            ->assertSee('Menunggu penilaian esai')->assertSee('Belum dikumpulkan')
+            ->assertSee($this->classroom->name)->assertSee('Tervalidasi')->assertSee('52 / 100')
+            ->assertDontSee('Kuis dengan penalti')->assertDontSee('Tugas dinilai')
+            ->assertDontSee('Menunggu penilaian esai')->assertDontSee('Belum dikumpulkan')
             ->assertDontSee($this->peer->name)->assertDontSee($this->peer->nomor_induk)
             ->assertDontSee('Draf kuis rahasia')->assertDontSee('Draf video rahasia')
             ->assertDontSee('Koreksi nilai')->assertDontSee('Konfirmasi Final Validation');
         $entries = $response->viewData('entries');
-        $this->assertCount(6, $entries);
+        $this->assertCount(1, $entries);
         $this->assertSame($this->classroom->id, $entries[0]['classroom']->id);
-        $this->assertSame(5, $response->viewData('completed'));
+        $this->assertSame(52.0, $entries[0]['average']);
+        $this->assertSame(1, $response->viewData('scoredClassCount'));
         $this->assertSame(52.0, $response->viewData('average'));
-        $this->assertSame(7, substr_count($response->getContent(), '<tr '));
+        $this->assertSame(2, substr_count($response->getContent(), '<tr '));
     }
 
     public function test_final_corrections_are_shared_without_exposing_internal_notes(): void
@@ -129,11 +132,11 @@ class StudentTranscriptTest extends TestCase
         ]);
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertRedirect();
         $response = $this->actingAs($this->student)->get(route('student.transcripts.index'))
-            ->assertOk()->assertSee('Koreksi guru')->assertDontSee('Catatan internal guru rahasia');
-        $entry = $response->viewData('entries')->first(fn ($entry) => ($entry['activity']['key'] ?? null) === 'quiz-'.$this->quiz->id);
-        $this->assertSame(25.0, $entry['score']['score']);
+            ->assertOk()->assertSee('48 / 100')->assertDontSee('Koreksi guru')->assertDontSee('Catatan internal guru rahasia');
+        $entry = $response->viewData('entries')->first();
+        $this->assertSame(48.0, $entry['average']);
         $this->assertSame(48.0, $response->viewData('average'));
-        $this->assertArrayNotHasKey('reason', $entry['score']);
+        $this->assertArrayNotHasKey('score', $entry);
     }
 
     public function test_final_snapshot_keeps_scores_and_publication_visibility_frozen(): void
@@ -143,11 +146,11 @@ class StudentTranscriptTest extends TestCase
         $this->draft->update(['is_published' => true]);
         $this->quiz->delete();
         $response = $this->actingAs($this->student)->get(route('student.transcripts.index'))->assertOk()
-            ->assertSee('Rekap nilai seluruh kelas')->assertSee('Kuis dengan penalti')
+            ->assertSee('Rekap nilai seluruh kelas')->assertSee('52 / 100')
+            ->assertDontSee('Kuis dengan penalti')->assertDontSee('Tugas dinilai')
             ->assertDontSee('Draf kuis rahasia')->assertDontSee($this->peer->name);
         $entries = $response->viewData('entries');
-        $this->assertSame(80.0, $entries->first(fn ($entry) => ($entry['activity']['key'] ?? null) === 'assignment-'.$this->submission->assignment_id)['score']['score']);
-        $this->assertSame(35.0, $entries->first(fn ($entry) => ($entry['activity']['key'] ?? null) === 'quiz-'.$this->quiz->id)['score']['score']);
+        $this->assertSame(52.0, $entries->first()['average']);
         $this->assertSame(52.0, $response->viewData('average'));
     }
 
@@ -172,9 +175,12 @@ class StudentTranscriptTest extends TestCase
             ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8')->streamedContent();
         $this->assertStringStartsWith("\xEF\xBB\xBFsep=,\r\n", $csv);
         $this->assertStringContainsString($this->student->name, $csv);
-        $this->assertStringContainsString('Menunggu penilaian esai', $csv);
         $this->assertStringContainsString($this->classroom->name, $csv);
+        $this->assertStringContainsString('Rata-rata akhir (0-100)', $csv);
+        $this->assertStringContainsString('Tervalidasi', $csv);
         $this->assertStringNotContainsString($this->peer->name, $csv);
+        $this->assertStringNotContainsString('Tugas dinilai', $csv);
+        $this->assertStringNotContainsString('Menunggu penilaian esai', $csv);
         $this->assertStringNotContainsString('Draf kuis rahasia', $csv);
         $this->assertStringNotContainsString('Draf video rahasia', $csv);
 
@@ -192,20 +198,22 @@ class StudentTranscriptTest extends TestCase
             }
             $text = json_encode($rows);
             $this->assertStringContainsString($this->student->name, $text);
-            $this->assertStringContainsString('Menunggu penilaian esai', $text);
             $this->assertStringContainsString($this->classroom->name, $text);
-            $this->assertStringContainsString('Persentase (%)', $text);
+            $this->assertStringContainsString('Rata-rata akhir (0-100)', $text);
+            $this->assertStringContainsString('Tervalidasi', $text);
             $this->assertStringNotContainsString($this->peer->name, $text);
+            $this->assertStringNotContainsString('Tugas dinilai', $text);
+            $this->assertStringNotContainsString('Menunggu penilaian esai', $text);
+            $this->assertStringNotContainsString('Persentase (%)', $text);
             $this->assertStringNotContainsString('Draf kuis rahasia', $text);
             $this->assertStringNotContainsString('Draf video rahasia', $text);
             $this->assertSame('001234', $rows[1][3]);
             $this->assertEquals(52, $rows[3][1]);
-            $activityRow = collect($rows)->first(fn ($item) => ($item[4] ?? null) === 'Tugas dinilai');
-            $this->assertNotNull($activityRow);
-            $this->assertEquals(80, $activityRow[2]);
-            $this->assertEquals(100, $activityRow[7]);
-            $this->assertEquals(80, $activityRow[8]);
-            $this->assertSame('Dinilai', $activityRow[3]);
+            $classRow = collect($rows)->first(fn ($item) => ($item[1] ?? null) === $this->classroom->name);
+            $this->assertNotNull($classRow);
+            $this->assertSame($this->teacher->name, $classRow[2]);
+            $this->assertSame('Tervalidasi', $classRow[3]);
+            $this->assertEquals(52, $classRow[4]);
         } finally {
             $reader->close();
             unlink($path);
@@ -215,7 +223,7 @@ class StudentTranscriptTest extends TestCase
     public function test_csv_escapes_formula_like_text(): void
     {
         $this->student->update(['name' => '=SUM(1,2)']);
-        $this->submission->assignment->update(['title' => '  =HYPERLINK("bad")']);
+        $this->classroom->update(['name' => '  =HYPERLINK("bad")']);
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertRedirect();
         $csv = $this->actingAs($this->student)->get(route('student.transcripts.all.csv'))->assertOk()->streamedContent();
         $this->assertStringContainsString("'=SUM(1,2)", $csv);
@@ -260,14 +268,14 @@ class StudentTranscriptTest extends TestCase
             ->assertOk()->assertSee('Belum divalidasi')->assertSee('Kelas kosong')->assertDontSee('Kuis dengan penalti');
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])->assertRedirect();
         $this->actingAs($this->student)->get(route('student.transcripts.index'))
-            ->assertOk()->assertSee('Belum divalidasi')->assertSee('Tugas dinilai');
+            ->assertOk()->assertSee('Belum divalidasi')->assertSee('52 / 100')->assertDontSee('Tugas dinilai');
         $this->classroom->students()->attach($newStudent);
         $this->actingAs($newStudent)->get(route('student.transcripts.index'))->assertOk()->assertSee('Belum tercantum dalam transkrip final');
         $lateCsv = $this->get(route('student.transcripts.all.csv'))->assertOk()->streamedContent();
         $this->assertStringContainsString('Belum tercantum dalam transkrip final', $lateCsv);
         $this->assertStringNotContainsString('Tugas dinilai', $lateCsv);
         $this->actingAs($this->student)->get(route('student.transcripts.index', ['classroom' => $emptyClass->id]))
-            ->assertOk()->assertSee('Tugas dinilai')->assertSee('Kelas kosong');
+            ->assertOk()->assertSee('52 / 100')->assertSee('Kelas kosong')->assertDontSee('Tugas dinilai');
     }
 
     public function test_student_cannot_see_or_download_transcript_before_teacher_validation(): void
@@ -280,7 +288,7 @@ class StudentTranscriptTest extends TestCase
             ->assertDontSee('Unduh CSV')
             ->assertDontSee('Excel (.xlsx)');
         $this->assertSame(0, $response->viewData('validatedCount'));
-        $this->assertNull($response->viewData('entries')[0]['score']);
+        $this->assertNull($response->viewData('entries')[0]['average']);
         $this->assertNull($response->viewData('average'));
         $pendingCsv = $this->get(route('student.transcripts.all.csv'))->assertOk()->streamedContent();
         $this->assertStringContainsString('Belum divalidasi', $pendingCsv);
@@ -316,13 +324,13 @@ class StudentTranscriptTest extends TestCase
 
         $response = $this->actingAs($this->student)->get(route('student.transcripts.index'))->assertOk()
             ->assertSee($pending->name)->assertSee($this->classroom->name)
-            ->assertSee('Belum divalidasi')->assertSee('Tugas dinilai')
+            ->assertSee('Belum divalidasi')->assertSee('52 / 100')
+            ->assertDontSee('Tugas dinilai')->assertDontSee('Kuis dengan penalti')
             ->assertDontSee('Nilai Biologi Rahasia')->assertDontSee($this->peer->name);
         $this->assertSame(1, $response->viewData('validatedCount'));
         $this->assertSame(52.0, $response->viewData('average'));
         $pendingEntry = $response->viewData('entries')->first(fn ($entry) => $entry['classroom']->id === $pending->id);
-        $this->assertNull($pendingEntry['activity']);
-        $this->assertNull($pendingEntry['score']);
+        $this->assertNull($pendingEntry['average']);
 
         $csv = $this->get(route('student.transcripts.all.csv'))->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8')->streamedContent();
@@ -332,9 +340,8 @@ class StudentTranscriptTest extends TestCase
         $this->assertStringNotContainsString($this->peer->name, $csv);
         $csvRows = array_map('str_getcsv', explode("\r\n", $csv));
         $pendingCsv = collect($csvRows)->first(fn ($row) => ($row[1] ?? null) === $pending->name);
-        $this->assertSame('', $pendingCsv[2]);
-        $this->assertSame('', $pendingCsv[8]);
         $this->assertSame('Belum divalidasi', $pendingCsv[3]);
+        $this->assertSame('', $pendingCsv[4]);
 
         $content = $this->get(route('student.transcripts.all.excel'))->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -351,8 +358,7 @@ class StudentTranscriptTest extends TestCase
             }
             $pendingXlsx = collect($rows)->first(fn ($row) => ($row[1] ?? null) === $pending->name);
             $this->assertSame('Belum divalidasi', $pendingXlsx[3]);
-            $this->assertEmpty($pendingXlsx[2]);
-            $this->assertEmpty($pendingXlsx[8]);
+            $this->assertEmpty($pendingXlsx[4]);
             $this->assertStringNotContainsString('Nilai Biologi Rahasia', json_encode($rows));
             $this->assertStringNotContainsString($this->peer->name, json_encode($rows));
         } finally {
@@ -362,8 +368,8 @@ class StudentTranscriptTest extends TestCase
 
         $this->actingAs($this->teacher)->post(route('transcripts.finalize', $pending), ['final_validation' => 1])->assertRedirect();
         $after = $this->actingAs($this->student)->get(route('student.transcripts.index'))->assertOk()
-            ->assertSee('Nilai Biologi Rahasia')->assertDontSee('Belum divalidasi');
+            ->assertSee('50 / 100')->assertDontSee('Nilai Biologi Rahasia')->assertDontSee('Belum divalidasi');
         $this->assertSame(2, $after->viewData('validatedCount'));
-        $this->assertSame(51.67, $after->viewData('average'));
+        $this->assertSame(51.0, $after->viewData('average'));
     }
 }
