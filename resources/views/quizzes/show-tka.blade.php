@@ -248,10 +248,10 @@
                 <div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Jumlah soal</span><b class="block text-lg">{{ $questionCount }}</b></div>
                 <div class="rounded-xl bg-slate-50 p-3"><span class="text-slate-500">Durasi pengerjaan</span><b class="block text-lg">{{ $quiz->duration_minutes ? $quiz->duration_minutes.' menit' : 'Tanpa batas' }}</b></div>
             </div>
-            <section aria-labelledby="quiz-schedule-title" class="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+            <section aria-labelledby="quiz-schedule-title" class="quiz-schedule-card mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 id="quiz-schedule-title" class="text-sm font-bold text-indigo-950">Timeline pelaksanaan kuis</h2>
-                    <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">Status: {{ $quiz->statusLabel() }}</span>
+                    <span class="quiz-schedule-status rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">Status: {{ $quiz->statusLabel() }}</span>
                 </div>
                 <div class="relative mt-4 grid gap-4 sm:grid-cols-2 sm:gap-6">
                     <div class="relative flex gap-3">

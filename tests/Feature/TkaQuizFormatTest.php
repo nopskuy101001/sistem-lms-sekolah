@@ -128,6 +128,20 @@ class TkaQuizFormatTest extends TestCase
             ->assertOk()
             ->assertSee('Sejak dipublikasikan')
             ->assertSee('Tanpa tanggal penutupan');
+
+        $this->quiz->update([
+            'start_at' => now()->subHours(2),
+            'end_at' => now()->subHour(),
+        ]);
+        $this->get(route('quizzes.show', $this->quiz))
+            ->assertOk()
+            ->assertSee('Status: Ditutup')
+            ->assertSee('quiz-schedule-card', false)
+            ->assertSee('quiz-schedule-status', false);
+        $stylesheet = file_get_contents(public_path('css/lms-ui.css'));
+        $this->assertIsString($stylesheet);
+        $this->assertStringContainsString("html[data-theme='dark'] .quiz-schedule-card", $stylesheet);
+        $this->assertStringContainsString("html[data-theme='dark'] .quiz-schedule-status", $stylesheet);
     }
 
     public function test_tka_answers_are_autoscored_by_their_question_format(): void
