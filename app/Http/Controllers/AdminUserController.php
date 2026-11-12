@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DiscussionMessage;
 use App\Models\User;
 use App\Services\StudentBatchImportService;
 use App\Services\StudentImportTemplateXlsxExporter;
@@ -231,9 +232,19 @@ class AdminUserController extends Controller
         }
 
         $profilePhoto = $user->profile_photo_path;
+        $discussionAttachments = DiscussionMessage::query()
+            ->whereNotNull('attachment_path')
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhereHas('room', fn ($rooms) => $rooms->where('creator_id', $user->id));
+            })
+            ->pluck('attachment_path')
+            ->unique()
+            ->all();
         $user->notifications()->delete();
         $user->delete();
         if ($profilePhoto) Storage::disk('public')->delete($profilePhoto);
+        Storage::disk('local')->delete($discussionAttachments);
 
         return back()->with('success', 'Pengguna dihapus.');
     }

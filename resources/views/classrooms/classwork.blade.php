@@ -72,19 +72,22 @@
     {{-- Video Interaktif --}}
     <details class="bg-white border border-slate-200 rounded-xl">
         <summary class="cursor-pointer px-4 py-3 font-medium text-indigo-700">+ Video Interaktif</summary>
-        <form method="POST" action="{{ route('video-lessons.store', $classroom) }}" enctype="multipart/form-data" class="p-4 space-y-3 border-t border-slate-200">
+        <form method="POST" action="{{ route('video-lessons.store', $classroom) }}" enctype="multipart/form-data" class="p-4 space-y-3 border-t border-slate-200" data-chunked-video-form data-video-upload-url="{{ route('video-uploads.chunks') }}">
             @csrf
             <input type="text" name="title" required maxlength="180" placeholder="Judul video" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <textarea name="description" rows="2" placeholder="Deskripsi (opsional)" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></textarea>
             <label class="block text-xs text-slate-600">Jenis video</label>
-            <select name="source_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <select name="source_type" data-video-source-type class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="youtube">YouTube</option><option value="mp4">Video MP4</option>
             </select>
             <input type="text" name="source_url" placeholder="URL YouTube / link langsung .mp4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <label class="block text-xs text-slate-600">Atau unggah MP4 (pilih jenis MP4)</label>
-            <input type="file" name="video_file" accept="video/mp4,.mp4" class="w-full text-xs">
-            <p class="text-[11px] text-slate-500">Unggahan maks. 100 MB (tergantung php.ini). Soal ditambahkan setelah video dibuat.</p>
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Buat Video Interaktif</button>
+            <input type="file" name="video_file" accept="video/mp4,.mp4" data-chunked-video-file class="w-full text-xs">
+            <input type="hidden" name="video_upload_token" value="" data-chunked-video-token>
+            <p class="text-[11px] text-slate-500">Unggahan MP4 maksimal 100 MB. File dikirim bertahap agar stabil pada server dengan batas unggahan kecil.</p>
+            <progress max="100" value="0" data-video-upload-progress class="h-2 w-full accent-indigo-600"></progress>
+            <p class="min-h-4 text-[11px] text-slate-500" data-video-upload-status></p>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Buat Video Interaktif</button>
         </form>
     </details>
 </div>
@@ -214,3 +217,7 @@
     @endforelse
 </div>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/chunked-video-upload.js') }}?v={{ filemtime(public_path('js/chunked-video-upload.js')) }}"></script>
+@endpush

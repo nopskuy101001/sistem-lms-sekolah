@@ -2,7 +2,7 @@
 
 @php
     $data = $notification->data;
-    $category = in_array($data['category'] ?? '', ['announcement', 'material', 'assignment', 'quiz', 'video', 'classroom', 'submission', 'grade', 'transcript'], true)
+    $category = in_array($data['category'] ?? '', ['announcement', 'material', 'assignment', 'quiz', 'video', 'classroom', 'submission', 'grade', 'transcript', 'discussion'], true)
         ? $data['category']
         : 'general';
 @endphp
@@ -25,6 +25,9 @@
             @case('classroom')
             @case('submission')
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+                @break
+            @case('discussion')
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
                 @break
             @case('grade')
             @case('transcript')

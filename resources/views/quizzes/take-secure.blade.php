@@ -173,7 +173,20 @@
             <button type="button" class="lms-button lms-button-primary" id="return-to-exam">Kembali mengerjakan</button>
         </div>
     </div>
+
 @endif
+
+<div class="exam-warning" id="submit-confirmation" role="dialog" aria-modal="true" aria-labelledby="submit-confirmation-title">
+    <div class="exam-warning-card exam-neutral-card">
+        <span><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        <h3 id="submit-confirmation-title">Kumpulkan jawaban sekarang?</h3>
+        <p>Periksa kembali jawabanmu. Setelah dikumpulkan, jawaban tidak dapat diubah lagi.</p>
+        <div class="flex flex-col-reverse justify-center gap-2 sm:flex-row">
+            <button type="button" class="lms-button border border-slate-300 bg-white text-slate-700" id="cancel-submit">Periksa lagi</button>
+            <button type="button" class="lms-button lms-button-primary" id="confirm-submit">Ya, kumpulkan</button>
+        </div>
+    </div>
+</div>
 
 <script>
 (function () {
@@ -190,12 +203,16 @@
     const saveStatus = document.getElementById('save-status');
     const saveStatusText = saveStatus.querySelector('span');
     const warning = document.getElementById('focus-warning');
+    const submitConfirmation = document.getElementById('submit-confirmation');
     let examActive = false;
     let submitting = false;
     let autoSubmitting = false;
+    let submitConfirmed = false;
     let hiddenAt = null;
     let blurTimer = null;
     let fullscreenWasActive = false;
+    let focusViolationPending = false;
+    let mediaInteractionUntil = 0;
     let violationCount = {{ $violationCount }};
     const saveTimers = new Map();
 
@@ -247,6 +264,24 @@
         if (!warning || submitting) return;
         warning.classList.add('show');
     }
+
+    function isStimulusMediaElement(element) {
+        return element instanceof Element
+            && (element.matches('[data-quiz-stimulus-video]') || Boolean(element.closest('.quiz-stimulus-video-frame')));
+    }
+
+    function isAllowedMediaFocus() {
+        return isStimulusMediaElement(document.activeElement)
+            || Date.now() < mediaInteractionUntil;
+    }
+
+    document.querySelectorAll('[data-quiz-stimulus-video]').forEach(media => {
+        const markMediaInteraction = () => { mediaInteractionUntil = Date.now() + 1500; };
+        media.addEventListener('pointerdown', markMediaInteraction, true);
+        media.addEventListener('pointerenter', markMediaInteraction, true);
+        media.addEventListener('touchstart', markMediaInteraction, { capture: true, passive: true });
+        media.addEventListener('focus', markMediaInteraction, true);
+    });
 
     async function postJson(url, payload, keepalive = false) {
         const response = await fetch(url, {
@@ -341,12 +376,23 @@
     updateProgress();
 
     form.addEventListener('submit', event => {
-        if (!autoSubmitting && !window.confirm('Kumpulkan jawaban sekarang? Jawaban tidak bisa diubah lagi.')) {
+        if (!autoSubmitting && !submitConfirmed) {
             event.preventDefault();
+            submitConfirmation.classList.add('show');
             return;
         }
         submitting = true;
         setSaveState('is-saving', 'Mengumpulkan...');
+    });
+
+    document.getElementById('cancel-submit').addEventListener('click', () => {
+        submitConfirmation.classList.remove('show');
+    });
+
+    document.getElementById('confirm-submit').addEventListener('click', () => {
+        submitConfirmed = true;
+        submitConfirmation.classList.remove('show');
+        form.requestSubmit();
     });
 
     if (securityModeEnabled) {
@@ -379,6 +425,7 @@
                 }
             }
             warning.classList.remove('show');
+            focusViolationPending = false;
         });
 
         if (monitoringEnabled) {
@@ -398,15 +445,24 @@
             window.addEventListener('blur', () => {
                 clearTimeout(blurTimer);
                 blurTimer = setTimeout(() => {
-                    if (examActive && !document.hidden && !submitting) {
+                    if (isStimulusMediaElement(document.activeElement)) {
+                        mediaInteractionUntil = Date.now() + 1500;
+                        focusViolationPending = false;
+                        return;
+                    }
+                    if (examActive && !document.hidden && !submitting && !isAllowedMediaFocus()) {
+                        focusViolationPending = true;
                         recordEvent('window_blur');
                     }
-                }, 350);
+                }, 900);
             });
 
             window.addEventListener('focus', () => {
                 clearTimeout(blurTimer);
-                if (examActive && !document.hidden && violationCount > 0) showWarning();
+                if (examActive && !document.hidden && focusViolationPending) {
+                    focusViolationPending = false;
+                    showWarning();
+                }
             });
         }
 

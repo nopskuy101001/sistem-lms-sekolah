@@ -15,14 +15,17 @@
 <div class="grid gap-5 lg:grid-cols-2">
     <section class="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
         <h2 class="text-lg font-semibold">Informasi Video</h2>
-        <form method="POST" action="{{ route('video-lessons.update', $videoLesson) }}" enctype="multipart/form-data" class="space-y-3">
+        <form method="POST" action="{{ route('video-lessons.update', $videoLesson) }}" enctype="multipart/form-data" class="space-y-3" data-chunked-video-form data-video-upload-url="{{ route('video-uploads.chunks') }}">
             @csrf @method('PUT')
             <label class="block text-sm font-medium">Judul <input class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" name="title" value="{{ old('title', $videoLesson->title) }}" maxlength="180" required></label>
             <label class="block text-sm font-medium">Deskripsi <textarea name="description" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm">{{ old('description', $videoLesson->description) }}</textarea></label>
-            <label class="block text-sm font-medium">Sumber <select name="source_type" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm"><option value="youtube" @selected(old('source_type', $videoLesson->source_type)==='youtube')>YouTube</option><option value="mp4" @selected(old('source_type', $videoLesson->source_type)==='mp4')>MP4</option></select></label>
+            <label class="block text-sm font-medium">Sumber <select name="source_type" data-video-source-type class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm"><option value="youtube" @selected(old('source_type', $videoLesson->source_type)==='youtube')>YouTube</option><option value="mp4" @selected(old('source_type', $videoLesson->source_type)==='mp4')>MP4</option></select></label>
             <label class="block text-sm font-medium">URL sumber baru (kosongkan untuk mempertahankan) <input name="source_url" type="text" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" placeholder="https://www.youtube.com/watch?v=... atau https://.../video.mp4"></label>
             @if($videoLesson->file_path)<p class="text-xs text-emerald-700">✓ Video MP4 tersimpan di storage LMS.</p>@else <p class="text-xs text-slate-500 break-all">Sumber saat ini: {{ $videoLesson->source_url }}</p>@endif
-            <label class="block text-sm font-medium">Ganti dengan unggahan MP4 (opsional) <input type="file" name="video_file" accept="video/mp4,.mp4" class="mt-1 block w-full text-sm"></label>
+            <label class="block text-sm font-medium">Ganti dengan unggahan MP4 (opsional) <input type="file" name="video_file" accept="video/mp4,.mp4" data-chunked-video-file class="mt-1 block w-full text-sm"></label>
+            <input type="hidden" name="video_upload_token" value="" data-chunked-video-token>
+            <progress max="100" value="0" data-video-upload-progress class="h-2 w-full accent-indigo-600"></progress>
+            <p class="min-h-4 text-xs text-slate-500" data-video-upload-status></p>
             @if($hasAnswers)<p class="text-xs text-amber-700">Sumber video dan checkpoint terkunci karena siswa sudah menjawab, agar nilai tidak berubah. Judul/deskripsi tetap dapat diubah.</p>@endif
             <button class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">Simpan perubahan</button>
         </form>
@@ -219,3 +222,7 @@ window.VideoTaskEditor = {{ \Illuminate\Support\Js::from([
 @endif
 @endif
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/chunked-video-upload.js') }}?v={{ filemtime(public_path('js/chunked-video-upload.js')) }}"></script>
+@endpush

@@ -216,6 +216,54 @@ class QuizSecurityTest extends TestCase
             ->assertDontSee('Layar penuh diwajibkan selama kuis');
     }
 
+    public function test_video_stimulus_uses_inline_playback_and_safe_submit_confirmation(): void
+    {
+        $this->quiz->update(['require_fullscreen' => true]);
+        $group = $this->quiz->questionGroups()->create([
+            'title' => 'Video informasi',
+            'stimulus' => '',
+            'video_type' => 'youtube',
+            'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        ]);
+        $this->question->update(['question_group_id' => $group->id]);
+        $mp4Group = $this->quiz->questionGroups()->create([
+            'title' => 'Video MP4 informasi',
+            'stimulus' => '',
+            'video_type' => 'mp4_url',
+            'video_url' => 'https://example.com/informasi.mp4',
+        ]);
+        Question::create([
+            'quiz_id' => $this->quiz->id,
+            'question_group_id' => $mp4Group->id,
+            'type' => Question::TYPE_PG,
+            'body' => 'Apa isi video?',
+            'option_a' => 'A',
+            'option_b' => 'B',
+            'correct_option' => 'a',
+            'points' => 5,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('attempts.take', $this->attempt))
+            ->assertOk()
+            ->assertSee('data-quiz-stimulus-video', false)
+            ->assertSee('fs=0', false)
+            ->assertDontSee('allowfullscreen', false)
+            ->assertSee('data-stimulus-self-player', false)
+            ->assertSee('quiz-stimulus-player.js', false)
+            ->assertSee('Mode fullscreen dinonaktifkan agar keamanan kuis tetap stabil.')
+            ->assertSee('Kumpulkan jawaban sekarang?')
+            ->assertSee('Periksa lagi')
+            ->assertSee('isStimulusMediaElement', false)
+            ->assertSee('focusViolationPending', false)
+            ->assertSee("Date.now() < mediaInteractionUntil", false)
+            ->assertDontSee('Kembali ke layar penuh kuis')
+            ->assertDontSee('mediaFullscreenActive', false)
+            ->assertDontSee('fullscreenVerificationDelay', false)
+            ->assertDontSee("window.confirm('Kumpulkan jawaban sekarang?", false)
+            ->assertDontSee('violationCount > 0) showWarning()', false);
+    }
+
     public function test_teacher_can_review_integrity_summary_and_event_timeline(): void
     {
         QuizSecurityEvent::create([

@@ -5,6 +5,9 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\ChunkedVideoUploadController;
+use App\Http\Controllers\DiscussionMessageController;
+use App\Http\Controllers\DiscussionRoomController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
@@ -60,6 +63,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/{notification}', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    Route::middleware(RoleMiddleware::class.':guru,admin')->prefix('staff')->group(function () {
+        Route::post('/video-uploads/chunks', [ChunkedVideoUploadController::class, 'store'])
+            ->middleware('throttle:180,1')
+            ->name('video-uploads.chunks');
+        Route::get('/discussions', [DiscussionRoomController::class, 'index'])->name('discussion-rooms.index');
+        Route::post('/discussions', [DiscussionRoomController::class, 'store'])->name('discussion-rooms.store');
+        Route::get('/discussions/{discussionRoom}', [DiscussionRoomController::class, 'show'])->name('discussion-rooms.show');
+        Route::put('/discussions/{discussionRoom}/members', [DiscussionRoomController::class, 'updateMembers'])->name('discussion-rooms.members.update');
+        Route::delete('/discussions/{discussionRoom}', [DiscussionRoomController::class, 'destroy'])->name('discussion-rooms.destroy');
+        Route::post('/discussions/{discussionRoom}/messages', [DiscussionMessageController::class, 'store'])->name('discussion-messages.store');
+        Route::get('/discussion-messages/{discussionMessage}/attachment', [DiscussionMessageController::class, 'attachment'])->name('discussion-messages.attachment');
+        Route::delete('/discussion-messages/{discussionMessage}', [DiscussionMessageController::class, 'destroy'])->name('discussion-messages.destroy');
+    });
 
     Route::middleware(RoleMiddleware::class.':guru')->prefix('teacher')->group(function () {
         Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');

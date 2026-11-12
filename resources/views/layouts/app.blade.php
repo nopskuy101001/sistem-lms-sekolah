@@ -63,6 +63,11 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Kelola Pengguna</span>
                     </a>
                 @endif
+                @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
+                    <a href="{{ route('discussion-rooms.index') }}" class="lms-nav-link {{ request()->routeIs('discussion-rooms.*', 'discussion-messages.*') ? 'active' : '' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg><span>Diskusi Guru</span>
+                    </a>
+                @endif
             </nav>
 
             <div class="lms-nav-label">Akademik</div>
@@ -123,6 +128,7 @@
                             <a href="{{ route('profile.edit') }}">Profil saya</a>
                             <a href="{{ route('dashboard') }}">Beranda saya</a>
                             @if(auth()->user()->isGuru())<a href="{{ route('question-banks.index') }}">Bank soal</a><a href="{{ route('transcripts.index') }}">Transkrip nilai</a>@endif
+                            @if(auth()->user()->isGuru() || auth()->user()->isAdmin())<a href="{{ route('discussion-rooms.index') }}">Diskusi guru</a>@endif
                             @if(auth()->user()->isSiswa())<a href="{{ route('student.transcripts.index') }}">Transkrip saya</a>@endif
                             @if(auth()->user()->isAdmin())<a href="{{ route('admin.users.index') }}">Kelola pengguna</a>@endif
                             <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Keluar dari akun</button></form>

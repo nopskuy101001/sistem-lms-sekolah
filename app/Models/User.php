@@ -92,4 +92,19 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Classroom::class, 'classroom_user')->withTimestamps();
     }
+
+    public function createdDiscussionRooms(): HasMany
+    {
+        return $this->hasMany(DiscussionRoom::class, 'creator_id');
+    }
+
+    public function discussionRooms(): BelongsToMany
+    {
+        return $this->belongsToMany(DiscussionRoom::class, 'discussion_room_user')->withTimestamps();
+    }
+
+    public function discussionMessages(): HasMany
+    {
+        return $this->hasMany(DiscussionMessage::class);
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\Quiz;
+use App\Services\ChunkedVideoUploadService;
 use App\Support\VideoSource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class QuestionController extends Controller
 {
     use AuthorizesClassroom;
+
+    public function __construct(private readonly ChunkedVideoUploadService $videoUploads) {}
 
     public function store(Request $request, Quiz $quiz): RedirectResponse
     {
@@ -131,13 +134,21 @@ class QuestionController extends Controller
             'table_text' => ['nullable', 'string', 'max:20000'],
             'stimulus_video_url' => ['nullable', 'string', 'max:2000'],
             'stimulus_video' => ['nullable', 'file', 'mimes:mp4', 'max:102400'],
+            'stimulus_video_upload_token' => ['nullable', 'uuid'],
             'video_caption' => ['nullable', 'string', 'max:255'],
         ]);
 
         $videoUrl = trim((string) ($data['stimulus_video_url'] ?? ''));
-        if ($videoUrl !== '' && $request->hasFile('stimulus_video')) {
+        $videoToken = $data['stimulus_video_upload_token'] ?? null;
+        $hasVideoUpload = $request->hasFile('stimulus_video') || filled($videoToken);
+        if ($videoUrl !== '' && $hasVideoUpload) {
             return back()->withErrors([
                 'stimulus_video_url' => 'Pilih salah satu sumber video: URL atau unggah MP4.',
+            ])->withInput();
+        }
+        if ($request->hasFile('stimulus_video') && filled($videoToken)) {
+            return back()->withErrors([
+                'stimulus_video' => 'Unggahan video terduplikasi. Pilih ulang file MP4.',
             ])->withInput();
         }
 
@@ -158,7 +169,7 @@ class QuestionController extends Controller
             && ! $request->hasFile('stimulus_image')
             && blank($data['table_text'] ?? null)
             && $videoUrl === ''
-            && ! $request->hasFile('stimulus_video')) {
+            && ! $hasVideoUpload) {
             return back()->withErrors([
                 'stimulus' => 'Isi minimal salah satu: teks, gambar/grafik, tabel, atau video stimulus.',
             ])->withInput();
@@ -194,6 +205,17 @@ class QuestionController extends Controller
             $groupData['video_path'] = $file->store('quiz-stimulus-videos', 'local');
             $groupData['video_name'] = $file->getClientOriginalName();
             $storedPaths[] = $groupData['video_path'];
+        } elseif (filled($videoToken)) {
+            $upload = $this->videoUploads->consume(
+                $request->user(),
+                $videoToken,
+                'quiz-stimulus-videos',
+                'local',
+            );
+            $groupData['video_type'] = 'upload';
+            $groupData['video_path'] = $upload['path'];
+            $groupData['video_name'] = $upload['name'];
+            $storedPaths[] = $upload['path'];
         }
 
         try {

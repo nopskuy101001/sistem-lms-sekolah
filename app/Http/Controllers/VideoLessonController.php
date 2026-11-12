@@ -7,6 +7,7 @@ use App\Models\Classroom;
 use App\Models\VideoAttempt;
 use App\Models\VideoLesson;
 use App\Services\VideoAnswerService;
+use App\Services\ChunkedVideoUploadService;
 use App\Support\VideoSource;
 use App\Support\AcademicNotifier;
 use Illuminate\Http\JsonResponse;
@@ -21,21 +22,30 @@ class VideoLessonController extends Controller
 {
     use AuthorizesClassroom;
 
+    public function __construct(private readonly ChunkedVideoUploadService $videoUploads) {}
+
     public function store(Request $request, Classroom $classroom): RedirectResponse
     {
         $this->authorizeManage($classroom);
         $data = $this->validateVideo($request);
-        $file = $request->file('video_file');
-        $path = $file?->store('video-lessons', 'public');
+        $upload = $this->videoUpload($request);
+        $path = $upload['path'] ?? null;
 
-        $lesson = $classroom->videoLessons()->create([
-            'creator_id' => $request->user()->id,
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'source_type' => $data['source_type'],
-            'source_url' => $path ? '' : $data['source_url'],
-            'file_path' => $path,
-        ]);
+        try {
+            $lesson = $classroom->videoLessons()->create([
+                'creator_id' => $request->user()->id,
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'source_type' => $data['source_type'],
+                'source_url' => $path ? '' : $data['source_url'],
+                'file_path' => $path,
+            ]);
+        } catch (\Throwable $exception) {
+            if ($path) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $exception;
+        }
 
         return redirect()->route('video-lessons.edit', $lesson)
             ->with('success', 'Video dibuat. Tambahkan checkpoint, kemudian publikasikan.');
@@ -75,8 +85,8 @@ class VideoLessonController extends Controller
     {
         $this->authorizeManage($videoLesson->classroom);
         $data = $this->validateVideo($request, $videoLesson);
-        $file = $request->file('video_file');
-        $newPath = $file?->store('video-lessons', 'public');
+        $upload = $this->videoUpload($request);
+        $newPath = $upload['path'] ?? null;
         $oldPath = $videoLesson->file_path;
         $sourceChanged = $newPath || ($data['source_type'] !== $videoLesson->source_type)
             || (! empty($data['source_url']) && $data['source_url'] !== $videoLesson->source_url);
@@ -299,13 +309,20 @@ class VideoLessonController extends Controller
             'source_type' => ['required', Rule::in(['youtube', 'mp4'])],
             'source_url' => ['nullable', 'string', 'max:2000'],
             'video_file' => ['nullable', 'file', 'mimes:mp4', 'max:102400'],
+            'video_upload_token' => ['nullable', 'uuid'],
         ]);
         $type = $data['source_type'];
-        $hasFile = $request->hasFile('video_file');
+        $hasFile = $request->hasFile('video_file') || filled($data['video_upload_token'] ?? null);
+        if ($request->hasFile('video_file') && filled($data['video_upload_token'] ?? null)) {
+            throw ValidationException::withMessages(['video_file' => 'Unggahan video terduplikasi. Pilih ulang file MP4.']);
+        }
         if ($hasFile && $type !== 'mp4') {
             throw ValidationException::withMessages(['video_file' => 'Unggahan file hanya tersedia untuk sumber MP4.']);
         }
         $url = trim($data['source_url'] ?? '');
+        if ($hasFile && $url !== '') {
+            throw ValidationException::withMessages(['source_url' => 'Pilih salah satu sumber MP4: URL atau unggah file.']);
+        }
         $canKeepExisting = $lesson && $type === $lesson->source_type && $url === '' && ! $hasFile;
         if (! $canKeepExisting && ! $hasFile) {
             $valid = $type === 'youtube' ? VideoSource::youtubeId($url) !== null : VideoSource::isMp4Url($url);
@@ -314,5 +331,30 @@ class VideoLessonController extends Controller
             }
         }
         return $data;
+    }
+
+    /** @return array{path: string, name?: string, size?: int}|null */
+    private function videoUpload(Request $request): ?array
+    {
+        if ($request->filled('video_upload_token')) {
+            return $this->videoUploads->consume(
+                $request->user(),
+                $request->string('video_upload_token')->toString(),
+                'video-lessons',
+                'public',
+            );
+        }
+
+        if ($request->hasFile('video_file')) {
+            $file = $request->file('video_file');
+            $path = $file->store('video-lessons', 'public');
+            if (! $path) {
+                throw ValidationException::withMessages(['video_file' => 'Video MP4 gagal disimpan.']);
+            }
+
+            return ['path' => $path, 'name' => $file->getClientOriginalName(), 'size' => $file->getSize()];
+        }
+
+        return null;
     }
 }
