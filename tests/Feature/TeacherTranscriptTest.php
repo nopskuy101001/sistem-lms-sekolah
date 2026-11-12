@@ -143,10 +143,19 @@ class TeacherTranscriptTest extends TestCase
 
     public function test_teacher_previews_then_downloads_wide_transcript_as_pdf(): void
     {
-        for ($i = 1; $i <= 7; $i++) {
+        // Dua komponen sudah dibuat di setUp. Delapan tambahan tepat memenuhi batas 10 kolom.
+        for ($i = 1; $i <= 8; $i++) {
             Assignment::create(['classroom_id' => $this->classroom->id, 'title' => 'Komponen tambahan '.$i, 'points' => 100]);
         }
-        $preview = $this->actingAs($this->teacher)->get(route('transcripts.print', $this->classroom))
+
+        $singlePage = $this->actingAs($this->teacher)->get(route('transcripts.print', $this->classroom))
+            ->assertOk()
+            ->assertDontSee('Bagian 1 dari');
+        $this->assertSame(1, substr_count($singlePage->getContent(), 'class="teacher-table"'));
+
+        // Kolom ke-11 harus diteruskan ke halaman kedua.
+        Assignment::create(['classroom_id' => $this->classroom->id, 'title' => 'Komponen tambahan 9', 'points' => 100]);
+        $preview = $this->get(route('transcripts.print', $this->classroom))
             ->assertOk()
             ->assertSee('Pratinjau transkrip')
             ->assertSee('Unduh PDF')
