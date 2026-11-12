@@ -76,6 +76,8 @@
             @csrf
             <input type="text" name="title" required maxlength="180" placeholder="Judul video" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <textarea name="description" rows="2" placeholder="Deskripsi (opsional)" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></textarea>
+            <label class="block text-xs text-slate-600">Tenggat penyelesaian (opsional)</label>
+            <input type="datetime-local" name="due_at" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <label class="block text-xs text-slate-600">Jenis video</label>
             <select name="source_type" data-video-source-type class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="youtube">YouTube</option><option value="mp4">Video MP4</option>
@@ -101,16 +103,21 @@
         <div class="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
             <a href="{{ $isManager ? route('video-lessons.edit', $videoLesson) : route('video-lessons.show', $videoLesson) }}" class="w-full min-w-0 flex-1 hover:text-indigo-700 sm:w-auto">
                 <div class="font-semibold">🎬 {{ $videoLesson->title }}</div>
-                <div class="text-xs text-slate-500 mt-1">{{ $videoLesson->checkpoints_count }} checkpoint · {{ strtoupper($videoLesson->source_type) }} · Nilai maks. 100</div>
+                <div class="text-xs text-slate-500 mt-1">{{ $videoLesson->checkpoints_count }} checkpoint · {{ strtoupper($videoLesson->source_type) }} · Nilai maks. 100 · {{ $videoLesson->due_at ? 'Tenggat '.$videoLesson->due_at->translatedFormat('d M Y, H:i') : 'Tanpa tenggat' }}</div>
             </a>
             @if($isManager)
                 <span class="rounded-full px-2 py-1 text-xs {{ $videoLesson->is_published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">{{ $videoLesson->is_published ? 'Terbit' : 'Draf' }}</span>
             @elseif($videoProgress?->completed_at)
-                <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">Selesai · {{ number_format((float) $videoProgress->score, 0) }}/100</span>
+                <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                    Selesai · {{ number_format((float) $videoProgress->score, 0) }}/100
+                    @if($videoProgress->isLate($videoLesson->due_at))
+                        · terlambat {{ $videoProgress->lateByLabel($videoLesson->due_at) }}
+                    @endif
+                </span>
             @elseif($videoProgress)
-                <span class="rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700">Dalam proses</span>
+                <span class="rounded-full px-2 py-1 text-xs {{ $videoLesson->isOverdue() ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700' }}">{{ $videoLesson->isOverdue() ? 'Belum selesai · lewat tenggat '.$videoLesson->overdueByLabel() : 'Dalam proses' }}</span>
             @else
-                <span class="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">Belum dimulai</span>
+                <span class="rounded-full px-2 py-1 text-xs {{ $videoLesson->isOverdue() ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600' }}">{{ $videoLesson->isOverdue() ? 'Belum dikerjakan · lewat tenggat '.$videoLesson->overdueByLabel() : 'Belum dimulai' }}</span>
             @endif
         </div>
     @empty
@@ -134,11 +141,19 @@
             </div>
             @unless($isManager)
                 @if($submission && $submission->score !== null)
-                    <span class="text-sm text-emerald-700 font-medium">{{ rtrim(rtrim((string) $submission->score, '0'), '.') }}/{{ $assignment->points }}</span>
+                    <span class="text-sm text-emerald-700 font-medium">
+                        {{ rtrim(rtrim((string) $submission->score, '0'), '.') }}/{{ $assignment->points }}
+                        @if($submission->isLate($assignment->due_at))
+                            <small class="block text-red-600">terlambat {{ $submission->lateByLabel($assignment->due_at) }}</small>
+                        @endif
+                    </span>
                 @elseif($submission)
-                    <span class="text-xs px-2 py-1 rounded-full bg-sky-50 text-sky-700">Dikumpulkan</span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-sky-50 text-sky-700">
+                        Dikumpulkan
+                        @if($submission->isLate($assignment->due_at)) · terlambat {{ $submission->lateByLabel($assignment->due_at) }} @endif
+                    </span>
                 @elseif($assignment->isOverdue())
-                    <span class="text-xs px-2 py-1 rounded-full bg-red-50 text-red-700">Terlambat</span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-red-50 text-red-700">Belum mengumpulkan · lewat tenggat {{ $assignment->overdueByLabel() }}</span>
                 @else
                     <span class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-700">Belum dikumpulkan</span>
                 @endif

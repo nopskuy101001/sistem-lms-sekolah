@@ -37,6 +37,7 @@
                                     <strong>{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</strong>
                                     <small>{{ $score['percentage'] !== null ? $fmt($score['percentage']).'%' : '—' }}{{ !$score['final'] ? ' · sementara' : '' }}</small>
                                     @if($score['automatic_zero'] ?? false)<small>{{ $score['status'] }}</small>@endif
+                                    @if(($score['late_label'] ?? false) && !($score['automatic_zero'] ?? false))<small>Terlambat {{ $score['late_label'] }}</small>@endif
                                 @else
                                     —<small>{{ $score['status'] }}</small>
                                 @endif

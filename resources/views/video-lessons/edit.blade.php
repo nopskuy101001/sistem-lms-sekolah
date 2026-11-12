@@ -19,6 +19,7 @@
             @csrf @method('PUT')
             <label class="block text-sm font-medium">Judul <input class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" name="title" value="{{ old('title', $videoLesson->title) }}" maxlength="180" required></label>
             <label class="block text-sm font-medium">Deskripsi <textarea name="description" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm">{{ old('description', $videoLesson->description) }}</textarea></label>
+            <label class="block text-sm font-medium">Tenggat penyelesaian <input type="datetime-local" name="due_at" value="{{ old('due_at', $videoLesson->due_at?->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm"><small class="mt-1 block text-xs font-normal text-slate-500">Kosongkan jika video tidak memiliki tenggat.</small></label>
             <label class="block text-sm font-medium">Sumber <select name="source_type" data-video-source-type class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm"><option value="youtube" @selected(old('source_type', $videoLesson->source_type)==='youtube')>YouTube</option><option value="mp4" @selected(old('source_type', $videoLesson->source_type)==='mp4')>MP4</option></select></label>
             <label class="block text-sm font-medium">URL sumber baru (kosongkan untuk mempertahankan) <input name="source_url" type="text" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" placeholder="https://www.youtube.com/watch?v=... atau https://.../video.mp4"></label>
             @if($videoLesson->file_path)<p class="text-xs text-emerald-700">✓ Video MP4 tersimpan di storage LMS.</p>@else <p class="text-xs text-slate-500 break-all">Sumber saat ini: {{ $videoLesson->source_url }}</p>@endif
@@ -31,7 +32,7 @@
         </form>
     </section>
     <section class="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-        <div class="flex justify-between items-start"><div><h2 class="text-lg font-semibold">Status & Publikasi</h2><p class="text-xs text-slate-500 mt-1">{{ $videoLesson->checkpoints->count() }} checkpoint · {{ $attemptCount }} pengerjaan selesai</p></div><span class="rounded-lg px-3 py-1 text-xs {{ $videoLesson->is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">{{ $videoLesson->is_published ? 'Diterbitkan' : 'Draf' }}</span></div>
+        <div class="flex justify-between items-start"><div><h2 class="text-lg font-semibold">Status & Publikasi</h2><p class="text-xs text-slate-500 mt-1">{{ $videoLesson->checkpoints->count() }} checkpoint · {{ $attemptCount }} pengerjaan selesai · {{ $videoLesson->due_at ? 'Tenggat '.$videoLesson->due_at->translatedFormat('d M Y, H:i') : 'Tanpa tenggat' }}</p></div><span class="rounded-lg px-3 py-1 text-xs {{ $videoLesson->is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">{{ $videoLesson->is_published ? 'Diterbitkan' : 'Draf' }}</span></div>
         <p class="text-sm text-slate-600">{{ $videoLesson->is_published ? 'Siswa anggota kelas dapat menonton dan mengerjakan.' : 'Video belum muncul untuk siswa. Publikasikan setelah membuat soal.' }}</p>
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <h3 class="text-sm font-semibold text-slate-900">Kontrol pemutaran siswa</h3>
@@ -168,6 +169,7 @@
                         <th class="px-5 py-3 text-center font-semibold">Status</th>
                         <th class="px-5 py-3 text-center font-semibold">Nilai</th>
                         <th class="px-5 py-3 font-semibold">Waktu selesai</th>
+                        <th class="px-5 py-3 font-semibold">Keterlambatan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -201,6 +203,19 @@
                             </td>
                             <td class="whitespace-nowrap px-5 py-4 text-slate-600">
                                 {{ $studentAttempt?->completed_at?->translatedFormat('d M Y, H:i') ?? '—' }}
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4">
+                                @if($studentAttempt?->completed_at)
+                                    @if($studentAttempt->isLate($videoLesson->due_at))
+                                        <span class="font-medium text-red-600">Terlambat {{ $studentAttempt->lateByLabel($videoLesson->due_at) }}</span>
+                                    @else
+                                        <span class="text-emerald-700">Tepat waktu</span>
+                                    @endif
+                                @elseif($videoLesson->isOverdue())
+                                    <span class="font-medium text-red-600">Tenggat terlewati {{ $videoLesson->overdueByLabel() }}</span>
+                                @else
+                                    <span class="text-slate-400">—</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

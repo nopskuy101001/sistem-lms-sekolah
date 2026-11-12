@@ -6,6 +6,10 @@
         <a href="{{ route('classrooms.classwork', $videoLesson->classroom) }}" class="text-sm font-medium text-indigo-700 hover:underline">← Tugas & Materi · {{ $videoLesson->classroom->name }}</a>
         <h1 class="text-2xl font-bold text-slate-900 mt-2">{{ $videoLesson->title }}</h1>
         @if($videoLesson->description)<p class="mt-2 text-sm text-slate-600">{{ $videoLesson->description }}</p>@endif
+        <p class="mt-2 text-xs {{ $videoLesson->isOverdue() ? 'font-semibold text-red-600' : 'text-slate-500' }}">
+            {{ $videoLesson->due_at ? 'Tenggat '.$videoLesson->due_at->translatedFormat('d M Y, H:i') : 'Tanpa tenggat' }}
+            @if($videoLesson->isOverdue() && !$attempt?->completed_at) · terlewati {{ $videoLesson->overdueByLabel() }} @endif
+        </p>
     </div>
     @if($isManager)<a href="{{ route('video-lessons.edit', $videoLesson) }}" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white font-semibold">Kelola video & soal</a>@endif
 </div>
@@ -14,7 +18,14 @@
     <iframe id="video-task-frame" src="{{ route('video-lessons.player', $videoLesson) }}" title="Video Interaktif: {{ $videoLesson->title }}" class="video-task-frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" loading="eager"></iframe>
 </div>
 <p id="video-task-status" class="mt-4 text-sm text-slate-600">Video akan berhenti pada setiap checkpoint. Jawab untuk melanjutkan.</p>
-@if($attempt?->completed_at)<div class="mt-4 rounded-xl bg-emerald-50 p-4 text-emerald-800 font-semibold">✓ Semua soal sudah dijawab. Nilai: {{ number_format((float) $attempt->score, 2) }}/100.</div>@endif
+@if($attempt?->completed_at)
+    <div class="mt-4 rounded-xl bg-emerald-50 p-4 text-emerald-800 font-semibold">
+        ✓ Semua soal sudah dijawab. Nilai: {{ number_format((float) $attempt->score, 2) }}/100.
+        @if($attempt->isLate($videoLesson->due_at))
+            <span class="text-red-700">Diselesaikan terlambat {{ $attempt->lateByLabel($videoLesson->due_at) }}.</span>
+        @endif
+    </div>
+@endif
 <script>
 (() => {
     const iframe = document.getElementById('video-task-frame');

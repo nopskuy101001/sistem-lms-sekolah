@@ -70,10 +70,13 @@
                                 @if($transcriptScore && $transcriptScore['score'] !== null)
                                     {{ $fmt($transcriptScore['score']) }}
                                     @if($transcriptScore['manual'] ?? false)<span class="block text-[10px] text-violet-600">koreksi guru</span>@endif
+                                    @if($transcriptScore['late_label'] ?? false)<span class="block text-[10px] text-red-600">terlambat {{ $transcriptScore['late_label'] }}</span>@endif
                                 @elseif(!$transcript['finalized'] && $sub && $sub->score !== null)
                                     {{ $fmt($sub->score) }}
+                                    @if($sub->isLate($assignment->due_at))<span class="block text-[10px] text-red-600">terlambat {{ $sub->lateByLabel($assignment->due_at) }}</span>@endif
                                 @elseif(!$transcript['finalized'] && $sub)
                                     <span class="text-sky-600 text-xs">Dikumpulkan</span>
+                                    @if($sub->isLate($assignment->due_at))<span class="block text-[10px] text-red-600">terlambat {{ $sub->lateByLabel($assignment->due_at) }}</span>@endif
                                 @else
                                     <span class="text-slate-300">–</span>
                                 @endif
@@ -112,8 +115,10 @@
                                 @if($transcriptScore && $transcriptScore['score'] !== null)
                                     <span class="text-emerald-700 font-semibold">{{ $fmt($transcriptScore['score']) }}</span>
                                     @if($transcriptScore['manual'] ?? false)<span class="block text-[10px] text-violet-600">koreksi guru</span>@endif
+                                    @if($transcriptScore['late_label'] ?? false)<span class="block text-[10px] text-red-600">terlambat {{ $transcriptScore['late_label'] }}</span>@endif
                                 @elseif(!$transcript['finalized'] && $videoAttempt?->completed_at)
                                     <span class="text-emerald-700 font-semibold">{{ $fmt($videoAttempt->score) }}</span>
+                                    @if($videoAttempt->isLate($videoLesson->due_at))<span class="block text-[10px] text-red-600">terlambat {{ $videoAttempt->lateByLabel($videoLesson->due_at) }}</span>@endif
                                 @elseif(!$transcript['finalized'] && $videoAttempt)
                                     <span class="text-xs text-amber-600">Dalam proses</span>
                                 @else

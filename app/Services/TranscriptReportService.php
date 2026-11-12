@@ -106,9 +106,10 @@ class TranscriptReportService
                 $submission = $submissions->get($student->id)?->get($assignment->id);
                 $score = $submission?->score;
                 $maximum = (float) $assignment->points;
+                $lateLabel = $submission?->lateByLabel($assignment->due_at);
                 $hasAutomaticZero = ! $submission && $assignment->isOverdue() && $maximum > 0;
                 $automaticZeroReason = $hasAutomaticZero
-                    ? 'Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu.'
+                    ? 'Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu. Tenggat telah terlewati '.$assignment->overdueByLabel().'.'
                     : null;
                 $scores['assignment-'.$assignment->id] = [
                     'score' => $score !== null ? (float) $score : ($hasAutomaticZero ? 0.0 : null),
@@ -116,9 +117,11 @@ class TranscriptReportService
                     'percentage' => $score !== null && $maximum > 0
                         ? round(((float) $score / $maximum) * 100, 2)
                         : ($hasAutomaticZero ? 0.0 : null),
-                    'status' => $automaticZeroReason ?? ($score !== null ? 'Dinilai' : ($submission ? 'Belum dinilai' : 'Belum dikumpulkan')),
+                    'status' => $automaticZeroReason ?? (($score !== null ? 'Dinilai' : ($submission ? 'Belum dinilai' : 'Belum dikumpulkan'))
+                        .($lateLabel ? ' · Terlambat '.$lateLabel : '')),
                     'final' => $score !== null || $hasAutomaticZero,
                     'automatic_zero' => $hasAutomaticZero,
+                    'late_label' => $lateLabel,
                     'reason' => $automaticZeroReason,
                 ];
             }
@@ -152,12 +155,23 @@ class TranscriptReportService
             foreach ($videoLessons as $lesson) {
                 $attempt = $videoAttempts->get($student->id)?->get($lesson->id);
                 $finished = $attempt && $attempt->completed_at !== null;
+                $lateLabel = $finished ? $attempt->lateByLabel($lesson->due_at) : null;
+                $hasAutomaticZero = $lesson->is_published && $lesson->isOverdue() && ! $finished;
+                $automaticZeroReason = $hasAutomaticZero
+                    ? ($attempt
+                        ? 'Nilai otomatis 0 karena video interaktif belum diselesaikan saat tenggat berakhir. Tenggat telah terlewati '.$lesson->overdueByLabel().'.'
+                        : 'Nilai otomatis 0 karena video interaktif tidak dikerjakan sampai tenggat waktu. Tenggat telah terlewati '.$lesson->overdueByLabel().'.')
+                    : null;
                 $scores['video-'.$lesson->id] = [
-                    'score' => $finished ? (float) $attempt->score : null,
+                    'score' => $finished ? (float) $attempt->score : ($hasAutomaticZero ? 0.0 : null),
                     'maximum' => 100.0,
-                    'percentage' => $finished ? (float) $attempt->score : null,
-                    'status' => ! $attempt ? 'Belum dikerjakan' : ($finished ? 'Dinilai' : 'Sedang mengerjakan'),
-                    'final' => (bool) $finished,
+                    'percentage' => $finished ? (float) $attempt->score : ($hasAutomaticZero ? 0.0 : null),
+                    'status' => $automaticZeroReason ?? ((! $attempt ? 'Belum dikerjakan' : ($finished ? 'Dinilai' : 'Sedang mengerjakan'))
+                        .($lateLabel ? ' · Terlambat '.$lateLabel : '')),
+                    'final' => (bool) $finished || $hasAutomaticZero,
+                    'automatic_zero' => $hasAutomaticZero,
+                    'late_label' => $lateLabel,
+                    'reason' => $automaticZeroReason,
                 ];
             }
 

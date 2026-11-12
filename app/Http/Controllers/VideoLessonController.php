@@ -37,6 +37,7 @@ class VideoLessonController extends Controller
                 'creator_id' => $request->user()->id,
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
+                'due_at' => $data['due_at'] ?? null,
                 'source_type' => $data['source_type'],
                 'source_url' => $path ? '' : $data['source_url'],
                 'file_path' => $path,
@@ -98,6 +99,7 @@ class VideoLessonController extends Controller
         $videoLesson->update([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'due_at' => $data['due_at'] ?? null,
             'source_type' => $data['source_type'],
             'source_url' => $newPath ? '' : ($data['source_url'] ?? $videoLesson->source_url),
             'file_path' => $newPath ?: ($sourceChanged ? null : $oldPath),
@@ -115,10 +117,13 @@ class VideoLessonController extends Controller
         $videoLesson->update(['is_published' => ! $videoLesson->is_published]);
 
         if ($videoLesson->is_published) {
+            $deadline = $videoLesson->due_at
+                ? ' Tenggat '.$videoLesson->due_at->translatedFormat('d M Y, H:i').'.'
+                : '';
             AcademicNotifier::students(
                 $videoLesson->classroom,
                 'Video task dipublikasikan',
-                $videoLesson->title.' sudah tersedia di kelas '.$videoLesson->classroom->name.'.',
+                $videoLesson->title.' sudah tersedia di kelas '.$videoLesson->classroom->name.'.'.$deadline,
                 route('video-lessons.show', $videoLesson, false),
                 'video',
             );
@@ -326,6 +331,7 @@ class VideoLessonController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'due_at' => ['nullable', 'date'],
             'source_type' => ['required', Rule::in(['youtube', 'mp4'])],
             'source_url' => ['nullable', 'string', 'max:2000'],
             'video_file' => ['nullable', 'file', 'mimes:mp4', 'max:102400'],

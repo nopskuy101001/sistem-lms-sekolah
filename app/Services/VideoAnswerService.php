@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\VideoAttempt;
 use App\Models\VideoLesson;
+use App\Support\Lateness;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -53,7 +54,12 @@ class VideoAnswerService
             $count = $lesson->checkpoints()->count();
             if ($count > 0 && $attempt->answers()->count() >= $count) {
                 $correct = $attempt->answers()->where('is_correct', true)->count();
-                $attempt->update(['score' => round($correct * 100 / $count, 2), 'completed_at' => now()]);
+                $completedAt = now();
+                $attempt->update([
+                    'score' => round($correct * 100 / $count, 2),
+                    'completed_at' => $completedAt,
+                    'late_seconds' => Lateness::seconds($lesson->due_at, $completedAt),
+                ]);
             }
             return $this->feedback($lesson, $attempt, $checkpoint, $answer);
         });

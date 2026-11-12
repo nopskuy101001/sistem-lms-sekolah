@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesClassroom;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Support\AcademicNotifier;
+use App\Support\Lateness;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,7 @@ class SubmissionController extends Controller
 
         $submission->content = $data['content'] ?? null;
         $submission->submitted_at = now();
+        $submission->late_seconds = Lateness::seconds($assignment->due_at, $submission->submitted_at);
         $submission->save();
 
         AcademicNotifier::teacher(

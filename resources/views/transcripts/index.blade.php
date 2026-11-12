@@ -121,6 +121,8 @@
                                             <span class="block text-[11px] {{ $score['final'] ? 'text-emerald-600' : 'text-amber-600' }}">{{ $fmt($score['percentage']) }}%{{ !$score['final'] ? ' · sementara' : '' }}</span>
                                             @if($score['automatic_zero'] ?? false)
                                                 <span class="mt-1 block text-[10px] font-medium leading-4 text-rose-600">{{ $score['status'] }}</span>
+                                            @elseif($score['late_label'] ?? false)
+                                                <span class="mt-1 block text-[10px] font-medium leading-4 text-rose-600">Terlambat {{ $score['late_label'] }}</span>
                                             @endif
                                         @else
                                             <span class="text-xs text-slate-400">{{ $score['status'] }}</span>

@@ -139,7 +139,7 @@ class TranscriptFinalValidationTest extends TestCase
         $this->assertSame(0.0, $score['percentage']);
         $this->assertTrue($score['final']);
         $this->assertTrue($score['automatic_zero']);
-        $this->assertSame('Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu.', $score['status']);
+        $this->assertStringStartsWith('Nilai otomatis 0 karena tugas tidak dikumpulkan sampai tenggat waktu. Tenggat telah terlewati ', $score['status']);
         $this->assertSame($score['status'], $score['reason']);
 
         $this->actingAs($this->teacher)

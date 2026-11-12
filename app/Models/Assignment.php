@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Lateness;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,5 +31,10 @@ class Assignment extends Model
     public function isOverdue(): bool
     {
         return $this->due_at !== null && now()->greaterThan($this->due_at);
+    }
+
+    public function overdueByLabel(): ?string
+    {
+        return $this->isOverdue() ? Lateness::label(Lateness::seconds($this->due_at, now())) : null;
     }
 }

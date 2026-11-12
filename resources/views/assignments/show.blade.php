@@ -59,7 +59,7 @@
                     <div class="text-sm mb-3">
                         <div class="text-slate-500">
                             Dikumpulkan {{ $submission->submitted_at->translatedFormat('d M Y, H:i') }}
-                            @if($submission->isLate()) <span class="text-red-600">(terlambat)</span> @endif
+                            @if($submission->isLate($assignment->due_at)) <span class="text-red-600">(terlambat {{ $submission->lateByLabel($assignment->due_at) }})</span> @endif
                         </div>
                         @if($submission->content)
                             <p class="mt-2 whitespace-pre-line bg-slate-50 rounded-lg p-2">{{ $submission->content }}</p>
@@ -80,7 +80,7 @@
                             {{ $submission ? 'Kumpulkan ulang' : 'Kumpulkan' }}
                         </button>
                         @if($assignment->isOverdue())
-                            <p class="text-xs text-red-600">Tenggat sudah lewat, pengumpulan akan ditandai terlambat.</p>
+                            <p class="text-xs text-red-600">Tenggat sudah lewat {{ $assignment->overdueByLabel() }}, pengumpulan akan ditandai terlambat.</p>
                         @endif
                     </form>
                 @endif
@@ -107,10 +107,13 @@
                     @if($sub)
                         <div class="text-xs text-slate-500">
                             {{ $sub->submitted_at->translatedFormat('d M Y, H:i') }}
-                            @if($sub->isLate()) <span class="text-red-600">· terlambat</span> @endif
+                            @if($sub->isLate($assignment->due_at)) <span class="text-red-600">· terlambat {{ $sub->lateByLabel($assignment->due_at) }}</span> @endif
                         </div>
                     @else
-                        <span class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-700">Belum mengumpulkan</span>
+                        <span class="text-xs px-2 py-1 rounded-full {{ $assignment->isOverdue() ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700' }}">
+                            Belum mengumpulkan
+                            @if($assignment->isOverdue()) · lewat tenggat {{ $assignment->overdueByLabel() }} @endif
+                        </span>
                     @endif
                 </div>
 
