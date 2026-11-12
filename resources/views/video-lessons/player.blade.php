@@ -17,7 +17,7 @@
                     @if($youtubeId)<div id="youtube-player" class="video-player" aria-label="Pemutar video YouTube"></div>
                     @else <div class="player-unavailable">URL YouTube tidak valid.</div>@endif
                 @else
-                    <video id="mp4-player" class="video-player" playsinline preload="metadata" controlsList="nodownload"><source src="{{ $videoLesson->playback_url }}" type="video/mp4">Browser Anda tidak mendukung MP4.</video>
+                    <video id="mp4-player" class="video-player" playsinline preload="metadata" controlsList="nodownload"><source src="{{ $videoLesson->file_path ? route('video-lessons.media', $videoLesson) : $videoLesson->source_url }}" type="video/mp4">Browser Anda tidak mendukung MP4.</video>
                 @endif
                 @if($preview || $videoLesson->allow_seeking)
                     <button id="skip-back" type="button" class="vt-skip-zone vt-skip-back" aria-label="Ketuk dua kali untuk mundur {{ $videoLesson->skip_seconds }} detik"><span>↶ {{ $videoLesson->skip_seconds }} dtk</span></button>

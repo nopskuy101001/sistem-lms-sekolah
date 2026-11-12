@@ -27,13 +27,14 @@
     </div>
     <div class="flex flex-wrap items-center gap-3">
         <span class="rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700">{{ $questionBank->question_count }} soal · {{ $questionBank->total_points }} poin</span>
-        <a href="{{ route('question-banks.excel', $questionBank) }}" class="lms-button border border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50">Unduh Excel</a>
+        <a href="{{ route('question-banks.package', $questionBank) }}" class="lms-button border border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"><span aria-hidden="true">&#128230;</span> Unduh Paket ZIP</a>
+        <a href="{{ route('question-banks.excel', $questionBank) }}" class="text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja</a>
         <a href="#bank-use-package" class="lms-button lms-button-primary">Gunakan paket ini</a>
     </div>
 </div>
 
 @if($groups->contains(fn ($group) => filled($group['media_path'] ?? null) || filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null)))
-    <p class="mb-5 text-xs text-amber-700">File Excel memuat soal, teks, dan tabel stimulus. Gambar serta video tidak disertakan di Excel; media tetap tersimpan saat paket digunakan kembali di dalam RuangKelas.</p>
+    <p class="mb-5 text-xs text-emerald-700">Gunakan Paket ZIP untuk memindahkan soal beserta gambar dan MP4. URL YouTube/MP4 tetap tercatat di Excel di dalam paket.</p>
 @endif
 
 <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">

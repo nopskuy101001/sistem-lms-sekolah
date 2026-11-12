@@ -11,8 +11,10 @@ use App\Services\QuestionImportTemplateXlsxExporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use OpenSpout\Reader\XLSX\Reader;
 use Tests\TestCase;
+use ZipArchive;
 
 class QuestionBankTest extends TestCase
 {
@@ -46,9 +48,14 @@ class QuestionBankTest extends TestCase
         ]);
 
         $this->actingAs($otherTeacher)->get(route('question-banks.excel', $bank))->assertForbidden();
+        $this->actingAs($otherTeacher)->get(route('question-banks.package', $bank))->assertForbidden();
         $this->actingAs($student)->get(route('question-banks.excel', $bank))->assertForbidden();
+        $this->actingAs($student)->get(route('question-banks.package', $bank))->assertForbidden();
         $this->actingAs($teacher)->get(route('question-banks.index'))
-            ->assertOk()->assertSee(route('question-banks.excel', $bank), false)->assertDontSee('Impor ke Bank Soal');
+            ->assertOk()
+            ->assertSee(route('question-banks.excel', $bank), false)
+            ->assertSee(route('question-banks.package', $bank), false)
+            ->assertDontSee('Impor ke Bank Soal');
         $this->get(route('question-banks.show', $bank))
             ->assertOk()->assertSee(route('question-banks.excel', $bank), false);
 
@@ -86,6 +93,127 @@ class QuestionBankTest extends TestCase
         $this->assertCount(4, $quiz->questions);
         $this->assertCount(1, $quiz->questionGroups);
         $this->assertSame('=2+2', $quiz->questions->first()->option_a);
+    }
+
+    public function test_question_package_round_trip_restores_images_uploaded_video_and_youtube_url(): void
+    {
+        Storage::fake('local');
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+        $mp4 = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isomvideo-data";
+        Storage::disk('local')->put('question-bank-stimuli/chart.png', $png);
+        Storage::disk('local')->put('question-bank-stimulus-videos/explanation.mp4', $mp4);
+
+        $teacher = User::factory()->create(['role' => 'guru']);
+        $classroom = Classroom::create(['teacher_id' => $teacher->id, 'name' => 'Kelas Paket', 'color' => 'indigo']);
+        $quiz = Quiz::create(['classroom_id' => $classroom->id, 'title' => 'Tujuan Paket']);
+        $bank = QuestionBank::create([
+            'teacher_id' => $teacher->id,
+            'title' => 'Paket Multimedia',
+            'question_count' => 3,
+            'total_points' => 30,
+            'payload' => [
+                'version' => 1,
+                'quiz' => ['title' => 'Kuis Multimedia'],
+                'groups' => [
+                    [
+                        'key' => 'group-1', 'title' => 'Media lokal', 'stimulus' => '',
+                        'media_path' => 'question-bank-stimuli/chart.png', 'media_name' => 'grafik.png',
+                        'media_alt' => 'Grafik nilai', 'video_type' => 'upload',
+                        'video_path' => 'question-bank-stimulus-videos/explanation.mp4',
+                        'video_name' => 'penjelasan.mp4', 'video_caption' => 'Penjelasan grafik',
+                    ],
+                    [
+                        'key' => 'group-2', 'title' => 'Video YouTube', 'stimulus' => '',
+                        'video_type' => 'youtube',
+                        'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                        'video_caption' => 'Video referensi',
+                    ],
+                    [
+                        'key' => 'group-3', 'title' => 'Video MP4 URL', 'stimulus' => '',
+                        'video_type' => 'mp4_url',
+                        'video_url' => 'https://cdn.example.test/stimulus/informasi.mp4',
+                        'video_caption' => 'Video dari CDN',
+                    ],
+                ],
+                'questions' => [
+                    ['type' => 'pilihan_ganda', 'body' => 'Soal media lokal', 'option_a' => 'Benar', 'option_b' => 'Salah', 'correct_option' => 'a', 'points' => 10, 'group_key' => 'group-1'],
+                    ['type' => 'pilihan_ganda', 'body' => 'Soal YouTube', 'option_a' => 'Benar', 'option_b' => 'Salah', 'correct_option' => 'a', 'points' => 10, 'group_key' => 'group-2'],
+                    ['type' => 'pilihan_ganda', 'body' => 'Soal MP4 URL', 'option_a' => 'Benar', 'option_b' => 'Salah', 'correct_option' => 'a', 'points' => 10, 'group_key' => 'group-3'],
+                ],
+            ],
+        ]);
+
+        $content = $this->actingAs($teacher)->get(route('question-banks.package', $bank))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/zip')
+            ->streamedContent();
+        $path = tempnam(sys_get_temp_dir(), 'question-package-test-');
+        file_put_contents($path, $content);
+        $archive = new ZipArchive;
+        $archiveOpen = false;
+
+        try {
+            $this->assertTrue($archive->open($path) === true);
+            $archiveOpen = true;
+            $this->assertNotFalse($archive->locateName('soal.xlsx'));
+            $this->assertNotFalse($archive->locateName('manifest.json'));
+            $this->assertNotFalse($archive->locateName('media/group-1/image.png'));
+            $this->assertNotFalse($archive->locateName('media/group-1/video.mp4'));
+            $manifest = json_decode($archive->getFromName('manifest.json'), true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame('ruangkelas-question-package', $manifest['format']);
+            $archive->close();
+            $archiveOpen = false;
+
+            $file = new UploadedFile($path, 'paket-multimedia.zip', 'application/zip', null, true);
+            $this->post(route('questions.import', $quiz), ['question_file' => $file])
+                ->assertRedirect()
+                ->assertSessionHasNoErrors()
+                ->assertSessionHas('success');
+
+            $quiz->refresh()->load(['questions', 'questionGroups']);
+            $this->assertCount(3, $quiz->questions);
+            $this->assertCount(3, $quiz->questionGroups);
+            $local = $quiz->questionGroups->firstWhere('title', 'Media lokal');
+            $youtube = $quiz->questionGroups->firstWhere('title', 'Video YouTube');
+            $mp4Url = $quiz->questionGroups->firstWhere('title', 'Video MP4 URL');
+            $this->assertNotNull($local);
+            $this->assertSame('Grafik nilai', $local->media_alt);
+            $this->assertSame('upload', $local->video_type);
+            $this->assertSame('Penjelasan grafik', $local->video_caption);
+            Storage::disk('local')->assertExists($local->media_path);
+            Storage::disk('local')->assertExists($local->video_path);
+            $this->assertSame($png, Storage::disk('local')->get($local->media_path));
+            $this->assertSame($mp4, Storage::disk('local')->get($local->video_path));
+            $this->assertNotNull($youtube);
+            $this->assertSame('youtube', $youtube->video_type);
+            $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $youtube->video_url);
+            $this->assertNotNull($mp4Url);
+            $this->assertSame('mp4_url', $mp4Url->video_type);
+            $this->assertSame('https://cdn.example.test/stimulus/informasi.mp4', $mp4Url->video_url);
+
+            $chunkQuiz = Quiz::create(['classroom_id' => $classroom->id, 'title' => 'Tujuan Paket Bertahap']);
+            $uploadId = (string) Str::uuid();
+            $chunkResponse = $this->postJson(route('question-package-uploads.chunks'), [
+                'upload_id' => $uploadId,
+                'chunk_index' => 0,
+                'total_chunks' => 1,
+                'original_name' => 'paket-multimedia.zip',
+                'total_size' => strlen($content),
+                'chunk' => UploadedFile::fake()->createWithContent('chunk.part', $content),
+            ])->assertOk()->assertJson(['complete' => true]);
+
+            $this->post(route('questions.import', $chunkQuiz), [
+                'question_package_upload_token' => $chunkResponse->json('token'),
+            ])->assertRedirect()->assertSessionHasNoErrors();
+            $this->assertCount(3, $chunkQuiz->refresh()->questions);
+            $this->assertCount(3, $chunkQuiz->questionGroups);
+            Storage::disk('local')->assertMissing('temporary/question-package-staging/'.$teacher->id.'/'.$uploadId.'.zip');
+        } finally {
+            if ($archiveOpen) {
+                $archive->close();
+            }
+            @unlink($path);
+        }
     }
 
     public function test_teacher_can_save_complete_tka_package_and_reuse_it_as_a_draft_quiz(): void

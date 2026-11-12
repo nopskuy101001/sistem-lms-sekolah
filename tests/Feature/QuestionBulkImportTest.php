@@ -14,6 +14,7 @@ use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader;
 use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
+use ZipArchive;
 
 class QuestionBulkImportTest extends TestCase
 {
@@ -151,5 +152,30 @@ class QuestionBulkImportTest extends TestCase
             'question_file' => UploadedFile::fake()->createWithContent('soal.csv', $csv),
         ])->assertRedirect()->assertSessionHasErrors('question_file');
         $this->assertDatabaseCount('questions', 0);
+    }
+
+    public function test_package_with_path_traversal_is_rejected_without_importing_questions(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'unsafe-question-package-');
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
+        $zip->addFromString('manifest.json', json_encode([
+            'format' => 'ruangkelas-question-package',
+            'version' => 1,
+            'workbook' => 'soal.xlsx',
+        ], JSON_THROW_ON_ERROR));
+        $zip->addFromString('../keluar.txt', 'tidak boleh keluar');
+        $zip->close();
+
+        try {
+            $file = new UploadedFile($path, 'paket-tidak-aman.zip', 'application/zip', null, true);
+            $this->actingAs($this->teacher)->post(route('questions.import', $this->quiz), [
+                'question_file' => $file,
+            ])->assertRedirect()->assertSessionHasErrors('question_file');
+            $this->assertDatabaseCount('questions', 0);
+            $this->assertFileDoesNotExist(sys_get_temp_dir().DIRECTORY_SEPARATOR.'keluar.txt');
+        } finally {
+            @unlink($path);
+        }
     }
 }

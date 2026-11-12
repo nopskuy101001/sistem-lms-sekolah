@@ -8,6 +8,7 @@ use App\Models\VideoAttempt;
 use App\Models\VideoLesson;
 use App\Services\TranscriptReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class VideoLessonIntegrationTest extends TestCase
@@ -68,6 +69,38 @@ class VideoLessonIntegrationTest extends TestCase
             ->assertSee('Progres Pengerjaan Siswa')
             ->assertSee($this->student->name)
             ->assertSee('Belum mulai');
+    }
+
+    public function test_mp4_checkpoint_editor_loads_seekable_preview_and_cache_busted_script(): void
+    {
+        Storage::fake('public');
+        $content = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isomvideo-data-for-range";
+        Storage::disk('public')->put('video-lessons/editor.mp4', $content);
+        $this->lesson->update([
+            'source_type' => 'mp4',
+            'source_url' => '',
+            'file_path' => 'video-lessons/editor.mp4',
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($this->teacher)
+            ->get(route('video-lessons.edit', $this->lesson))
+            ->assertOk()
+            ->assertSee('id="video-editor-mp4"', false)
+            ->assertSee(route('video-lessons.media', $this->lesson), false)
+            ->assertSee('class="video-time-range', false)
+            ->assertSee('video-task/js/editor.js?v=', false);
+
+        $this->withHeaders(['Range' => 'bytes=5-14'])
+            ->get(route('video-lessons.media', $this->lesson))
+            ->assertStatus(206)
+            ->assertHeader('accept-ranges', 'bytes')
+            ->assertHeader('content-range', 'bytes 5-14/'.strlen($content));
+
+        $editor = file_get_contents(public_path('video-task/js/editor.js'));
+        $this->assertStringContainsString('pendingMp4Seek', $editor);
+        $this->assertStringContainsString('mp4.currentTime = target', $editor);
+        $this->assertStringContainsString("mp4.addEventListener('canplay'", $editor);
     }
 
     public function test_answer_sequence_completion_and_transcript(): void

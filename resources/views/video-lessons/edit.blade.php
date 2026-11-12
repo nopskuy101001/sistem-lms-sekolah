@@ -69,7 +69,7 @@
                 <div id="video-editor-youtube" class="h-full w-full" aria-label="Pratinjau video YouTube"></div>
             @elseif($videoLesson->source_type === 'mp4')
                 <video id="video-editor-mp4" class="h-full w-full" controls playsinline preload="metadata">
-                    <source src="{{ $videoLesson->playback_url }}" type="video/mp4">
+                    <source src="{{ $videoLesson->file_path ? route('video-lessons.media', $videoLesson) : $videoLesson->source_url }}" type="video/mp4">
                     Browser Anda tidak mendukung video MP4.
                 </video>
             @else
@@ -216,7 +216,7 @@ window.VideoTaskEditor = {{ \Illuminate\Support\Js::from([
     'youtubeId' => $youtubeId,
 ]) }};
 </script>
-<script src="{{ asset('video-task/js/editor.js') }}"></script>
+<script src="{{ asset('video-task/js/editor.js') }}?v={{ filemtime(public_path('video-task/js/editor.js')) }}"></script>
 @if($videoLesson->source_type === 'youtube' && $youtubeId)
 <script src="https://www.youtube.com/iframe_api"></script>
 @endif

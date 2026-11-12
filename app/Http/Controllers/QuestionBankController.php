@@ -4,22 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\QuestionBank;
 use App\Models\Quiz;
-use App\Services\QuestionBankXlsxExporter;
+use App\Services\QuestionBankPackageService;
 use App\Services\QuestionBankService;
+use App\Services\QuestionBankXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class QuestionBankController extends Controller
 {
     public function __construct(
         private readonly QuestionBankService $banks,
         private readonly QuestionBankXlsxExporter $exporter,
+        private readonly QuestionBankPackageService $packages,
     ) {}
 
     public function index(Request $request): View
@@ -116,6 +118,28 @@ class QuestionBankController extends Controller
             }
         }, 'bank-soal-'.$questionBank->id.'-'.(Str::slug($questionBank->title) ?: 'paket').'.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
+    }
+
+    public function package(Request $request, QuestionBank $questionBank): StreamedResponse
+    {
+        $this->authorizeBank($request, $questionBank);
+
+        return response()->streamDownload(function () use ($questionBank): void {
+            $path = tempnam(sys_get_temp_dir(), 'bank-soal-package-');
+            abort_if($path === false, 500, 'Folder sementara tidak tersedia.');
+
+            try {
+                $this->packages->write($path, $questionBank);
+                readfile($path);
+            } finally {
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+        }, 'bank-soal-'.$questionBank->id.'-'.(Str::slug($questionBank->title) ?: 'paket').'.zip', [
+            'Content-Type' => 'application/zip',
             'Cache-Control' => 'no-store, no-cache',
         ]);
     }

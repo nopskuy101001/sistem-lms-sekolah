@@ -142,16 +142,19 @@
                         <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-600 font-bold text-white">CSV</div>
                         <div>
                             <h2 class="font-semibold text-emerald-950">Import Soal Massal</h2>
-                            <p class="mt-1 text-xs leading-5 text-emerald-800">Tambahkan hingga 500 soal sekaligus dari CSV atau Excel. Mendukung PG, PG kompleks, kategori, esai, serta stimulus teks dan tabel.</p>
+                            <p class="mt-1 text-xs leading-5 text-emerald-800">Tambahkan hingga 500 soal dari CSV, Excel, atau Paket ZIP RuangKelas. Paket ZIP dapat membawa gambar, MP4, serta URL video stimulus.</p>
                         </div>
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
                         <a href="{{ route('questions.import.template.xlsx') }}" class="rounded-lg bg-white px-3 py-2 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100">Template Excel</a>
                         <a href="{{ route('questions.import.template.csv') }}" class="rounded-lg bg-white px-3 py-2 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100">Template CSV</a>
                     </div>
-                    <form method="POST" action="{{ route('questions.import', $quiz) }}" enctype="multipart/form-data" class="mt-4 space-y-3">
+                    <form method="POST" action="{{ route('questions.import', $quiz) }}" enctype="multipart/form-data" class="mt-4 space-y-3" data-question-package-form data-package-upload-url="{{ route('question-package-uploads.chunks') }}">
                         @csrf
-                        <input type="file" name="question_file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required class="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:font-semibold file:text-white">
+                        <input type="file" name="question_file" accept=".csv,.xlsx,.zip,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip" data-question-package-file class="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:font-semibold file:text-white">
+                        <input type="hidden" name="question_package_upload_token" value="" data-question-package-token>
+                        <progress max="100" value="0" data-question-package-progress class="h-2 w-full accent-emerald-600"></progress>
+                        <p class="min-h-4 text-[11px] text-emerald-700" data-question-package-status></p>
                         @if($errors->has('question_file'))
                             <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                                 <p class="font-semibold">Import belum dapat diproses:</p>
@@ -162,7 +165,7 @@
                         @endif
                         <button class="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Import ke kuis ini</button>
                     </form>
-                    <p class="mt-3 text-[11px] leading-4 text-emerald-700">Unduh dan ikuti template. Import dibatalkan seluruhnya bila ada baris yang tidak valid.</p>
+                    <p class="mt-3 text-[11px] leading-4 text-emerald-700">Gunakan template untuk input biasa. Untuk memindahkan media, ekspor Paket ZIP dari Bank Soal lalu impor ZIP tanpa mengubah susunan foldernya. Import dibatalkan seluruhnya bila ada data yang tidak valid.</p>
                 </section>
             @endif
             @if(auth()->user()->isGuru())
@@ -300,4 +303,5 @@
 
 @push('scripts')
 <script src="{{ asset('js/chunked-video-upload.js') }}?v={{ filemtime(public_path('js/chunked-video-upload.js')) }}"></script>
+<script src="{{ asset('js/chunked-question-package-upload.js') }}?v={{ filemtime(public_path('js/chunked-question-package-upload.js')) }}"></script>
 @endpush

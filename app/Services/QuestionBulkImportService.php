@@ -4,17 +4,26 @@ namespace App\Services;
 
 use App\Models\Question;
 use App\Models\Quiz;
+use App\Support\VideoSource;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use OpenSpout\Reader\CSV\Options as CsvOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
+use Throwable;
+use ZipArchive;
 
 class QuestionBulkImportService
 {
     private const MAX_QUESTIONS = 500;
+
+    private const MAX_PACKAGE_BYTES = 125_829_120;
+
+    private const MAX_PACKAGE_ENTRIES = 1000;
 
     private const REQUIRED_HEADERS = ['type', 'body', 'points'];
 
@@ -39,19 +48,35 @@ class QuestionBulkImportService
         'judulstimulus' => 'stimulus_title',
         'teksstimulus' => 'stimulus_text',
         'tabelstimulus' => 'stimulus_table',
+        'filegambarstimulus' => 'stimulus_image_file',
+        'altgambarstimulus' => 'stimulus_image_alt',
+        'urlvideostimulus' => 'stimulus_video_url',
+        'filevideostimulus' => 'stimulus_video_file',
+        'keteranganvideostimulus' => 'stimulus_video_caption',
     ];
 
     /** @return array{questions:int,groups:int} */
     public function import(Quiz $quiz, UploadedFile $file): array
     {
-        $reader = $this->readerFor($file);
+        $extension = strtolower($file->getClientOriginalExtension());
+        if ($extension === 'zip') {
+            return $this->importPackage($quiz, $file);
+        }
+
+        return $this->importSpreadsheet($quiz, $file->getRealPath(), $extension);
+    }
+
+    /** @return array{questions:int,groups:int} */
+    private function importSpreadsheet(Quiz $quiz, string $path, string $extension, ?string $packageRoot = null): array
+    {
+        $reader = $this->readerFor($extension);
         $questions = [];
         $groups = [];
         $errors = [];
         $headers = null;
 
         try {
-            $reader->open($file->getRealPath());
+            $reader->open($path);
 
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $rowNumber => $row) {
@@ -85,7 +110,7 @@ class QuestionBulkImportService
                         break 2;
                     }
 
-                    $parsed = $this->parseRow($values, $headers, (int) $rowNumber, $groups, $errors);
+                    $parsed = $this->parseRow($values, $headers, (int) $rowNumber, $groups, $errors, $packageRoot);
                     if ($parsed !== null) {
                         $questions[] = $parsed;
                     }
@@ -106,26 +131,38 @@ class QuestionBulkImportService
             throw ValidationException::withMessages(['question_file' => array_slice($errors, 0, 25)]);
         }
 
-        DB::transaction(function () use ($quiz, $groups, $questions): void {
-            $groupIds = [];
-            foreach ($groups as $code => $group) {
-                $groupIds[$code] = $quiz->questionGroups()->create($group)->id;
+        $storedMedia = [];
+        try {
+            foreach ($groups as &$group) {
+                $this->storeGroupMedia($group, $storedMedia);
             }
+            unset($group);
 
-            foreach ($questions as $question) {
-                $code = $question['_stimulus_code'];
-                unset($question['_stimulus_code']);
-                $question['question_group_id'] = $code !== null ? $groupIds[$code] : null;
-                $quiz->questions()->create($question);
-            }
-        });
+            DB::transaction(function () use ($quiz, $groups, $questions): void {
+                $groupIds = [];
+                foreach ($groups as $code => $group) {
+                    unset($group['_image_source'], $group['_video_source']);
+                    $groupIds[$code] = $quiz->questionGroups()->create($group)->id;
+                }
+
+                foreach ($questions as $question) {
+                    $code = $question['_stimulus_code'];
+                    unset($question['_stimulus_code']);
+                    $question['question_group_id'] = $code !== null ? $groupIds[$code] : null;
+                    $quiz->questions()->create($question);
+                }
+            });
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($storedMedia);
+            throw $exception;
+        }
 
         return ['questions' => count($questions), 'groups' => count($groups)];
     }
 
-    private function readerFor(UploadedFile $file): CsvReader|XlsxReader
+    private function readerFor(string $extension): CsvReader|XlsxReader
     {
-        if (strtolower($file->getClientOriginalExtension()) === 'xlsx') {
+        if ($extension === 'xlsx') {
             return new XlsxReader;
         }
 
@@ -162,8 +199,14 @@ class QuestionBulkImportService
      * @param  array<int, string>  $errors
      * @return array<string, mixed>|null
      */
-    private function parseRow(array $values, array $headers, int $rowNumber, array &$groups, array &$errors): ?array
-    {
+    private function parseRow(
+        array $values,
+        array $headers,
+        int $rowNumber,
+        array &$groups,
+        array &$errors,
+        ?string $packageRoot = null,
+    ): ?array {
         $data = [];
         foreach ($headers as $index => $field) {
             $data[$field] = trim((string) ($values[$index] ?? ''));
@@ -251,7 +294,10 @@ class QuestionBulkImportService
         }
 
         $code = trim($data['stimulus_code'] ?? '');
-        $hasStimulusData = collect(['stimulus_title', 'stimulus_text', 'stimulus_table'])
+        $hasStimulusData = collect([
+            'stimulus_title', 'stimulus_text', 'stimulus_table', 'stimulus_image_file',
+            'stimulus_image_alt', 'stimulus_video_url', 'stimulus_video_file', 'stimulus_video_caption',
+        ])
             ->contains(fn ($field) => filled($data[$field] ?? null));
         $normalizedCode = $code !== '' ? Str::lower($code) : null;
 
@@ -267,20 +313,72 @@ class QuestionBulkImportService
             if (mb_strlen($data['stimulus_text'] ?? '') > 20000) {
                 $rowErrors[] = 'Teks Stimulus maksimal 20.000 karakter';
             }
+            if (mb_strlen($data['stimulus_image_alt'] ?? '') > 255) {
+                $rowErrors[] = 'Alt Gambar Stimulus maksimal 255 karakter';
+            }
+            if (mb_strlen($data['stimulus_video_caption'] ?? '') > 255) {
+                $rowErrors[] = 'Keterangan Video Stimulus maksimal 255 karakter';
+            }
 
             $tableData = null;
             if (filled($data['stimulus_table'] ?? null)) {
                 $tableData = $this->parseTable($data['stimulus_table'], $rowErrors);
             }
 
+            $imageSource = $this->packageMedia(
+                $data['stimulus_image_file'] ?? '',
+                $packageRoot,
+                ['jpg', 'jpeg', 'png', 'webp'],
+                4_194_304,
+                'gambar',
+                $rowErrors,
+            );
+            $videoSource = $this->packageMedia(
+                $data['stimulus_video_file'] ?? '',
+                $packageRoot,
+                ['mp4'],
+                104_857_600,
+                'video',
+                $rowErrors,
+            );
+            $videoUrl = trim($data['stimulus_video_url'] ?? '');
+            $videoType = null;
+            if ($videoUrl !== '') {
+                $videoType = VideoSource::youtubeId($videoUrl) !== null
+                    ? 'youtube'
+                    : (VideoSource::isMp4Url($videoUrl) ? 'mp4_url' : null);
+                if ($videoType === null) {
+                    $rowErrors[] = 'URL Video Stimulus harus berupa URL YouTube atau tautan langsung .mp4';
+                }
+            }
+            if ($videoSource && $videoUrl !== '') {
+                $rowErrors[] = 'Pilih salah satu sumber video stimulus: URL atau file MP4 dalam paket';
+            }
+
             $candidate = [
                 'title' => filled($data['stimulus_title'] ?? null) ? $data['stimulus_title'] : null,
                 'stimulus' => trim($data['stimulus_text'] ?? ''),
                 'table_data' => $tableData,
+                'media_path' => null,
+                'media_name' => $imageSource ? basename((string) ($data['stimulus_image_file'] ?? '')) : null,
+                'media_alt' => filled($data['stimulus_image_alt'] ?? null) ? $data['stimulus_image_alt'] : null,
+                'video_type' => $videoSource ? 'upload' : $videoType,
+                'video_url' => $videoUrl !== '' ? $videoUrl : null,
+                'video_path' => null,
+                'video_name' => $videoSource ? basename((string) ($data['stimulus_video_file'] ?? '')) : null,
+                'video_caption' => filled($data['stimulus_video_caption'] ?? null) ? $data['stimulus_video_caption'] : null,
+                '_image_source' => $imageSource,
+                '_video_source' => $videoSource,
             ];
             if (! isset($groups[$normalizedCode])) {
-                if (! $hasStimulusData || (blank($candidate['stimulus']) && $candidate['table_data'] === null)) {
-                    $rowErrors[] = 'Kemunculan pertama Kode Stimulus harus memiliki Teks Stimulus atau Tabel Stimulus';
+                if (! $hasStimulusData || (
+                    blank($candidate['stimulus'])
+                    && $candidate['table_data'] === null
+                    && $imageSource === null
+                    && $videoSource === null
+                    && $videoUrl === ''
+                )) {
+                    $rowErrors[] = 'Kemunculan pertama Kode Stimulus harus memiliki teks, tabel, gambar, atau video stimulus';
                 } else {
                     $groups[$normalizedCode] = $candidate;
                 }
@@ -298,6 +396,215 @@ class QuestionBulkImportService
         $question['_stimulus_code'] = $normalizedCode;
 
         return $question;
+    }
+
+    /** @return array{questions:int,groups:int} */
+    private function importPackage(Quiz $quiz, UploadedFile $file): array
+    {
+        $directory = sys_get_temp_dir().DIRECTORY_SEPARATOR.'ruangkelas-question-package-'.Str::uuid();
+        File::ensureDirectoryExists($directory);
+        $zip = new ZipArchive;
+        $zipOpen = false;
+
+        try {
+            if ($zip->open($file->getRealPath()) !== true) {
+                throw ValidationException::withMessages(['question_file' => 'Paket ZIP tidak dapat dibuka atau rusak.']);
+            }
+            $zipOpen = true;
+            if ($zip->numFiles < 2 || $zip->numFiles > self::MAX_PACKAGE_ENTRIES) {
+                throw ValidationException::withMessages(['question_file' => 'Jumlah file di dalam Paket ZIP tidak valid.']);
+            }
+
+            $totalBytes = 0;
+            for ($index = 0; $index < $zip->numFiles; $index++) {
+                $stat = $zip->statIndex($index);
+                $name = str_replace('\\', '/', (string) ($stat['name'] ?? ''));
+                $totalBytes += (int) ($stat['size'] ?? 0);
+                if (! $this->safeArchiveEntry($name)
+                    || (! str_ends_with($name, '/')
+                        && $name !== QuestionBankPackageService::WORKBOOK
+                        && $name !== QuestionBankPackageService::MANIFEST
+                        && ! str_starts_with($name, 'media/'))) {
+                    throw ValidationException::withMessages(['question_file' => 'Paket ZIP memuat path atau file yang tidak diizinkan: '.$name]);
+                }
+                if ($totalBytes > self::MAX_PACKAGE_BYTES) {
+                    throw ValidationException::withMessages(['question_file' => 'Isi Paket ZIP melebihi batas 120 MB.']);
+                }
+            }
+
+            for ($index = 0; $index < $zip->numFiles; $index++) {
+                $name = str_replace('\\', '/', (string) $zip->getNameIndex($index));
+                if (str_ends_with($name, '/')) {
+                    continue;
+                }
+                $destination = $directory.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $name);
+                File::ensureDirectoryExists(dirname($destination));
+                $input = $zip->getStream($name);
+                $output = fopen($destination, 'wb');
+                if (! is_resource($input) || ! is_resource($output)) {
+                    if (is_resource($input)) {
+                        fclose($input);
+                    }
+                    if (is_resource($output)) {
+                        fclose($output);
+                    }
+                    throw ValidationException::withMessages(['question_file' => 'Salah satu file dalam Paket ZIP tidak dapat dibaca.']);
+                }
+                stream_copy_to_stream($input, $output);
+                fclose($input);
+                fclose($output);
+            }
+            $zip->close();
+            $zipOpen = false;
+
+            $manifestPath = $directory.DIRECTORY_SEPARATOR.QuestionBankPackageService::MANIFEST;
+            if (! is_file($manifestPath)) {
+                throw ValidationException::withMessages(['question_file' => 'manifest.json tidak ditemukan dalam Paket ZIP.']);
+            }
+            $manifest = json_decode((string) file_get_contents($manifestPath), true);
+            if (! is_array($manifest)
+                || ($manifest['format'] ?? null) !== 'ruangkelas-question-package'
+                || ($manifest['version'] ?? null) !== 1
+                || ($manifest['workbook'] ?? null) !== QuestionBankPackageService::WORKBOOK) {
+                throw ValidationException::withMessages(['question_file' => 'Format atau versi Paket ZIP tidak didukung.']);
+            }
+            $this->verifyManifestMedia($manifest, $directory);
+
+            $workbook = $directory.DIRECTORY_SEPARATOR.QuestionBankPackageService::WORKBOOK;
+            if (! is_file($workbook)) {
+                throw ValidationException::withMessages(['question_file' => 'soal.xlsx tidak ditemukan dalam Paket ZIP.']);
+            }
+
+            return $this->importSpreadsheet($quiz, $workbook, 'xlsx', $directory);
+        } finally {
+            if ($zipOpen) {
+                $zip->close();
+            }
+            File::deleteDirectory($directory);
+        }
+    }
+
+    /** @param array<int, string> $extensions @param array<int, string> $errors */
+    private function packageMedia(
+        string $reference,
+        ?string $packageRoot,
+        array $extensions,
+        int $maxBytes,
+        string $label,
+        array &$errors,
+    ): ?string {
+        $reference = str_replace('\\', '/', trim($reference));
+        if ($reference === '') {
+            return null;
+        }
+        if ($packageRoot === null) {
+            $errors[] = 'File '.ucfirst($label).' Stimulus hanya dapat digunakan melalui Paket ZIP';
+
+            return null;
+        }
+        if (! $this->safeArchiveEntry($reference) || ! str_starts_with($reference, 'media/')) {
+            $errors[] = 'Path file '.$label.' stimulus tidak aman atau berada di luar folder media';
+
+            return null;
+        }
+
+        $path = realpath($packageRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $reference));
+        $root = realpath($packageRoot);
+        if ($path === false || $root === false || ! str_starts_with($path, $root.DIRECTORY_SEPARATOR) || ! is_file($path)) {
+            $errors[] = 'File '.$label.' stimulus tidak ditemukan di dalam Paket ZIP: '.$reference;
+
+            return null;
+        }
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (! in_array($extension, $extensions, true) || filesize($path) > $maxBytes) {
+            $errors[] = 'File '.$label.' stimulus memiliki tipe atau ukuran yang tidak diizinkan';
+
+            return null;
+        }
+        if ($label === 'gambar') {
+            $mime = (string) mime_content_type($path);
+            if (! in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                $errors[] = 'File gambar stimulus tidak dikenali sebagai JPG, PNG, atau WebP';
+
+                return null;
+            }
+        } elseif (! $this->looksLikeMp4($path)) {
+            $errors[] = 'File video stimulus tidak dikenali sebagai MP4 yang valid';
+
+            return null;
+        }
+
+        return $path;
+    }
+
+    /** @param array<string, mixed> $group @param array<int, string> $storedMedia */
+    private function storeGroupMedia(array &$group, array &$storedMedia): void
+    {
+        foreach ([
+            ['source' => '_image_source', 'path' => 'media_path', 'directory' => 'quiz-stimuli'],
+            ['source' => '_video_source', 'path' => 'video_path', 'directory' => 'quiz-stimulus-videos'],
+        ] as $media) {
+            $source = $group[$media['source']] ?? null;
+            if (! is_string($source) || $source === '') {
+                continue;
+            }
+
+            $extension = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+            $target = $media['directory'].'/'.Str::uuid().($extension !== '' ? '.'.$extension : '');
+            $stream = fopen($source, 'rb');
+            $stored = is_resource($stream) && Storage::disk('local')->put($target, $stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            if (! $stored) {
+                throw ValidationException::withMessages(['question_file' => 'Media stimulus gagal disimpan ke LMS.']);
+            }
+
+            $group[$media['path']] = $target;
+            $storedMedia[] = $target;
+        }
+    }
+
+    /** @param array<string, mixed> $manifest */
+    private function verifyManifestMedia(array $manifest, string $packageRoot): void
+    {
+        foreach ($manifest['media'] ?? [] as $groupMedia) {
+            foreach (['image', 'video'] as $kind) {
+                $item = $groupMedia[$kind] ?? null;
+                if (! is_array($item) || blank($item['path'] ?? null)) {
+                    continue;
+                }
+                $reference = str_replace('\\', '/', (string) $item['path']);
+                if (! $this->safeArchiveEntry($reference) || ! str_starts_with($reference, 'media/')) {
+                    throw ValidationException::withMessages(['question_file' => 'Manifest memuat path media yang tidak aman.']);
+                }
+                $path = $packageRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $reference);
+                if (! is_file($path) || ! hash_equals((string) ($item['sha256'] ?? ''), hash_file('sha256', $path))) {
+                    throw ValidationException::withMessages(['question_file' => 'Media Paket ZIP hilang atau berubah: '.$reference]);
+                }
+            }
+        }
+    }
+
+    private function safeArchiveEntry(string $name): bool
+    {
+        return $name !== ''
+            && ! str_starts_with($name, '/')
+            && ! preg_match('/^[A-Za-z]:\//', $name)
+            && ! str_contains($name, "\0")
+            && ! preg_match('#(^|/)\.\.(/|$)#', $name);
+    }
+
+    private function looksLikeMp4(string $path): bool
+    {
+        $stream = fopen($path, 'rb');
+        if (! is_resource($stream)) {
+            return false;
+        }
+        $header = fread($stream, 4096);
+        fclose($stream);
+
+        return is_string($header) && strpos($header, 'ftyp') !== false;
     }
 
     private function normalizeType(string $type): ?string

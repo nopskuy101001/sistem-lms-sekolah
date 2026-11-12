@@ -17,13 +17,15 @@ class QuestionImportTemplateXlsxExporter
         'Kunci Jawaban', 'Pernyataan Kategori', 'Jawaban Kategori', 'Poin',
         'Level Kognitif', 'Kompetensi', 'Subkompetensi', 'Kode Stimulus',
         'Judul Stimulus', 'Teks Stimulus', 'Tabel Stimulus',
+        'File Gambar Stimulus', 'Alt Gambar Stimulus', 'URL Video Stimulus',
+        'File Video Stimulus', 'Keterangan Video Stimulus',
     ];
 
     public function write(string $path): void
     {
         $options = new Options;
         $options->SHOULD_USE_INLINE_STRINGS = false;
-        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45] as $index => $width) {
+        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
             $options->setColumnWidth($width, $index + 1);
         }
 
@@ -77,7 +79,9 @@ class QuestionImportTemplateXlsxExporter
             'Level Kognitif bersifat opsional: Pemahaman, Penerapan, atau Penalaran.',
             'Kode Stimulus menghubungkan beberapa soal ke stimulus yang sama. Isi detail stimulus pada kemunculan pertama, lalu cukup ulangi kodenya.',
             'Tabel Stimulus: satu baris tabel per baris baru dan pisahkan kolom dengan tanda |. Minimal 2x2, maksimal 30x12.',
-            'Template import tidak memasukkan gambar. Untuk stimulus bergambar/grafik, gunakan form stimulus dan soal biasa.',
+            'URL Video Stimulus menerima URL YouTube atau URL langsung .mp4. Isi hanya pada kemunculan pertama Kode Stimulus.',
+            'Kolom File Gambar/Video Stimulus hanya bekerja saat soal.xlsx berada di dalam Paket ZIP RuangKelas bersama folder media.',
+            'Jangan mengubah path media di Excel atau memindahkan file di dalam ZIP karena import akan memeriksa kecocokannya.',
             'Jika ada satu baris tidak valid, seluruh import dibatalkan agar isi kuis tetap konsisten.',
         ];
     }
@@ -86,10 +90,10 @@ class QuestionImportTemplateXlsxExporter
     private function examples(): array
     {
         return [
-            ['PG', 'Ibu kota Indonesia adalah ...', 'Jakarta', 'Bandung', 'Surabaya', 'Medan', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan umum', '', '', '', '', ''],
-            ['PG Kompleks', 'Pilih dua simpulan yang benar.', 'Simpulan A', 'Simpulan B', 'Simpulan C', 'Simpulan D', 'A|C', '', '', 15, 'Penalaran', 'Literasi data', 'Interpretasi tabel', 'STIM-01', 'Data Penjualan', 'Perhatikan data penjualan berikut.', "Bulan|Jumlah\nJanuari|120\nFebruari|150"],
-            ['Kategori', 'Tentukan benar atau salah.', '', '', '', '', '', 'Nilai Februari lebih tinggi dari Januari||Selisihnya 20', 'Benar|Salah', 15, 'Penerapan', 'Literasi data', '', 'STIM-01', '', '', ''],
-            ['Esai', 'Jelaskan alasan jawaban Anda.', '', '', '', '', '', '', '', 20, 'Penalaran', '', '', '', '', '', ''],
+            ['PG', 'Ibu kota Indonesia adalah ...', 'Jakarta', 'Bandung', 'Surabaya', 'Medan', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan umum', '', '', '', '', '', '', '', '', '', ''],
+            ['PG Kompleks', 'Pilih dua simpulan yang benar.', 'Simpulan A', 'Simpulan B', 'Simpulan C', 'Simpulan D', 'A|C', '', '', 15, 'Penalaran', 'Literasi data', 'Interpretasi tabel', 'STIM-01', 'Data Penjualan', 'Perhatikan data penjualan berikut.', "Bulan|Jumlah\nJanuari|120\nFebruari|150", '', '', 'https://www.youtube.com/watch?v=M7lc1UVf-VE', '', 'Video penjelasan data'],
+            ['Kategori', 'Tentukan benar atau salah.', '', '', '', '', '', 'Nilai Februari lebih tinggi dari Januari||Selisihnya 20', 'Benar|Salah', 15, 'Penerapan', 'Literasi data', '', 'STIM-01', '', '', '', '', '', '', '', ''],
+            ['Esai', 'Jelaskan alasan jawaban Anda.', '', '', '', '', '', '', '', 20, 'Penalaran', '', '', '', '', '', '', '', '', '', '', ''],
         ];
     }
 }

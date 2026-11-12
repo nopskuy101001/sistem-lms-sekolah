@@ -45,10 +45,11 @@
                         <span aria-hidden="true">☷</span>
                         Lihat isi soal
                     </a>
-                    <a href="{{ route('question-banks.excel', $bank) }}" class="mt-2 flex min-h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">Unduh Excel</a>
-                    @if(collect($bank->payload['groups'] ?? [])->contains(fn ($group) => filled($group['media_path'] ?? null)))
-                        <p class="mt-2 text-xs text-amber-700">Gambar stimulus perlu disimpan terpisah; file Excel memuat soal, teks, dan tabel.</p>
-                    @endif
+                    <a href="{{ route('question-banks.package', $bank) }}" class="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">
+                        <span aria-hidden="true">&#128230;</span> Unduh Paket ZIP
+                    </a>
+                    <a href="{{ route('question-banks.excel', $bank) }}" class="mt-2 block text-center text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline">Excel saja (tanpa file media)</a>
+                    <p class="mt-2 text-xs text-slate-500">Paket ZIP berisi Excel, gambar, dan MP4. URL YouTube/MP4 dicatat di Excel.</p>
                 </div>
                 <form method="POST" action="{{ route('question-banks.quizzes.store', $bank) }}" class="space-y-3 bg-slate-50/70 p-5">
                     @csrf

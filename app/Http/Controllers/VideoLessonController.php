@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VideoLessonController extends Controller
 {
@@ -199,6 +200,25 @@ class VideoLessonController extends Controller
             ->header('X-Frame-Options', 'SAMEORIGIN')
             ->header('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->header('Cache-Control', 'no-store');
+    }
+
+    public function media(Request $request, VideoLesson $videoLesson): BinaryFileResponse
+    {
+        $this->authorizeWatch($request, $videoLesson);
+        abort_unless(
+            $videoLesson->source_type === 'mp4'
+                && $videoLesson->file_path
+                && Storage::disk('public')->exists($videoLesson->file_path),
+            404,
+        );
+
+        return response()->file(Storage::disk('public')->path($videoLesson->file_path), [
+            'Content-Type' => 'video/mp4',
+            'Content-Disposition' => 'inline; filename="video-interaktif-'.$videoLesson->id.'.mp4"',
+            'Cache-Control' => 'private, max-age=3600',
+            'Accept-Ranges' => 'bytes',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function answer(Request $request, VideoLesson $videoLesson, VideoAnswerService $service): JsonResponse

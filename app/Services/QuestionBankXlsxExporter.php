@@ -15,11 +15,11 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class QuestionBankXlsxExporter
 {
-    public function write(string $path, QuestionBank $bank): void
+    public function write(string $path, QuestionBank $bank, bool $packageReferences = false): void
     {
         $options = new Options;
         $options->SHOULD_USE_INLINE_STRINGS = false;
-        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45] as $index => $width) {
+        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
             $options->setColumnWidth($width, $index + 1);
         }
 
@@ -78,6 +78,11 @@ class QuestionBankXlsxExporter
                     $firstUse ? ($group['title'] ?? '') : '',
                     $firstUse ? ($group['stimulus'] ?? '') : '',
                     $firstUse ? $this->tableText($group['table_data'] ?? []) : '',
+                    $firstUse && $packageReferences ? $this->packageMediaPath($groupKey, $group['media_path'] ?? null, 'image') : '',
+                    $firstUse ? ($group['media_alt'] ?? '') : '',
+                    $firstUse ? ($group['video_url'] ?? '') : '',
+                    $firstUse && $packageReferences ? $this->packageMediaPath($groupKey, $group['video_path'] ?? null, 'video') : '',
+                    $firstUse ? ($group['video_caption'] ?? '') : '',
                 ];
 
                 // Keep text starting with '=' as text so question content cannot become a spreadsheet formula.
@@ -95,8 +100,7 @@ class QuestionBankXlsxExporter
             $writer->addRow(Row::fromValues(['Informasi Paket Bank Soal'], $headerStyle)->setHeight(32));
             $quiz = $bank->payload['quiz'] ?? [];
             $hasImages = collect($bank->payload['groups'] ?? [])->contains(fn ($group) => filled($group['media_path'] ?? null));
-            $hasVideos = collect($bank->payload['groups'] ?? [])->contains(fn ($group) =>
-                filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null)
+            $hasVideos = collect($bank->payload['groups'] ?? [])->contains(fn ($group) => filled($group['video_path'] ?? null) || filled($group['video_url'] ?? null)
             );
             foreach ([
                 ['Nama paket', $bank->title],
@@ -105,8 +109,8 @@ class QuestionBankXlsxExporter
                 ['Durasi (menit)', $quiz['duration_minutes'] ?? 'Tanpa batas'],
                 ['Jumlah soal', $bank->question_count],
                 ['Total poin', $bank->total_points],
-                ['Gambar stimulus', $hasImages ? 'Gambar tidak disertakan. Simpan gambar secara terpisah sebelum mengimpor ulang.' : 'Tidak ada'],
-                ['Video stimulus', $hasVideos ? 'Video tidak disertakan di Excel. Gunakan paket bank soal di RuangKelas agar video tetap tersedia.' : 'Tidak ada'],
+                ['Gambar stimulus', $hasImages ? ($packageReferences ? 'Disertakan di folder media dalam Paket ZIP.' : 'Gambar tidak disertakan pada Excel tunggal; gunakan Paket ZIP.') : 'Tidak ada'],
+                ['Video stimulus', $hasVideos ? ($packageReferences ? 'File lokal disertakan; URL YouTube/MP4 tetap dicatat di Excel.' : 'Video lokal tidak disertakan pada Excel tunggal; gunakan Paket ZIP.') : 'Tidak ada'],
             ] as $item) {
                 $writer->addRow(new Row([
                     new StringCell((string) $item[0], null),
@@ -130,5 +134,16 @@ class QuestionBankXlsxExporter
 
             return $line;
         })->implode("\n");
+    }
+
+    private function packageMediaPath(?string $groupKey, ?string $storagePath, string $kind): string
+    {
+        if (! $groupKey || ! $storagePath) {
+            return '';
+        }
+
+        $extension = strtolower(pathinfo($storagePath, PATHINFO_EXTENSION));
+
+        return 'media/'.$groupKey.'/'.$kind.($extension !== '' ? '.'.$extension : '');
     }
 }

@@ -4,23 +4,24 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\ChunkedQuestionPackageUploadController;
 use App\Http\Controllers\ChunkedVideoUploadController;
+use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\DiscussionMessageController;
 use App\Http\Controllers\DiscussionRoomController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionBulkImportController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\StudentTranscriptController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\TranscriptController;
-use App\Http\Controllers\StudentTranscriptController;
 use App\Http\Controllers\VideoLessonController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/video-uploads/chunks', [ChunkedVideoUploadController::class, 'store'])
             ->middleware('throttle:180,1')
             ->name('video-uploads.chunks');
+        Route::post('/question-package-uploads/chunks', [ChunkedQuestionPackageUploadController::class, 'store'])
+            ->middleware('throttle:180,1')
+            ->name('question-package-uploads.chunks');
         Route::get('/discussions', [DiscussionRoomController::class, 'index'])->name('discussion-rooms.index');
         Route::post('/discussions', [DiscussionRoomController::class, 'store'])->name('discussion-rooms.store');
         Route::get('/discussions/{discussionRoom}', [DiscussionRoomController::class, 'show'])->name('discussion-rooms.show');
@@ -89,6 +93,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/transcripts/{classroom}/excel', [TranscriptController::class, 'excel'])->name('transcripts.excel');
         Route::get('/question-banks', [QuestionBankController::class, 'index'])->name('question-banks.index');
         Route::get('/question-banks/{questionBank}/excel', [QuestionBankController::class, 'excel'])->name('question-banks.excel');
+        Route::get('/question-banks/{questionBank}/package', [QuestionBankController::class, 'package'])->name('question-banks.package');
         Route::get('/question-banks/{questionBank}', [QuestionBankController::class, 'show'])->name('question-banks.show');
         Route::get('/question-banks/{questionBank}/stimuli/{groupKey}/media', [QuestionBankController::class, 'media'])->name('question-banks.media');
         Route::get('/question-banks/{questionBank}/stimuli/{groupKey}/video', [QuestionBankController::class, 'video'])->name('question-banks.video');
@@ -170,6 +175,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/classrooms/{classroom}/video-lessons', [VideoLessonController::class, 'store'])->name('video-lessons.store');
     Route::get('/video-lessons/{videoLesson}', [VideoLessonController::class, 'show'])->name('video-lessons.show');
     Route::get('/video-lessons/{videoLesson}/player', [VideoLessonController::class, 'player'])->name('video-lessons.player');
+    Route::get('/video-lessons/{videoLesson}/media', [VideoLessonController::class, 'media'])->name('video-lessons.media');
     Route::post('/video-lessons/{videoLesson}/answer', [VideoLessonController::class, 'answer'])->middleware('throttle:30,1')->name('video-lessons.answer');
     Route::get('/video-lessons/{videoLesson}/edit', [VideoLessonController::class, 'edit'])->name('video-lessons.edit');
     Route::put('/video-lessons/{videoLesson}', [VideoLessonController::class, 'update'])->name('video-lessons.update');

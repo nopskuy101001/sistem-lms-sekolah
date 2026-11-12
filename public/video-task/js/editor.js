@@ -13,6 +13,7 @@
     let youtubeReady = false;
     let duration = 0;
     let fallbackTimer = null;
+    let pendingMp4Seek = null;
 
     if (!sliders.length) return;
 
@@ -55,12 +56,35 @@
         if (youtubePlayer && youtubeReady) youtubePlayer.pauseVideo();
     }
 
+    function seekMp4(seconds) {
+        if (!mp4) return false;
+
+        pendingMp4Seek = seconds;
+        if (mp4.readyState < HTMLMediaElement.HAVE_METADATA) {
+            mp4.load();
+            return false;
+        }
+
+        const maximum = Number.isFinite(mp4.duration) && mp4.duration > 0
+            ? Math.max(0, mp4.duration - 0.05)
+            : seconds;
+        const target = Math.max(0, Math.min(seconds, maximum));
+
+        try {
+            mp4.currentTime = target;
+            pendingMp4Seek = null;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     function seekPreview(seconds) {
         const target = Math.max(0, Math.min(Number(seconds) || 0, duration || 86400));
         pausePreview();
 
-        if (mp4 && Number.isFinite(mp4.duration)) {
-            mp4.currentTime = target;
+        if (mp4) {
+            seekMp4(target);
         } else if (youtubePlayer && youtubeReady) {
             youtubePlayer.seekTo(target, true);
         }
@@ -100,10 +124,12 @@
     }
 
     sliders.forEach((slider) => {
-        slider.addEventListener('input', () => {
+        const movePreview = () => {
             updateOutput(slider);
             seekPreview(slider.value);
-        });
+        };
+        slider.addEventListener('input', movePreview);
+        slider.addEventListener('change', movePreview);
     });
 
     document.querySelectorAll('[data-use-player-time]').forEach((button) => {
@@ -119,9 +145,18 @@
     });
 
     if (mp4) {
-        const readMp4Duration = () => applyDuration(mp4.duration);
+        const readMp4Duration = () => {
+            applyDuration(mp4.duration);
+            if (pendingMp4Seek !== null) seekMp4(pendingMp4Seek);
+        };
         mp4.addEventListener('loadedmetadata', readMp4Duration);
         mp4.addEventListener('durationchange', readMp4Duration);
+        mp4.addEventListener('canplay', () => {
+            if (pendingMp4Seek !== null) seekMp4(pendingMp4Seek);
+        });
+        mp4.addEventListener('seeked', () => {
+            if (positionLabel) positionLabel.textContent = `Posisi video ${clock(mp4.currentTime)}`;
+        });
         mp4.addEventListener('timeupdate', () => {
             if (positionLabel) positionLabel.textContent = `Posisi video ${clock(mp4.currentTime)}`;
         });
