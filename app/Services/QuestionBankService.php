@@ -103,14 +103,20 @@ class QuestionBankService
         }
     }
 
-    public function createQuiz(QuestionBank $bank, Classroom $classroom, ?string $title = null): Quiz
+    public function createQuiz(
+        QuestionBank $bank,
+        Classroom $classroom,
+        ?string $title = null,
+        ?string $startAt = null,
+        ?string $endAt = null,
+    ): Quiz
     {
         $payload = $bank->payload;
         $quizData = $payload['quiz'] ?? [];
         $copiedMedia = [];
 
         try {
-            return DB::transaction(function () use ($bank, $classroom, $title, $payload, $quizData, &$copiedMedia) {
+            return DB::transaction(function () use ($bank, $classroom, $title, $startAt, $endAt, $payload, $quizData, &$copiedMedia) {
                 $quiz = $classroom->quizzes()->create([
                     'title' => filled($title) ? trim($title) : ($quizData['title'] ?? $bank->title),
                     'description' => $quizData['description'] ?? $bank->description,
@@ -121,8 +127,8 @@ class QuestionBankService
                     'penalty_percent_per_violation' => (int) ($quizData['penalty_percent_per_violation'] ?? 2),
                     'shuffle_questions' => (bool) ($quizData['shuffle_questions'] ?? true),
                     'is_published' => false,
-                    'start_at' => null,
-                    'end_at' => null,
+                    'start_at' => $startAt,
+                    'end_at' => $endAt,
                 ]);
 
                 $groupIds = [];

@@ -295,9 +295,14 @@ class QuestionBankTest extends TestCase
         $this->get(route('question-banks.index'))
             ->assertOk()
             ->assertSee('Lihat isi soal')
+            ->assertSee('name="start_at"', false)
+            ->assertSee('name="end_at"', false)
             ->assertSee(route('question-banks.show', $bank), false);
         $this->get(route('question-banks.show', $bank))
             ->assertOk()
+            ->assertSee('Jadwal kuis baru')
+            ->assertSee('name="start_at"', false)
+            ->assertSee('name="end_at"', false)
             ->assertSee('Grafik Penjualan')
             ->assertSee('Perhatikan grafik dan tabel berikut.')
             ->assertSee('Pilih dua pernyataan yang benar.')
@@ -323,16 +328,20 @@ class QuestionBankTest extends TestCase
         Storage::disk('local')->assertExists($bankMedia);
         Storage::disk('local')->assertExists($bankVideo);
 
+        $newStart = now()->addWeek()->startOfHour();
+        $newEnd = $newStart->copy()->addHours(2);
         $this->post(route('question-banks.quizzes.store', $bank), [
             'classroom_id' => $classroom->id,
             'title' => 'TKA Aljabar 2027',
+            'start_at' => $newStart->format('Y-m-d H:i:s'),
+            'end_at' => $newEnd->format('Y-m-d H:i:s'),
         ])->assertRedirect();
 
         $newQuiz = Quiz::where('title', 'TKA Aljabar 2027')->firstOrFail();
         $newQuiz->load(['questions.group', 'questionGroups']);
         $this->assertFalse($newQuiz->is_published);
-        $this->assertNull($newQuiz->start_at);
-        $this->assertNull($newQuiz->end_at);
+        $this->assertTrue($newQuiz->start_at->equalTo($newStart));
+        $this->assertTrue($newQuiz->end_at->equalTo($newEnd));
         $this->assertSame(60, $newQuiz->duration_minutes);
         $this->assertTrue($newQuiz->shuffle_questions);
         $this->assertCount(2, $newQuiz->questions);
@@ -389,6 +398,37 @@ class QuestionBankTest extends TestCase
         ])->assertForbidden();
         $this->post(route('question-banks.store', $quiz), ['title' => 'Salinan'])->assertForbidden();
         $this->actingAs($student)->get(route('question-banks.index'))->assertForbidden();
+    }
+
+    public function test_direct_question_bank_schedule_rejects_closing_before_opening(): void
+    {
+        $teacher = User::factory()->create(['role' => 'guru']);
+        $classroom = Classroom::create(['teacher_id' => $teacher->id, 'name' => 'Kelas Jadwal', 'color' => 'indigo']);
+        $bank = QuestionBank::create([
+            'teacher_id' => $teacher->id,
+            'title' => 'Paket Jadwal',
+            'question_count' => 1,
+            'total_points' => 10,
+            'payload' => [
+                'version' => 1,
+                'quiz' => ['title' => 'Kuis Jadwal', 'duration_minutes' => 30],
+                'groups' => [],
+                'questions' => [[
+                    'type' => Question::TYPE_ESAI,
+                    'body' => 'Jelaskan jawabanmu.',
+                    'points' => 10,
+                ]],
+            ],
+        ]);
+
+        $this->actingAs($teacher)->post(route('question-banks.quizzes.store', $bank), [
+            'classroom_id' => $classroom->id,
+            'title' => 'Jadwal tidak valid',
+            'start_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'end_at' => now()->addDay()->format('Y-m-d H:i:s'),
+        ])->assertSessionHasErrors('end_at');
+
+        $this->assertDatabaseMissing('quizzes', ['title' => 'Jadwal tidak valid']);
     }
 
     public function test_empty_quiz_cannot_be_saved_to_question_bank(): void

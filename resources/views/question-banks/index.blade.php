@@ -11,6 +11,12 @@
     <a href="{{ route('dashboard') }}#kelas" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700">Pilih kelas untuk membuat soal</a>
 </div>
 
+@if($errors->any())
+    <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <strong>Periksa pengaturan kuis:</strong> {{ $errors->first() }}
+    </div>
+@endif
+
 @if($questionBanks->isEmpty())
     <section class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
         <div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-xl text-indigo-600">▤</div>
@@ -66,6 +72,18 @@
                         <label class="block text-xs font-semibold text-slate-700">Judul kuis baru</label>
                         <input name="title" value="{{ $bank->payload['quiz']['title'] ?? $bank->title }}" maxlength="200" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm">
                     </div>
+                    <fieldset class="rounded-xl border border-slate-200 bg-white p-3">
+                        <legend class="px-1 text-xs font-semibold text-slate-700">Jadwal kuis baru</legend>
+                        <p class="mb-3 text-[11px] leading-4 text-slate-500">Jadwal lama tidak disimpan di bank soal. Tentukan jadwal yang sesuai untuk kelas tujuan.</p>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label class="block text-xs font-medium text-slate-600">Mulai dibuka
+                                <input type="datetime-local" name="start_at" value="{{ old('start_at') }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                            </label>
+                            <label class="block text-xs font-medium text-slate-600">Ditutup
+                                <input type="datetime-local" name="end_at" value="{{ old('end_at') }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                            </label>
+                        </div>
+                    </fieldset>
                     <button @disabled($classrooms->isEmpty()) class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Buat kuis draft dari paket ini</button>
                     @if($classrooms->isEmpty())<p class="text-xs text-amber-700">Buat kelas terlebih dahulu sebelum menggunakan bank soal.</p>@endif
                 </form>

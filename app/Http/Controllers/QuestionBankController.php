@@ -154,12 +154,20 @@ class QuestionBankController extends Controller
                 Rule::exists('classrooms', 'id')->where('teacher_id', $request->user()->id),
             ],
             'title' => ['nullable', 'string', 'max:200'],
+            'start_at' => ['nullable', 'date'],
+            'end_at' => ['nullable', 'date', 'after:start_at'],
         ]);
         $classroom = $request->user()->teachingClassrooms()->findOrFail($data['classroom_id']);
-        $quiz = $this->banks->createQuiz($questionBank, $classroom, $data['title'] ?? null);
+        $quiz = $this->banks->createQuiz(
+            $questionBank,
+            $classroom,
+            $data['title'] ?? null,
+            $data['start_at'] ?? null,
+            $data['end_at'] ?? null,
+        );
 
         return redirect()->route('quizzes.show', $quiz)
-            ->with('success', 'Kuis draft berhasil dibuat dari bank soal. Atur jadwal lalu publikasikan.');
+            ->with('success', 'Kuis draft berhasil dibuat dari bank soal. Periksa jadwal lalu publikasikan.');
     }
 
     public function destroy(Request $request, QuestionBank $questionBank): RedirectResponse

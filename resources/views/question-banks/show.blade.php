@@ -223,6 +223,20 @@
             <label class="block text-xs font-semibold text-slate-700">Judul kuis baru
                 <input name="title" value="{{ $quizMeta['title'] ?? $questionBank->title }}" maxlength="200" class="mt-1 w-full rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-sm">
             </label>
+            <fieldset class="rounded-xl border border-indigo-200 bg-white/70 p-3">
+                <legend class="px-1 text-xs font-semibold text-slate-700">Jadwal kuis baru</legend>
+                <p class="mb-3 text-[11px] leading-4 text-slate-500">Jadwal kuis sumber tidak digunakan agar paket aman dipakai kembali pada tahun ajaran berbeda.</p>
+                <div class="grid gap-3">
+                    <label class="block text-xs font-medium text-slate-600">Mulai dibuka
+                        <input type="datetime-local" name="start_at" value="{{ old('start_at') }}" class="mt-1 w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm">
+                    </label>
+                    <label class="block text-xs font-medium text-slate-600">Ditutup
+                        <input type="datetime-local" name="end_at" value="{{ old('end_at') }}" class="mt-1 w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm">
+                    </label>
+                </div>
+            </fieldset>
+            @error('start_at')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            @error('end_at')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button @disabled($classrooms->isEmpty()) class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Buat kuis draft</button>
             <a href="#bank-questions" class="block py-2 text-center text-sm font-semibold text-indigo-700 hover:underline">Kembali ke isi soal</a>
         </form>
