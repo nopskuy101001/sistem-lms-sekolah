@@ -8,7 +8,9 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\Submission;
+use App\Models\TranscriptState;
 use App\Models\User;
+use App\Services\TranscriptReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use OpenSpout\Reader\XLSX\Reader;
 use Tests\TestCase;
@@ -92,6 +94,51 @@ class TeacherTranscriptTest extends TestCase
             ->assertSee(route('transcripts.print', $this->classroom))
             ->assertSee(route('transcripts.excel', $this->classroom))
             ->assertSee(route('transcripts.csv', $this->classroom));
+    }
+
+    public function test_draft_quiz_is_excluded_even_after_its_deadline_and_from_final_snapshot(): void
+    {
+        $draft = Quiz::create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Draf Kuis Kedaluwarsa',
+            'start_at' => now()->subHours(2),
+            'end_at' => now()->subHour(),
+            'is_published' => false,
+        ]);
+        Question::create([
+            'quiz_id' => $draft->id,
+            'type' => Question::TYPE_PG,
+            'body' => 'Soal draf tidak boleh masuk transkrip',
+            'option_a' => 'A',
+            'option_b' => 'B',
+            'correct_option' => 'a',
+            'points' => 100,
+        ]);
+        QuizAttempt::create([
+            'quiz_id' => $draft->id,
+            'user_id' => $this->student->id,
+            'started_at' => now()->subHours(2),
+            'finished_at' => now()->subHour(),
+            'score' => 100,
+            'is_graded' => true,
+        ]);
+
+        $report = app(TranscriptReportService::class)->build($this->classroom);
+        $this->assertNotContains('quiz-'.$draft->id, $report['activities']->pluck('key')->all());
+        $this->assertArrayNotHasKey('quiz-'.$draft->id, $report['rows']->first()['scores']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('transcripts.index', ['classroom' => $this->classroom->id]))
+            ->assertOk()
+            ->assertDontSee($draft->title);
+        $csv = $this->get(route('transcripts.csv', $this->classroom))->assertOk()->streamedContent();
+        $this->assertStringNotContainsString($draft->title, $csv);
+
+        $this->post(route('transcripts.finalize', $this->classroom), ['final_validation' => 1])
+            ->assertRedirect();
+        $snapshot = TranscriptState::where('classroom_id', $this->classroom->id)->firstOrFail()->snapshot;
+        $this->assertNotContains('quiz-'.$draft->id, collect($snapshot['activities'])->pluck('key')->all());
+        $this->assertArrayNotHasKey('quiz-'.$draft->id, $snapshot['rows'][0]['scores']);
     }
 
     public function test_teacher_previews_then_downloads_wide_transcript_as_pdf(): void

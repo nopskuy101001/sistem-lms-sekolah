@@ -50,7 +50,7 @@ class TranscriptReportService
         $students = $classroom->students()->when($studentId !== null, fn ($query) => $query->where('users.id', $studentId))->orderBy('name')->get();
         $assignments = $classroom->assignments()->orderBy('created_at')->get();
         $quizzes = $classroom->quizzes()
-            ->when($studentId !== null, fn ($query) => $query->where('is_published', true))
+            ->where('is_published', true)
             ->withSum('questions', 'points')
             ->orderBy('created_at')
             ->get();
