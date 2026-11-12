@@ -144,12 +144,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('[data-question-bank-excel-download]').forEach((link) => {
-        link.addEventListener('click', (event) => {
-            const warning = link.dataset.warning || 'Periksa isi soal sebelum mengunduh Excel.';
-            if (!window.confirm(warning)) event.preventDefault();
+    const questionBankExcelWarning = document.querySelector('[data-question-bank-excel-warning]');
+    if (questionBankExcelWarning) {
+        const previewAction = questionBankExcelWarning.querySelector('[data-question-bank-preview-action]');
+        const packageAction = questionBankExcelWarning.querySelector('[data-question-bank-package-action]');
+        const excelAction = questionBankExcelWarning.querySelector('[data-question-bank-excel-action]');
+        const cancelAction = questionBankExcelWarning.querySelector('[data-question-bank-excel-cancel]');
+        let activeExcelLink = null;
+
+        const closeExcelWarning = () => {
+            questionBankExcelWarning.classList.remove('show');
+            questionBankExcelWarning.setAttribute('aria-hidden', 'true');
+            questionBankExcelWarning.inert = true;
+            activeExcelLink?.focus({preventScroll: true});
+            activeExcelLink = null;
+        };
+
+        document.querySelectorAll('[data-question-bank-excel-download]').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                activeExcelLink = link;
+                previewAction.href = link.dataset.previewUrl;
+                packageAction.href = link.dataset.packageUrl;
+                excelAction.href = link.href;
+                questionBankExcelWarning.inert = false;
+                questionBankExcelWarning.setAttribute('aria-hidden', 'false');
+                questionBankExcelWarning.classList.add('show');
+                previewAction.focus({preventScroll: true});
+            });
         });
-    });
+
+        cancelAction.addEventListener('click', closeExcelWarning);
+        questionBankExcelWarning.addEventListener('click', (event) => {
+            if (event.target === questionBankExcelWarning) closeExcelWarning();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && questionBankExcelWarning.classList.contains('show')) closeExcelWarning();
+        });
+    }
 
     const discussionBadge = document.querySelector('[data-discussion-unread-badge]');
     if (discussionBadge) {

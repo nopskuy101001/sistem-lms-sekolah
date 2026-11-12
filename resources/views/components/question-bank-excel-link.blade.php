@@ -2,6 +2,7 @@
 
 <a href="{{ route('question-banks.excel', $questionBank) }}"
    data-question-bank-excel-download
-   data-warning="Periksa isi soal terlebih dahulu sebelum mengunduh Excel. Jika terdapat stimulus video URL, MP4, atau gambar, disarankan mengunduh Paket ZIP agar media dan referensinya tetap lengkap. Tetap unduh Excel saja?"
+   data-preview-url="{{ route('question-banks.show', $questionBank) }}"
+   data-package-url="{{ route('question-banks.package', $questionBank) }}"
    aria-label="Unduh Excel saja tanpa paket media"
    {{ $attributes }}>{{ $slot }}</a>

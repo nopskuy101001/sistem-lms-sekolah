@@ -242,4 +242,5 @@
         </form>
     </aside>
 </div>
+<x-question-bank-excel-warning />
 @endsection

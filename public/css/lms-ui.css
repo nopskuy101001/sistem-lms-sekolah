@@ -616,6 +616,9 @@ html[data-theme='dark'] .lms-theme-toggle { color: #f8c45c; }
 .exam-warning-card h3 { margin: 0 0 7px; font-size: 18px; font-weight: 800; }
 .exam-warning-card p { margin: 0 0 17px; color: var(--muted); font-size: 10px; line-height: 1.7; }
 .exam-warning-card.exam-neutral-card > span { color: var(--primary); background: var(--primary-soft); }
+.question-bank-excel-warning-card { width: min(520px,100%); }
+.exam-warning-card.question-bank-excel-warning-card > span { color: #b45309; background: #fffbeb; }
+.question-bank-excel-warning-card > p { font-size: 13px; text-align: left; }
 .integrity-badge { padding: 5px 8px; border-radius: 999px; font-size: 9px; font-weight: 800; white-space: nowrap; }
 .integrity-safe { color: #087456; background: #eaf9f4; }
 .integrity-review { color: #a96316; background: #fff4e5; }

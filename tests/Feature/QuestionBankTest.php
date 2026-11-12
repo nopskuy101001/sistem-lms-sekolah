@@ -56,17 +56,22 @@ class QuestionBankTest extends TestCase
             ->assertSee(route('question-banks.excel', $bank), false)
             ->assertSee(route('question-banks.package', $bank), false)
             ->assertSee('data-question-bank-excel-download', false)
-            ->assertSee('Periksa isi soal terlebih dahulu sebelum mengunduh Excel.', false)
+            ->assertSee('role="dialog"', false)
+            ->assertSee('Periksa isi soal sebelum mengunduh')
+            ->assertSee('Unduh Paket ZIP')
+            ->assertSee('Tetap unduh Excel')
             ->assertDontSee('Impor ke Bank Soal');
         $this->get(route('question-banks.show', $bank))
             ->assertOk()
             ->assertSee(route('question-banks.excel', $bank), false)
             ->assertSee('data-question-bank-excel-download', false)
-            ->assertSee('Periksa isi soal terlebih dahulu sebelum mengunduh Excel.', false);
+            ->assertSee('Periksa isi soal sebelum mengunduh')
+            ->assertSee('Tetap unduh Excel');
         $questionBankScript = file_get_contents(public_path('js/lms-ui.js'));
         $this->assertIsString($questionBankScript);
         $this->assertStringContainsString("[data-question-bank-excel-download]", $questionBankScript);
-        $this->assertStringContainsString('window.confirm(warning)', $questionBankScript);
+        $this->assertStringContainsString("questionBankExcelWarning.classList.add('show')", $questionBankScript);
+        $this->assertStringNotContainsString('window.confirm', $questionBankScript);
 
         $content = $this->get(route('question-banks.excel', $bank))
             ->assertOk()->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
