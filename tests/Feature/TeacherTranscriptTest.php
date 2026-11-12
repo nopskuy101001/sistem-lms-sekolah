@@ -148,6 +148,11 @@ class TeacherTranscriptTest extends TestCase
             Assignment::create(['classroom_id' => $this->classroom->id, 'title' => 'Komponen tambahan '.$i, 'points' => 100]);
         }
 
+        $gradedAssignment = Assignment::where('classroom_id', $this->classroom->id)
+            ->where('title', 'Latihan Aljabar')
+            ->firstOrFail();
+        $gradedAssignment->update(['due_at' => now()->subHours(2)]);
+
         $preview = $this->actingAs($this->teacher)->get(route('transcripts.print', $this->classroom))
             ->assertOk()
             ->assertSee('Pratinjau transkrip')
@@ -155,6 +160,11 @@ class TeacherTranscriptTest extends TestCase
             ->assertSee(route('transcripts.pdf', $this->classroom))
             ->assertSee('K20')
             ->assertDontSee('Bagian 1 dari')
+            ->assertSee('80 / 100')
+            ->assertSee('40 / 50')
+            ->assertDontSee('80%')
+            ->assertDontSee('Terlambat')
+            ->assertDontSee('2/20 terhitung')
             ->assertSee('© 2026 Muhammad Misfalah Saputra')
             ->assertDontSee('window.print');
         $this->assertSame(1, substr_count($preview->getContent(), 'class="teacher-table"'));

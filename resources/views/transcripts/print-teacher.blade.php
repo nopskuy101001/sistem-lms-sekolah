@@ -35,15 +35,12 @@
                             <td class="number">
                                 @if($score['score'] !== null)
                                     <strong>{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</strong>
-                                    <small>{{ $score['percentage'] !== null ? $fmt($score['percentage']).'%' : '—' }}{{ !$score['final'] ? ' · sementara, dihitung' : '' }}</small>
-                                    @if($score['automatic_zero'] ?? false)<small>{{ $score['status'] }}</small>@endif
-                                    @if(($score['late_label'] ?? false) && !($score['automatic_zero'] ?? false))<small>Terlambat {{ $score['late_label'] }}</small>@endif
                                 @else
-                                    —<small>{{ $score['status'] }}</small>
+                                    —
                                 @endif
                             </td>
                         @endforeach
-                        <td class="number"><strong>{{ $fmt($row['average']) }}</strong><small>{{ $row['completed'] }}/{{ $report['activity_count'] }} terhitung</small></td>
+                        <td class="number"><strong>{{ $fmt($row['average']) }}</strong></td>
                     </tr>
                 @empty
                     <tr><td colspan="{{ $part->count() + 4 }}">Belum ada siswa di kelas ini.</td></tr>
