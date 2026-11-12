@@ -119,16 +119,25 @@ class TranscriptReportService
                 $attempt = $attempts->get($student->id)?->get($quiz->id);
                 $maximum = (float) ($quiz->questions_sum_points ?? 0);
                 $hasScore = $attempt?->isFinished() && $maximum > 0;
+                $deadlineExpired = $quiz->end_at && now()->greaterThan($quiz->end_at);
+                $hasAutomaticZero = $deadlineExpired && (! $attempt || ! $attempt->isFinished()) && $maximum > 0;
+                $automaticZeroReason = $hasAutomaticZero
+                    ? (! $attempt
+                        ? 'Nilai otomatis 0 karena tidak mengerjakan kuis sampai tenggat waktu.'
+                        : 'Nilai otomatis 0 karena pengerjaan belum diselesaikan saat waktu kuis habis.')
+                    : null;
                 $scores['quiz-'.$quiz->id] = [
-                    'score' => $hasScore ? (float) $attempt->score : null,
+                    'score' => $hasScore ? (float) $attempt->score : ($hasAutomaticZero ? 0.0 : null),
                     'maximum' => $maximum,
-                    'percentage' => $hasScore ? round(((float) $attempt->score / $maximum) * 100, 2) : null,
-                    'status' => ! $attempt
-                        ? ($quiz->end_at && now()->greaterThan($quiz->end_at) ? 'Tidak mengerjakan (waktu habis)' : 'Belum dikerjakan')
+                    'percentage' => $hasScore ? round(((float) $attempt->score / $maximum) * 100, 2) : ($hasAutomaticZero ? 0.0 : null),
+                    'status' => $automaticZeroReason ?? (! $attempt
+                        ? 'Belum dikerjakan'
                         : (! $attempt->isFinished()
-                            ? ($quiz->end_at && now()->greaterThan($quiz->end_at) ? 'Tidak selesai (waktu habis)' : 'Sedang mengerjakan')
-                            : ($attempt->is_graded ? 'Dinilai' : 'Menunggu esai')),
-                    'final' => $hasScore && (bool) $attempt->is_graded,
+                            ? 'Sedang mengerjakan'
+                            : ($attempt->is_graded ? 'Dinilai' : 'Menunggu esai'))),
+                    'final' => $hasAutomaticZero || ($hasScore && (bool) $attempt->is_graded),
+                    'automatic_zero' => $hasAutomaticZero,
+                    'reason' => $automaticZeroReason,
                 ];
             }
 
@@ -154,10 +163,11 @@ class TranscriptReportService
                     $item['status'] = 'Koreksi guru';
                     $item['final'] = true;
                     $item['manual'] = true;
+                    $item['automatic_zero'] = false;
                     $item['reason'] = $manual->reason;
                 } else {
                     $item['manual'] = false;
-                    $item['reason'] = null;
+                    $item['reason'] = $item['reason'] ?? null;
                 }
             }
             unset($item);

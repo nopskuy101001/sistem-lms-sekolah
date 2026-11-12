@@ -62,24 +62,64 @@ class TranscriptFinalValidationTest extends TestCase
         ];
     }
 
-    public function test_teacher_can_grade_a_missing_attempt_after_quiz_expired_and_sync_all_views(): void
+    public function test_expired_missing_attempt_gets_an_explained_zero_and_teacher_can_correct_it(): void
     {
         $this->assertFalse($this->quiz->isOpen());
-        $this->assertSame('Tidak mengerjakan (waktu habis)',
-            app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['quiz-'.$this->quiz->id]['status']);
-        $this->actingAs($this->teacher)->put(route('transcripts.scores.update', $this->classroom), $this->scorePayload(0))
+        $report = app(TranscriptReportService::class)->build($this->classroom);
+        $score = $report['rows'][0]['scores']['quiz-'.$this->quiz->id];
+        $this->assertSame(0.0, $score['score']);
+        $this->assertSame(0.0, $score['percentage']);
+        $this->assertTrue($score['final']);
+        $this->assertTrue($score['automatic_zero']);
+        $this->assertSame('Nilai otomatis 0 karena tidak mengerjakan kuis sampai tenggat waktu.', $score['status']);
+        $this->assertSame($score['status'], $score['reason']);
+        $this->assertSame(0.0, $report['rows'][0]['average']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('transcripts.index', ['classroom' => $this->classroom->id]))
+            ->assertOk()
+            ->assertSee('0 / 50')
+            ->assertSee($score['status']);
+
+        $this->put(route('transcripts.scores.update', $this->classroom), $this->scorePayload(25))
             ->assertRedirect(route('transcripts.index', ['classroom' => $this->classroom->id]));
 
         $score = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['quiz-'.$this->quiz->id];
-        $this->assertSame(0.0, $score['score']);
+        $this->assertSame(25.0, $score['score']);
         $this->assertTrue($score['manual']);
         $this->assertTrue($score['final']);
+        $this->assertFalse($score['automatic_zero']);
+        $this->assertSame('Koreksi guru', $score['status']);
         $this->assertNull(QuizAttempt::where('quiz_id', $this->quiz->id)->first());
 
         $this->get(route('classrooms.grades', $this->classroom))->assertOk()->assertSee('koreksi guru');
-        $this->get(route('transcripts.index', ['classroom' => $this->classroom->id]))->assertOk()->assertSee('0 / 50');
+        $this->get(route('transcripts.index', ['classroom' => $this->classroom->id]))->assertOk()->assertSee('25 / 50');
         $csv = $this->get(route('transcripts.csv', $this->classroom))->assertOk()->streamedContent();
-        $this->assertStringContainsString(',0,0', $csv);
+        $this->assertStringContainsString(',50,50', $csv);
+    }
+
+    public function test_expired_unfinished_attempt_gets_zero_but_open_quiz_does_not(): void
+    {
+        QuizAttempt::create([
+            'quiz_id' => $this->quiz->id,
+            'user_id' => $this->student->id,
+            'started_at' => now()->subHours(2),
+            'finished_at' => null,
+            'score' => 0,
+            'is_graded' => false,
+        ]);
+
+        $score = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['quiz-'.$this->quiz->id];
+        $this->assertSame(0.0, $score['score']);
+        $this->assertTrue($score['automatic_zero']);
+        $this->assertSame('Nilai otomatis 0 karena pengerjaan belum diselesaikan saat waktu kuis habis.', $score['status']);
+
+        $this->quiz->update(['end_at' => now()->addHour()]);
+        $score = app(TranscriptReportService::class)->build($this->classroom)['rows'][0]['scores']['quiz-'.$this->quiz->id];
+        $this->assertNull($score['score']);
+        $this->assertFalse($score['final']);
+        $this->assertFalse($score['automatic_zero']);
+        $this->assertSame('Sedang mengerjakan', $score['status']);
     }
 
     public function test_teacher_can_edit_then_clear_override_without_touching_original_attempt(): void

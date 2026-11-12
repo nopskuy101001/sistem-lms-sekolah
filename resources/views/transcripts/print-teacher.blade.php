@@ -35,6 +35,7 @@
                                 @if($score['score'] !== null)
                                     <strong>{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</strong>
                                     <small>{{ $score['percentage'] !== null ? $fmt($score['percentage']).'%' : '—' }}{{ !$score['final'] ? ' · sementara' : '' }}</small>
+                                    @if($score['automatic_zero'] ?? false)<small>{{ $score['status'] }}</small>@endif
                                 @else
                                     —<small>{{ $score['status'] }}</small>
                                 @endif
@@ -55,7 +56,7 @@
         @else
             <p>Belum ada komponen nilai.</p>
         @endif
-        <p class="document-note">Rata-rata dihitung dari seluruh nilai final dalam skala 0–100. Nilai sementara tidak masuk rata-rata. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
+        <p class="document-note">Rata-rata dihitung dari seluruh nilai final dalam skala 0–100, termasuk nilai otomatis 0 setelah tenggat. Nilai sementara tidak masuk rata-rata. Tanda — berarti belum ada nilai, berbeda dari nilai 0.</p>
     </section>
 @endforeach
 @endsection

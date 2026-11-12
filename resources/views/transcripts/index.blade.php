@@ -77,7 +77,7 @@
         </div>
     @else
         <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            <strong>Draft transkrip (dapat diedit).</strong> Klik "Koreksi nilai" pada sel siswa. Nilai 0 sah untuk yang tidak mengerjakan; nilai kosong tidak otomatis sama dengan 0. Koreksi tidak menimpa jawaban, tugas, atau rekaman video asli.
+            <strong>Draft transkrip (dapat diedit).</strong> Kuis yang melewati tenggat otomatis bernilai 0 jika tidak dikerjakan atau belum diselesaikan. Klik "Koreksi nilai" pada sel siswa untuk meninjau atau mengubahnya. Koreksi tidak menimpa jawaban, tugas, atau rekaman video asli.
         </div>
     @endif
 
@@ -119,6 +119,9 @@
                                         @if($score['score'] !== null)
                                             <span class="font-semibold text-slate-800">{{ $fmt($score['score']) }} / {{ $fmt($score['maximum']) }}</span>
                                             <span class="block text-[11px] {{ $score['final'] ? 'text-emerald-600' : 'text-amber-600' }}">{{ $fmt($score['percentage']) }}%{{ !$score['final'] ? ' · sementara' : '' }}</span>
+                                            @if($score['automatic_zero'] ?? false)
+                                                <span class="mt-1 block text-[10px] font-medium leading-4 text-rose-600">{{ $score['status'] }}</span>
+                                            @endif
                                         @else
                                             <span class="text-xs text-slate-400">{{ $score['status'] }}</span>
                                         @endif
@@ -162,7 +165,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs leading-5 text-slate-500">Rata-rata dihitung dari nilai final dalam skala 0–100. Koreksi guru dianggap sebagai nilai final komponen. Kuis yang menunggu penilaian esai tidak masuk rata-rata kecuali diberi koreksi guru.</div>
+            <div class="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs leading-5 text-slate-500">Rata-rata dihitung dari nilai final dalam skala 0–100, termasuk nilai otomatis 0 setelah tenggat. Koreksi guru dianggap sebagai nilai final komponen. Kuis yang menunggu penilaian esai tidak masuk rata-rata kecuali diberi koreksi guru.</div>
         </section>
         @unless($report['finalized'])
             <form method="POST" action="{{ route('transcripts.finalize', $classroom) }}" class="mt-5 rounded-2xl border-2 border-amber-300 bg-white p-5">
