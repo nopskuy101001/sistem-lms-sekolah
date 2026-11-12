@@ -5,7 +5,7 @@
 <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div>
         <p class="text-xs font-bold uppercase tracking-[.18em] text-indigo-600">Kolaborasi pengajar</p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-900">Ruang Diskusi Guru</h1>
+        <div class="mt-1 flex flex-wrap items-center gap-3"><h1 class="text-2xl font-bold text-slate-900">Ruang Diskusi Guru</h1>@if($unreadTotal)<span class="discussion-unread-pill">{{ $unreadTotal > 99 ? '99+' : $unreadTotal }} pesan baru</span>@endif</div>
         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Diskusikan perangkat ajar, materi, dan evaluasi bersama guru pengampu mata pelajaran yang sama. Pesan dan lampiran hanya dapat dibuka anggota serta admin.</p>
     </div>
     @if($subjects->isNotEmpty())
@@ -20,18 +20,19 @@
         </div>
         <div class="grid gap-4 md:grid-cols-2">
             @forelse($rooms as $room)
-                <a href="{{ route('discussion-rooms.show', $room) }}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+                <a href="{{ route('discussion-rooms.show', $room) }}" class="discussion-room-card discussion-theme-{{ $room->themeStyle() }} group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style="{{ $room->themeVariables() }}">
                     <div class="flex items-start justify-between gap-3">
-                        <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $room->subject }}</span>
-                        @if(auth()->user()->isAdmin())<span class="text-[11px] font-medium text-slate-400">Pantauan admin</span>@endif
+                        <span class="discussion-subject-pill">{{ $room->subject }}</span>
+                        <span class="discussion-room-unread {{ $room->unread_count ? '' : 'hidden' }}" data-discussion-room-unread="{{ $room->id }}">{{ $room->unread_count > 99 ? '99+' : $room->unread_count }} baru</span>
                     </div>
-                    <h3 class="mt-4 break-words font-bold text-slate-900 group-hover:text-indigo-700">{{ $room->name }}</h3>
+                    <h3 class="discussion-room-title mt-4 break-words font-bold text-slate-900">{{ $room->name }}</h3>
                     @if($room->description)<p class="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">{{ $room->description }}</p>@endif
                     <div class="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
                         <span>{{ $room->members_count }} anggota · {{ $room->messages_count }} pesan</span>
                         <span>{{ $room->updated_at->diffForHumans() }}</span>
                     </div>
                     <p class="mt-2 text-xs text-slate-400">Dibuat oleh {{ $room->creator->name }}</p>
+                    @if(auth()->user()->isAdmin())<p class="mt-1 text-[10px] font-medium text-slate-400">Pantauan admin</p>@endif
                 </a>
             @empty
                 <div class="md:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
@@ -68,6 +69,25 @@
                     </label>
                     <label class="grid gap-1.5 text-sm font-medium text-slate-700">Tujuan diskusi
                         <textarea name="description" rows="3" maxlength="3000" placeholder="Topik dan tujuan ruang ini..." class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">{{ old('description') }}</textarea>
+                    </label>
+
+                    <fieldset>
+                        <legend class="text-sm font-medium text-slate-700">Warna tema</legend>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @foreach(\App\Models\DiscussionRoom::THEME_COLORS as $key => $theme)
+                                <label class="discussion-theme-choice" title="{{ $theme['label'] }}">
+                                    <input type="radio" name="theme_color" value="{{ $key }}" @checked(old('theme_color', 'indigo') === $key) required>
+                                    <span style="--theme-swatch: {{ $theme['primary'] }}"></span><small>{{ $theme['label'] }}</small>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">Gaya header
+                        <select name="theme_style" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
+                            @foreach(\App\Models\DiscussionRoom::THEME_STYLES as $key => $label)
+                                <option value="{{ $key }}" @selected(old('theme_style', 'aurora') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </label>
 
                     <fieldset>

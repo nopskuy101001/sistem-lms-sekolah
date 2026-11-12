@@ -74,9 +74,11 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:180,1')
             ->name('question-package-uploads.chunks');
         Route::get('/discussions', [DiscussionRoomController::class, 'index'])->name('discussion-rooms.index');
+        Route::get('/discussions-unread', [DiscussionRoomController::class, 'unread'])->name('discussion-rooms.unread');
         Route::post('/discussions', [DiscussionRoomController::class, 'store'])->name('discussion-rooms.store');
         Route::get('/discussions/{discussionRoom}', [DiscussionRoomController::class, 'show'])->name('discussion-rooms.show');
         Route::put('/discussions/{discussionRoom}/members', [DiscussionRoomController::class, 'updateMembers'])->name('discussion-rooms.members.update');
+        Route::put('/discussions/{discussionRoom}/theme', [DiscussionRoomController::class, 'updateTheme'])->name('discussion-rooms.theme.update');
         Route::delete('/discussions/{discussionRoom}', [DiscussionRoomController::class, 'destroy'])->name('discussion-rooms.destroy');
         Route::post('/discussions/{discussionRoom}/messages', [DiscussionMessageController::class, 'store'])->name('discussion-messages.store');
         Route::get('/discussion-messages/{discussionMessage}/attachment', [DiscussionMessageController::class, 'attachment'])->name('discussion-messages.attachment');

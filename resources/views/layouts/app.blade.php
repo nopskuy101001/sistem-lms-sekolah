@@ -66,6 +66,7 @@
                 @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
                     <a href="{{ route('discussion-rooms.index') }}" class="lms-nav-link {{ request()->routeIs('discussion-rooms.*', 'discussion-messages.*') ? 'active' : '' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg><span>Diskusi Guru</span>
+                        <span class="lms-nav-unread-badge {{ $unreadDiscussionCount ? '' : 'hidden' }}" data-discussion-unread-badge data-unread-url="{{ route('discussion-rooms.unread') }}" data-unread-count="{{ $unreadDiscussionCount }}" aria-label="{{ $unreadDiscussionCount }} pesan diskusi belum dibaca">{{ $unreadDiscussionCount > 99 ? '99+' : $unreadDiscussionCount }}</span>
                     </a>
                 @endif
             </nav>
@@ -158,7 +159,7 @@
     @yield('content')
 @endauth
 
-<script src="{{ asset('js/lms-ui.js') }}"></script>
+<script src="{{ asset('js/lms-ui.js') }}?v={{ filemtime(public_path('js/lms-ui.js')) }}"></script>
 @stack('scripts')
 </body>
 </html>

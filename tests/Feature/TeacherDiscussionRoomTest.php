@@ -28,11 +28,15 @@ class TeacherDiscussionRoomTest extends TestCase
             'name' => 'MGMP Matematika',
             'subject' => 'Matematika',
             'description' => 'Menyusun asesmen bersama.',
+            'theme_color' => 'emerald',
+            'theme_style' => 'waves',
             'member_ids' => [$mathTeacher->id],
         ])->assertRedirect();
 
         $room = DiscussionRoom::firstOrFail();
         $this->assertSame('Matematika', $room->subject);
+        $this->assertSame('emerald', $room->theme_color);
+        $this->assertSame('waves', $room->theme_style);
         $this->assertEqualsCanonicalizing([$creator->id, $mathTeacher->id], $room->members()->pluck('users.id')->all());
         $this->assertDatabaseHas('notifications', [
             'notifiable_id' => $mathTeacher->id,
@@ -131,6 +135,77 @@ class TeacherDiscussionRoomTest extends TestCase
         $this->actingAs($teacher)->get(route('dashboard'))->assertOk()->assertSee('Diskusi Guru');
         $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('Diskusi Guru');
         $this->actingAs($student)->get(route('dashboard'))->assertOk()->assertDontSee('Diskusi Guru');
+    }
+
+    public function test_unread_message_badges_are_per_teacher_and_clear_when_room_is_opened(): void
+    {
+        $creator = User::factory()->create(['role' => 'guru']);
+        $member = User::factory()->create(['role' => 'guru']);
+        $this->teach($creator, 'Matematika', 'Matematika A');
+        $this->teach($member, 'Matematika', 'Matematika B');
+        $room = DiscussionRoom::create([
+            'creator_id' => $creator->id,
+            'name' => 'Forum Matematika',
+            'subject' => 'Matematika',
+        ]);
+        $room->members()->attach([
+            $creator->id => ['last_read_at' => now()],
+            $member->id => ['last_read_at' => now()],
+        ]);
+        $room->messages()->create(['user_id' => $creator->id, 'body' => 'Pesan baru untuk anggota.']);
+        $room->messages()->create(['user_id' => $member->id, 'body' => 'Pesan milik sendiri tidak dihitung.']);
+
+        $this->actingAs($member)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-discussion-unread-badge', false)
+            ->assertSee('data-unread-count="1"', false);
+        $this->get(route('discussion-rooms.index'))
+            ->assertOk()
+            ->assertSee('data-discussion-room-unread="'.$room->id.'"', false)
+            ->assertSee('1 baru');
+        $this->getJson(route('discussion-rooms.unread'))
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('rooms.'.$room->id, 1);
+
+        $this->get(route('discussion-rooms.show', $room))
+            ->assertOk()
+            ->assertSee('1 pesan baru dibaca');
+        $this->getJson(route('discussion-rooms.unread'))
+            ->assertOk()
+            ->assertJsonPath('total', 0);
+
+        $this->actingAs($creator)->getJson(route('discussion-rooms.unread'))
+            ->assertOk()
+            ->assertJsonPath('total', 1);
+    }
+
+    public function test_creator_can_customize_room_theme_but_member_cannot(): void
+    {
+        $creator = User::factory()->create(['role' => 'guru']);
+        $member = User::factory()->create(['role' => 'guru']);
+        $room = DiscussionRoom::create([
+            'creator_id' => $creator->id,
+            'name' => 'Forum Tema',
+            'subject' => 'Produktif RPL',
+        ]);
+        $room->members()->attach([$creator->id, $member->id]);
+
+        $this->actingAs($member)->put(route('discussion-rooms.theme.update', $room), [
+            'theme_color' => 'rose', 'theme_style' => 'grid',
+        ])->assertForbidden();
+        $this->actingAs($creator)->put(route('discussion-rooms.theme.update', $room), [
+            'theme_color' => 'violet', 'theme_style' => 'grid',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $room->refresh();
+        $this->assertSame('violet', $room->theme_color);
+        $this->assertSame('grid', $room->theme_style);
+        $this->get(route('discussion-rooms.show', $room))
+            ->assertOk()
+            ->assertSee('discussion-theme-grid', false)
+            ->assertSee('--discussion-primary: #7c3aed', false)
+            ->assertSee('Ubah tema ruang');
     }
 
     public function test_deleting_teacher_account_cleans_discussion_attachments(): void

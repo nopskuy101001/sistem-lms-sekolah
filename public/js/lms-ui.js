@@ -143,4 +143,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const discussionBadge = document.querySelector('[data-discussion-unread-badge]');
+    if (discussionBadge) {
+        const renderDiscussionUnread = (data) => {
+            const total = Number(data.total) || 0;
+            discussionBadge.textContent = total > 99 ? '99+' : String(total);
+            discussionBadge.dataset.unreadCount = String(total);
+            discussionBadge.classList.toggle('hidden', total === 0);
+            discussionBadge.setAttribute('aria-label', `${total} pesan diskusi belum dibaca`);
+
+            document.querySelectorAll('[data-discussion-room-unread]').forEach((badge) => {
+                const count = Number(data.rooms?.[badge.dataset.discussionRoomUnread]) || 0;
+                badge.textContent = `${count > 99 ? '99+' : count} baru`;
+                badge.classList.toggle('hidden', count === 0);
+            });
+        };
+        const refreshDiscussionUnread = async () => {
+            if (document.hidden) return;
+            try {
+                const response = await fetch(discussionBadge.dataset.unreadUrl, {
+                    credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store',
+                });
+                if (response.ok) renderDiscussionUnread(await response.json());
+            } catch (_) {}
+        };
+
+        window.setInterval(refreshDiscussionUnread, 30000);
+        document.addEventListener('visibilitychange', refreshDiscussionUnread);
+    }
 });

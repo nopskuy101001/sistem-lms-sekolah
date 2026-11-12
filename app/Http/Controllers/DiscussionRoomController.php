@@ -6,6 +6,8 @@ use App\Models\Classroom;
 use App\Models\DiscussionRoom;
 use App\Models\User;
 use App\Notifications\AcademicNotification;
+use App\Services\DiscussionUnreadService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,6 +19,8 @@ use Illuminate\View\View;
 
 class DiscussionRoomController extends Controller
 {
+    public function __construct(private readonly DiscussionUnreadService $unread) {}
+
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -28,11 +32,16 @@ class DiscussionRoomController extends Controller
             ))
             ->latest('updated_at')
             ->get();
+        $unreadCounts = $this->unread->countsForRooms($user, $rooms->pluck('id'));
+        $rooms->each(fn (DiscussionRoom $room) => $room->setAttribute(
+            'unread_count', (int) $unreadCounts->get($room->id, 0)
+        ));
+        $unreadTotal = (int) $unreadCounts->sum();
 
         $subjects = $this->subjectsFor($user);
         $teachers = $this->teacherCandidates($user);
 
-        return view('discussion-rooms.index', compact('rooms', 'subjects', 'teachers'));
+        return view('discussion-rooms.index', compact('rooms', 'subjects', 'teachers', 'unreadTotal'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -41,6 +50,8 @@ class DiscussionRoomController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'subject' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:3000'],
+            'theme_color' => ['nullable', Rule::in(array_keys(DiscussionRoom::THEME_COLORS))],
+            'theme_style' => ['nullable', Rule::in(array_keys(DiscussionRoom::THEME_STYLES))],
             'member_ids' => ['required', 'array', 'min:1', 'max:100'],
             'member_ids.*' => [
                 'integer',
@@ -64,13 +75,18 @@ class DiscussionRoomController extends Controller
                 'name' => trim($data['name']),
                 'subject' => $subject,
                 'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
+                'theme_color' => $data['theme_color'] ?? 'indigo',
+                'theme_style' => $data['theme_style'] ?? 'aurora',
             ]);
 
             $memberIds = $members->pluck('id');
             if ($request->user()->isGuru()) {
                 $memberIds->push($request->user()->id);
             }
-            $room->members()->sync($memberIds->unique()->all());
+            $room->members()->syncWithPivotValues($memberIds->unique()->all(), [
+                'last_read_message_id' => null,
+                'last_read_at' => now(),
+            ]);
 
             return $room;
         });
@@ -91,6 +107,10 @@ class DiscussionRoomController extends Controller
     public function show(Request $request, DiscussionRoom $discussionRoom): View
     {
         $this->authorizeAccess($request, $discussionRoom);
+        $unreadOnOpen = (int) $this->unread
+            ->countsForRooms($request->user(), [$discussionRoom->id])
+            ->get($discussionRoom->id, 0);
+        $this->unread->markRoomRead($request->user(), $discussionRoom->id);
         $discussionRoom->load(['creator', 'members' => fn ($query) => $query->orderBy('name')]);
         $messages = $discussionRoom->messages()->with('user')->latest()->limit(100)->get()->reverse()->values();
         $canManage = $discussionRoom->canManage($request->user());
@@ -99,8 +119,34 @@ class DiscussionRoomController extends Controller
             : collect();
 
         return view('discussion-rooms.show', compact(
-            'discussionRoom', 'messages', 'canManage', 'teachers'
+            'discussionRoom', 'messages', 'canManage', 'teachers', 'unreadOnOpen'
         ));
+    }
+
+    public function unread(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $roomIds = $user->isGuru()
+            ? $user->discussionRooms()->pluck('discussion_rooms.id')
+            : collect();
+        $counts = $this->unread->countsForRooms($user, $roomIds);
+
+        return response()->json([
+            'total' => (int) $counts->sum(),
+            'rooms' => $counts->all(),
+        ]);
+    }
+
+    public function updateTheme(Request $request, DiscussionRoom $discussionRoom): RedirectResponse
+    {
+        $this->authorizeManage($request, $discussionRoom);
+        $data = $request->validate([
+            'theme_color' => ['required', Rule::in(array_keys(DiscussionRoom::THEME_COLORS))],
+            'theme_style' => ['required', Rule::in(array_keys(DiscussionRoom::THEME_STYLES))],
+        ]);
+        $discussionRoom->update($data);
+
+        return back()->with('success', 'Tema ruang diskusi diperbarui.');
     }
 
     public function updateMembers(Request $request, DiscussionRoom $discussionRoom): RedirectResponse
@@ -129,6 +175,11 @@ class DiscussionRoomController extends Controller
         }
         $memberIds = $memberIds->unique()->values();
         $discussionRoom->members()->sync($memberIds->all());
+        $lastMessageId = $discussionRoom->messages()->max('id');
+        $memberIds->diff($oldIds)->each(fn (int $memberId) => $discussionRoom->members()->updateExistingPivot($memberId, [
+            'last_read_message_id' => $lastMessageId,
+            'last_read_at' => now(),
+        ]));
 
         $members->whereIn('id', $memberIds->diff($oldIds)->all())->each(fn (User $member) => $member->notify(
             new AcademicNotification(

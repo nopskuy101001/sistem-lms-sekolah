@@ -2,20 +2,21 @@
 @section('title', $discussionRoom->name)
 
 @section('content')
-<div class="mb-5 flex flex-wrap items-start justify-between gap-4">
+<div class="discussion-room-page" style="{{ $discussionRoom->themeVariables() }}">
+<section class="discussion-room-hero discussion-theme-{{ $discussionRoom->themeStyle() }} mb-5 flex flex-wrap items-start justify-between gap-4">
     <div class="min-w-0">
-        <a href="{{ route('discussion-rooms.index') }}" class="text-sm font-semibold text-indigo-700 hover:underline">&larr; Semua ruang diskusi</a>
-        <div class="mt-4 flex flex-wrap items-center gap-2"><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $discussionRoom->subject }}</span><span class="text-xs text-slate-500">{{ $discussionRoom->members->count() }} anggota</span></div>
-        <h1 class="mt-2 break-words text-2xl font-bold text-slate-900">{{ $discussionRoom->name }}</h1>
-        @if($discussionRoom->description)<p class="mt-2 max-w-3xl whitespace-pre-wrap break-words text-sm leading-6 text-slate-500">{{ $discussionRoom->description }}</p>@endif
+        <a href="{{ route('discussion-rooms.index') }}" class="text-sm font-semibold text-white/80 hover:text-white hover:underline">&larr; Semua ruang diskusi</a>
+        <div class="mt-4 flex flex-wrap items-center gap-2"><span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $discussionRoom->subject }}</span><span class="text-xs text-white/75">{{ $discussionRoom->members->count() }} anggota</span>@if($unreadOnOpen)<span class="rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-amber-950">{{ $unreadOnOpen }} pesan baru dibaca</span>@endif</div>
+        <h1 class="mt-2 break-words text-2xl font-bold text-white">{{ $discussionRoom->name }}</h1>
+        @if($discussionRoom->description)<p class="mt-2 max-w-3xl whitespace-pre-wrap break-words text-sm leading-6 text-white/80">{{ $discussionRoom->description }}</p>@endif
     </div>
-    <a href="{{ route('discussion-rooms.show', $discussionRoom) }}#pesan-terbaru" class="lms-button border border-slate-200 bg-white text-slate-700">Muat pesan terbaru</a>
-</div>
+    <a href="{{ route('discussion-rooms.show', $discussionRoom) }}#pesan-terbaru" class="lms-button border border-white/25 bg-white/15 text-white hover:bg-white/25">Muat pesan terbaru</a>
+</section>
 
 <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
     <main class="min-w-0">
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 bg-slate-50 px-5 py-3"><h2 class="text-sm font-semibold text-slate-800">Percakapan</h2><p class="mt-0.5 text-xs text-slate-500">100 pesan terbaru ditampilkan.</p></div>
+            <div class="discussion-conversation-head border-b border-slate-200 px-5 py-3"><h2 class="text-sm font-semibold text-slate-800">Percakapan</h2><p class="mt-0.5 text-xs text-slate-500">100 pesan terbaru ditampilkan.</p></div>
             <div class="max-h-[62vh] min-h-[22rem] space-y-4 overflow-y-auto p-4 sm:p-5" data-discussion-messages>
                 @forelse($messages as $message)
                     @php $mine = $message->user_id === auth()->id(); @endphp
@@ -23,7 +24,7 @@
                         <x-user-avatar :user="$message->user" class="lms-avatar shrink-0" />
                         <div class="min-w-0 max-w-[88%] sm:max-w-[75%]">
                             <div class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 {{ $mine ? 'justify-end' : '' }}"><b class="text-slate-600">{{ $message->user->name }}</b><time datetime="{{ $message->created_at->toIso8601String() }}">{{ $message->created_at->translatedFormat('d M Y, H:i') }}</time></div>
-                            <div class="rounded-2xl px-4 py-3 {{ $mine ? 'rounded-tr-md bg-indigo-600 text-white' : 'rounded-tl-md bg-slate-100 text-slate-800' }}">
+                            <div class="rounded-2xl px-4 py-3 {{ $mine ? 'discussion-message-mine rounded-tr-md text-white' : 'rounded-tl-md bg-slate-100 text-slate-800' }}">
                                 @if($message->body)<p class="whitespace-pre-wrap break-words text-sm leading-6">{{ $message->body }}</p>@endif
                                 @if($message->attachment_path)
                                     @if($message->isImage())
@@ -55,7 +56,7 @@
                 <textarea id="discussion-body" name="body" rows="3" maxlength="10000" placeholder="Tulis pesan untuk anggota ruang..." class="w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm">{{ old('body') }}</textarea>
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <label class="min-w-0 cursor-pointer text-xs font-medium text-indigo-700"><span class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-2">&#128206;&nbsp; Tambahkan foto atau file</span><input type="file" name="attachment" class="mt-2 block w-full max-w-sm text-xs text-slate-500" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"></label>
-                    <button class="lms-button lms-button-primary">Kirim pesan</button>
+                    <button class="discussion-send-button lms-button text-white">Kirim pesan</button>
                 </div>
                 <p class="mt-2 text-[11px] text-slate-400">Foto, PDF, dokumen Office, teks, CSV, atau ZIP · maksimal 20 MB.</p>
             </form>
@@ -77,6 +78,29 @@
 
         @if($canManage)
             <details class="rounded-2xl border border-slate-200 bg-white p-5">
+                <summary class="cursor-pointer font-semibold text-slate-900">Ubah tema ruang</summary>
+                <form method="POST" action="{{ route('discussion-rooms.theme.update', $discussionRoom) }}" class="mt-4 space-y-4">@csrf @method('PUT')
+                    <fieldset>
+                        <legend class="text-xs font-semibold text-slate-700">Warna aksen</legend>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @foreach(\App\Models\DiscussionRoom::THEME_COLORS as $key => $theme)
+                                <label class="discussion-theme-choice" title="{{ $theme['label'] }}">
+                                    <input type="radio" name="theme_color" value="{{ $key }}" @checked($discussionRoom->theme_color === $key) required>
+                                    <span style="--theme-swatch: {{ $theme['primary'] }}"></span><small>{{ $theme['label'] }}</small>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                    <label class="grid gap-1.5 text-xs font-semibold text-slate-700">Gaya header
+                        <select name="theme_style" class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm">
+                            @foreach(\App\Models\DiscussionRoom::THEME_STYLES as $key => $label)<option value="{{ $key }}" @selected($discussionRoom->themeStyle() === $key)>{{ $label }}</option>@endforeach
+                        </select>
+                    </label>
+                    <button class="discussion-send-button w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white">Simpan tema</button>
+                </form>
+            </details>
+
+            <details class="rounded-2xl border border-slate-200 bg-white p-5">
                 <summary class="cursor-pointer font-semibold text-slate-900">Kelola anggota</summary>
                 <form method="POST" action="{{ route('discussion-rooms.members.update', $discussionRoom) }}" class="mt-4">@csrf @method('PUT')
                     <div class="max-h-72 space-y-2 overflow-y-auto">
@@ -97,6 +121,7 @@
             </section>
         @endif
     </aside>
+</div>
 </div>
 @endsection
 
