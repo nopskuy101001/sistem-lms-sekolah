@@ -127,7 +127,7 @@ class QuestionController extends Controller
         }
 
         $data = $request->validate([
-            'title' => ['nullable', 'string', 'max:200'],
+            'title' => ['required', 'string', 'max:200'],
             'stimulus' => ['nullable', 'string', 'max:20000'],
             'stimulus_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'media_alt' => ['nullable', 'string', 'max:255'],
@@ -181,7 +181,7 @@ class QuestionController extends Controller
         }
 
         $groupData = [
-            'title' => $data['title'] ?? null,
+            'title' => $data['title'],
             'stimulus' => trim((string) ($data['stimulus'] ?? '')),
             'media_alt' => $data['media_alt'] ?? null,
             'table_data' => $tableData,

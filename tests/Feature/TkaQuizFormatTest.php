@@ -45,6 +45,13 @@ class TkaQuizFormatTest extends TestCase
     public function test_teacher_can_create_tka_stimulus_and_complex_question_formats(): void
     {
         $this->actingAs($this->teacher)
+            ->get(route('quizzes.show', $this->quiz))
+            ->assertOk()
+            ->assertSee('Judul stimulus')
+            ->assertSee('name="title"', false)
+            ->assertSee('required', false);
+
+        $this->actingAs($this->teacher)
             ->post(route('question-groups.store', $this->quiz), [
                 'title' => 'Data Penjualan',
                 'stimulus' => 'Perhatikan data penjualan selama empat bulan.',
@@ -90,6 +97,18 @@ class TkaQuizFormatTest extends TestCase
             ->assertSee('Struktur soal TKA')
             ->assertSee('PG Kompleks - Multi Jawaban')
             ->assertSee('Data Penjualan');
+    }
+
+    public function test_stimulus_title_is_required(): void
+    {
+        $this->actingAs($this->teacher)
+            ->post(route('question-groups.store', $this->quiz), [
+                'stimulus' => 'Isi stimulus tanpa judul.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('title');
+
+        $this->assertDatabaseCount('question_groups', 0);
     }
 
     public function test_student_sees_quiz_opening_and_closing_timeline_separately_from_duration(): void
@@ -400,12 +419,14 @@ class TkaQuizFormatTest extends TestCase
     {
         $this->actingAs($this->teacher)
             ->post(route('question-groups.store', $this->quiz), [
+                'title' => 'Video tidak didukung',
                 'stimulus_video_url' => 'https://example.com/watch/video',
             ])
             ->assertSessionHasErrors('stimulus_video_url');
 
         $this->actingAs($this->teacher)
             ->post(route('question-groups.store', $this->quiz), [
+                'title' => 'Sumber video ganda',
                 'stimulus_video_url' => 'https://example.com/video.mp4',
                 'stimulus_video' => UploadedFile::fake()->create('video.mp4', 20, 'video/mp4'),
             ])

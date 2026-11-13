@@ -33,7 +33,10 @@
                 </div>
                 @if(!$quiz->attempts()->exists())
                     <form method="POST" action="{{ route('question-groups.store', $quiz) }}" enctype="multipart/form-data" class="mt-4 grid gap-3" data-chunked-video-form data-video-upload-url="{{ route('video-uploads.chunks') }}">@csrf
-                        <input name="title" value="{{ old('title') }}" placeholder="Judul stimulus (opsional)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <label class="block text-xs font-semibold text-slate-700">Judul stimulus <span class="text-red-600">*</span>
+                            <input name="title" value="{{ old('title') }}" required maxlength="200" placeholder="Contoh: Grafik Penjualan Bulanan" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        </label>
+                        @error('title')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
                         <textarea name="stimulus" rows="6" data-quiz-auto-grow placeholder="Teks stimulus: bacaan, kasus, atau informasi pengantar (opsional jika memakai gambar/tabel)..." class="quiz-auto-grow rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('stimulus') }}</textarea>
                         @error('stimulus')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
                         <div class="grid gap-3 md:grid-cols-2">
