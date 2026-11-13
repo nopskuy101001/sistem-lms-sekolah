@@ -72,10 +72,10 @@ class QuestionBulkImportTest extends TestCase
         $csv = "\xEF\xBB\xBFsep=,\r\n";
         $rows = [
             QuestionImportTemplateXlsxExporter::HEADERS,
-            ['PG', 'Ibu kota Indonesia?', 'Jakarta', 'Bandung', '', '', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan', '', '', '', '', ''],
-            ['PG Kompleks', 'Pilih simpulan benar.', 'Satu', 'Dua', 'Tiga', '', 'A|C', '', '', 15, 'Penalaran', '', '', 'DATA-1', 'Data Nilai', 'Baca tabel.', "Nama|Nilai\nAyu|90"],
-            ['Kategori', 'Tentukan kategori.', '', '', '', '', '', 'Nilai Ayu di atas 80||Nilai Ayu 70', 'Benar|Salah', 15, 'Penerapan', '', '', 'DATA-1', '', '', ''],
-            ['Esai', 'Jelaskan kesimpulan.', '', '', '', '', '', '', '', 20, '', '', '', '', '', '', ''],
+            ['PG', 'Ibu kota Indonesia?', 'Jakarta', 'Bandung', '', '', '', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan', '', '', '', '', ''],
+            ['PG Kompleks', 'Pilih simpulan benar.', 'Satu', 'Dua', 'Tiga', '', 'Lima', 'A|C', '', '', 15, 'Penalaran', '', '', 'DATA-1', 'Data Nilai', 'Baca tabel.', "Nama|Nilai\nAyu|90"],
+            ['Kategori', 'Tentukan kategori.', '', '', '', '', '', '', 'Nilai Ayu di atas 80||Nilai Ayu 70', 'Benar|Salah', 15, 'Penerapan', '', '', 'DATA-1', '', '', ''],
+            ['Esai', 'Jelaskan kesimpulan.', '', '', '', '', '', '', '', '', 20, '', '', '', '', '', '', ''],
         ];
         $stream = fopen('php://temp', 'r+');
         foreach ($rows as $row) {
@@ -93,6 +93,7 @@ class QuestionBulkImportTest extends TestCase
         $this->assertCount(4, $this->quiz->questions);
         $this->assertCount(1, $this->quiz->questionGroups);
         $this->assertSame(['a', 'c'], $this->quiz->questions->where('type', Question::TYPE_PGK_MCMA)->first()->correct_options);
+        $this->assertSame('Lima', $this->quiz->questions->where('type', Question::TYPE_PGK_MCMA)->first()->option_e);
         $this->assertCount(2, $this->quiz->questions->where('type', Question::TYPE_PGK_KATEGORI)->first()->category_items);
         $group = $this->quiz->questionGroups->first();
         $this->assertSame([['Nama', 'Nilai'], ['Ayu', '90']], $group->table_data);
@@ -105,7 +106,7 @@ class QuestionBulkImportTest extends TestCase
         $writer = new Writer;
         $writer->openToFile($path);
         $writer->addRow(Row::fromValues(QuestionImportTemplateXlsxExporter::HEADERS));
-        $writer->addRow(Row::fromValues(['PG', 'Dua tambah dua?', '3', '4', '5', '', 'B', '', '', 10]));
+        $writer->addRow(Row::fromValues(['PG', 'Dua tambah dua?', '3', '4', '5', '', '6', 'B', '', '', 10]));
         $writer->close();
 
         try {
@@ -115,6 +116,7 @@ class QuestionBulkImportTest extends TestCase
             $this->assertDatabaseHas('questions', [
                 'quiz_id' => $this->quiz->id,
                 'body' => 'Dua tambah dua?',
+                'option_e' => '6',
                 'correct_option' => 'b',
             ]);
         } finally {

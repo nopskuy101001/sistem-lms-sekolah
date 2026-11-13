@@ -12,9 +12,11 @@ class Question extends Model
     public const TYPE_PGK_KATEGORI = 'kategori';
     public const TYPE_ESAI = 'esai';
 
+    public const OPTION_KEYS = ['a', 'b', 'c', 'd', 'e'];
+
     protected $fillable = [
         'quiz_id', 'question_group_id', 'type', 'body',
-        'option_a', 'option_b', 'option_c', 'option_d',
+        'option_a', 'option_b', 'option_c', 'option_d', 'option_e',
         'correct_option', 'correct_options', 'category_items',
         'competency', 'subcompetency', 'cognitive_level', 'points',
     ];
@@ -98,6 +100,7 @@ class Question extends Model
             'b' => $this->option_b,
             'c' => $this->option_c,
             'd' => $this->option_d,
+            'e' => $this->option_e,
         ], fn ($text) => filled($text));
     }
 }

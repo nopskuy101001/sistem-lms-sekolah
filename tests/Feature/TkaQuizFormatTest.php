@@ -49,7 +49,9 @@ class TkaQuizFormatTest extends TestCase
             ->assertOk()
             ->assertSee('Judul stimulus')
             ->assertSee('name="title"', false)
-            ->assertSee('required', false);
+            ->assertSee('required', false)
+            ->assertSee('name="option_e"', false)
+            ->assertSee('value="e"', false);
 
         $this->actingAs($this->teacher)
             ->post(route('question-groups.store', $this->quiz), [
@@ -165,6 +167,15 @@ class TkaQuizFormatTest extends TestCase
 
     public function test_tka_answers_are_autoscored_by_their_question_format(): void
     {
+        $single = Question::create([
+            'quiz_id' => $this->quiz->id,
+            'type' => Question::TYPE_PG,
+            'body' => 'Pilih jawaban kelima.',
+            'option_a' => 'Satu', 'option_b' => 'Dua', 'option_c' => 'Tiga',
+            'option_d' => 'Empat', 'option_e' => 'Lima',
+            'correct_option' => 'e',
+            'points' => 10,
+        ]);
         $multi = Question::create([
             'quiz_id' => $this->quiz->id,
             'type' => Question::TYPE_PGK_MCMA,
@@ -190,13 +201,28 @@ class TkaQuizFormatTest extends TestCase
         ]);
 
         $this->actingAs($this->student)
+            ->get(route('attempts.take', $attempt))
+            ->assertOk()
+            ->assertSee('Pilih jawaban kelima.')
+            ->assertSee('Lima')
+            ->assertSee('value="e"', false);
+
+        $this->actingAs($this->student)
             ->post(route('attempts.submit', $attempt), [
                 'answers' => [
+                    $single->id => 'e',
                     $multi->id => ['c', 'a'],
                     $category->id => ['benar', 'benar'],
                 ],
             ])->assertRedirect(route('attempts.show', $attempt));
 
+        $this->assertDatabaseHas('quiz_answers', [
+            'quiz_attempt_id' => $attempt->id,
+            'question_id' => $single->id,
+            'answer' => 'e',
+            'is_correct' => true,
+            'score' => 10,
+        ]);
         $this->assertDatabaseHas('quiz_answers', [
             'quiz_attempt_id' => $attempt->id,
             'question_id' => $multi->id,
@@ -209,7 +235,7 @@ class TkaQuizFormatTest extends TestCase
             'is_correct' => false,
             'score' => 5,
         ]);
-        $this->assertEquals(15, $attempt->fresh()->score);
+        $this->assertEquals(25, $attempt->fresh()->score);
     }
 
     public function test_questions_that_share_a_stimulus_remain_adjacent_when_shuffled(): void

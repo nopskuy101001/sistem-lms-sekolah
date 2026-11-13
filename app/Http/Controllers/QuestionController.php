@@ -50,9 +50,10 @@ class QuestionController extends Controller
             'option_b' => ['required_if:type,pilihan_ganda,pilihan_ganda_kompleks', 'nullable', 'string', 'max:500'],
             'option_c' => ['nullable', 'string', 'max:500'],
             'option_d' => ['nullable', 'string', 'max:500'],
-            'correct_option' => ['required_if:type,pilihan_ganda', 'nullable', 'in:a,b,c,d'],
+            'option_e' => ['nullable', 'string', 'max:500'],
+            'correct_option' => ['required_if:type,pilihan_ganda', 'nullable', Rule::in(Question::OPTION_KEYS)],
             'correct_options' => ['required_if:type,pilihan_ganda_kompleks', 'nullable', 'array', 'min:2'],
-            'correct_options.*' => ['in:a,b,c,d'],
+            'correct_options.*' => [Rule::in(Question::OPTION_KEYS)],
             'category_statements' => ['required_if:type,kategori', 'nullable', 'array', 'min:2', 'max:10'],
             'category_statements.*' => ['nullable', 'string', 'max:1000'],
             'category_answers' => ['required_if:type,kategori', 'nullable', 'array'],
@@ -67,7 +68,7 @@ class QuestionController extends Controller
             $data['correct_options'] = null;
             $data['category_items'] = null;
         } elseif ($data['type'] === Question::TYPE_PGK_MCMA) {
-            $filledOptions = collect(['a', 'b', 'c', 'd'])
+            $filledOptions = collect(Question::OPTION_KEYS)
                 ->filter(fn ($key) => filled($data['option_'.$key] ?? null));
             $correctOptions = collect($data['correct_options'] ?? [])
                 ->filter(fn ($key) => $filledOptions->contains($key))
@@ -100,12 +101,12 @@ class QuestionController extends Controller
                 ])->withInput();
             }
 
-            $data['option_a'] = $data['option_b'] = $data['option_c'] = $data['option_d'] = null;
+            $data['option_a'] = $data['option_b'] = $data['option_c'] = $data['option_d'] = $data['option_e'] = null;
             $data['correct_option'] = null;
             $data['correct_options'] = null;
             $data['category_items'] = $categoryItems->all();
         } else {
-            $data['option_a'] = $data['option_b'] = $data['option_c'] = $data['option_d'] = null;
+            $data['option_a'] = $data['option_b'] = $data['option_c'] = $data['option_d'] = $data['option_e'] = null;
             $data['correct_option'] = null;
             $data['correct_options'] = null;
             $data['category_items'] = null;

@@ -19,7 +19,7 @@ class QuestionBankXlsxExporter
     {
         $options = new Options;
         $options->SHOULD_USE_INLINE_STRINGS = false;
-        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
+        foreach ([16, 45, 24, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
             $options->setColumnWidth($width, $index + 1);
         }
 
@@ -67,6 +67,7 @@ class QuestionBankXlsxExporter
                     $question['option_b'] ?? '',
                     $question['option_c'] ?? '',
                     $question['option_d'] ?? '',
+                    $question['option_e'] ?? '',
                     $keys,
                     implode('||', array_column($items, 'statement')),
                     implode('|', array_map('ucfirst', array_column($items, 'answer'))),
@@ -87,7 +88,7 @@ class QuestionBankXlsxExporter
 
                 // Keep text starting with '=' as text so question content cannot become a spreadsheet formula.
                 $cells = array_map(
-                    fn ($value, int $index) => $index === 9
+                    fn ($value, int $index) => $index === 10
                         ? Cell::fromValue($value)
                         : new StringCell((string) $value, null),
                     $values,

@@ -13,7 +13,7 @@ use OpenSpout\Writer\XLSX\Writer;
 class QuestionImportTemplateXlsxExporter
 {
     public const HEADERS = [
-        'Tipe', 'Pertanyaan', 'Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D',
+        'Tipe', 'Pertanyaan', 'Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D', 'Pilihan E',
         'Kunci Jawaban', 'Pernyataan Kategori', 'Jawaban Kategori', 'Poin',
         'Level Kognitif', 'Kompetensi', 'Subkompetensi', 'Kode Stimulus',
         'Judul Stimulus', 'Teks Stimulus', 'Tabel Stimulus',
@@ -25,7 +25,7 @@ class QuestionImportTemplateXlsxExporter
     {
         $options = new Options;
         $options->SHOULD_USE_INLINE_STRINGS = false;
-        foreach ([16, 45, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
+        foreach ([16, 45, 24, 24, 24, 24, 24, 18, 42, 24, 10, 20, 28, 28, 18, 28, 45, 45, 30, 32, 42, 30, 36] as $index => $width) {
             $options->setColumnWidth($width, $index + 1);
         }
 
@@ -90,10 +90,10 @@ class QuestionImportTemplateXlsxExporter
     private function examples(): array
     {
         return [
-            ['PG', 'Ibu kota Indonesia adalah ...', 'Jakarta', 'Bandung', 'Surabaya', 'Medan', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan umum', '', '', '', '', '', '', '', '', '', ''],
-            ['PG Kompleks', 'Pilih dua simpulan yang benar.', 'Simpulan A', 'Simpulan B', 'Simpulan C', 'Simpulan D', 'A|C', '', '', 15, 'Penalaran', 'Literasi data', 'Interpretasi tabel', 'STIM-01', 'Data Penjualan', 'Perhatikan data penjualan berikut.', "Bulan|Jumlah\nJanuari|120\nFebruari|150", '', '', 'https://www.youtube.com/watch?v=M7lc1UVf-VE', '', 'Video penjelasan data'],
-            ['Kategori', 'Tentukan benar atau salah.', '', '', '', '', '', 'Nilai Februari lebih tinggi dari Januari||Selisihnya 20', 'Benar|Salah', 15, 'Penerapan', 'Literasi data', '', 'STIM-01', '', '', '', '', '', '', '', ''],
-            ['Esai', 'Jelaskan alasan jawaban Anda.', '', '', '', '', '', '', '', 20, 'Penalaran', '', '', '', '', '', '', '', '', '', '', ''],
+            ['PG', 'Ibu kota Indonesia adalah ...', 'Jakarta', 'Bandung', 'Surabaya', 'Medan', 'Makassar', 'A', '', '', 10, 'Pemahaman', 'Pengetahuan umum', '', '', '', '', '', '', '', '', '', ''],
+            ['PG Kompleks', 'Pilih dua simpulan yang benar.', 'Simpulan A', 'Simpulan B', 'Simpulan C', 'Simpulan D', 'Simpulan E', 'A|C', '', '', 15, 'Penalaran', 'Literasi data', 'Interpretasi tabel', 'STIM-01', 'Data Penjualan', 'Perhatikan data penjualan berikut.', "Bulan|Jumlah\nJanuari|120\nFebruari|150", '', '', 'https://www.youtube.com/watch?v=M7lc1UVf-VE', '', 'Video penjelasan data'],
+            ['Kategori', 'Tentukan benar atau salah.', '', '', '', '', '', '', 'Nilai Februari lebih tinggi dari Januari||Selisihnya 20', 'Benar|Salah', 15, 'Penerapan', 'Literasi data', '', 'STIM-01', '', '', '', '', '', '', '', ''],
+            ['Esai', 'Jelaskan alasan jawaban Anda.', '', '', '', '', '', '', '', '', 20, 'Penalaran', '', '', '', '', '', '', '', '', '', '', ''],
         ];
     }
 }

@@ -21,6 +21,7 @@ class QuestionBankService
         'option_b',
         'option_c',
         'option_d',
+        'option_e',
         'correct_option',
         'correct_options',
         'category_items',

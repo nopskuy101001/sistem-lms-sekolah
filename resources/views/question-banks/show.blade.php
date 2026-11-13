@@ -64,6 +64,7 @@
                     'b' => $question['option_b'] ?? null,
                     'c' => $question['option_c'] ?? null,
                     'd' => $question['option_d'] ?? null,
+                    'e' => $question['option_e'] ?? null,
                 ])->filter(fn ($value) => filled($value));
                 $correctKeys = $type === 'pilihan_ganda'
                     ? array_filter([$question['correct_option'] ?? null])

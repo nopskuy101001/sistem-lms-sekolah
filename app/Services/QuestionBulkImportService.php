@@ -36,6 +36,7 @@ class QuestionBulkImportService
         'pilihanb' => 'option_b',
         'pilihanc' => 'option_c',
         'pilihand' => 'option_d',
+        'pilihane' => 'option_e',
         'kuncijawaban' => 'answer_key',
         'kunci' => 'answer_key',
         'pernyataankategori' => 'category_statements',
@@ -243,6 +244,7 @@ class QuestionBulkImportService
             'option_b' => null,
             'option_c' => null,
             'option_d' => null,
+            'option_e' => null,
             'correct_option' => null,
             'correct_options' => null,
             'category_items' => null,
@@ -253,7 +255,7 @@ class QuestionBulkImportService
         ];
 
         if (in_array($type, [Question::TYPE_PG, Question::TYPE_PGK_MCMA], true)) {
-            foreach (['a', 'b', 'c', 'd'] as $key) {
+            foreach (Question::OPTION_KEYS as $key) {
                 $option = $data['option_'.$key] ?? '';
                 if (mb_strlen($option) > 500) {
                     $rowErrors[] = 'Pilihan '.strtoupper($key).' maksimal 500 karakter';
@@ -267,12 +269,12 @@ class QuestionBulkImportService
             $answerKeys = $this->parseAnswerKeys($data['answer_key'] ?? '');
             if ($type === Question::TYPE_PG) {
                 if (count($answerKeys) !== 1 || blank($question['option_'.$answerKeys[0]] ?? null)) {
-                    $rowErrors[] = 'Kunci Jawaban PG harus satu huruf A-D yang pilihannya terisi';
+                    $rowErrors[] = 'Kunci Jawaban PG harus satu huruf A-E yang pilihannya terisi';
                 } else {
                     $question['correct_option'] = $answerKeys[0];
                 }
             } elseif (count($answerKeys) < 2 || collect($answerKeys)->contains(fn ($key) => blank($question['option_'.$key] ?? null))) {
-                $rowErrors[] = 'Kunci PG Kompleks harus minimal dua huruf A-D yang pilihannya terisi, contoh A|C';
+                $rowErrors[] = 'Kunci PG Kompleks harus minimal dua huruf A-E yang pilihannya terisi, contoh A|C';
             } else {
                 $question['correct_options'] = $answerKeys;
             }

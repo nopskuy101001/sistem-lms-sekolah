@@ -127,18 +127,18 @@
                 </div>
 
                 <div id="pg-fields" class="space-y-2">
-                    @foreach(['a', 'b', 'c', 'd'] as $key)
+                    @foreach(\App\Models\Question::OPTION_KEYS as $key)
                         <div class="flex items-center gap-2">
                             <span class="w-5 text-sm font-medium">{{ strtoupper($key) }}</span>
                             <input type="text" name="option_{{ $key }}" value="{{ old('option_'.$key) }}"
-                                   placeholder="Opsi {{ strtoupper($key) }}{{ in_array($key, ['c', 'd']) ? ' (opsional)' : '' }}"
+                                   placeholder="Opsi {{ strtoupper($key) }}{{ in_array($key, ['c', 'd', 'e']) ? ' (opsional)' : '' }}"
                                    class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
                         </div>
                     @endforeach
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Kunci jawaban</label>
                         <select name="correct_option" class="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm">
-                            @foreach(['a', 'b', 'c', 'd'] as $key)
+                            @foreach(\App\Models\Question::OPTION_KEYS as $key)
                                 <option value="{{ $key }}" @selected(old('correct_option') === $key)>{{ strtoupper($key) }}</option>
                             @endforeach
                         </select>

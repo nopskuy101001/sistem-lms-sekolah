@@ -39,7 +39,7 @@ class QuestionBankTest extends TestCase
                     'table_data' => [['Nama', 'Nilai'], ['Ayu', '20']], 'media_path' => 'question-bank-stimuli/grafik.png',
                 ]],
                 'questions' => [
-                    ['type' => 'pilihan_ganda', 'body' => 'Berapa nilai Ayu?', 'option_a' => '=2+2', 'option_b' => '20', 'correct_option' => 'b', 'points' => 10, 'group_key' => 'group-1'],
+                    ['type' => 'pilihan_ganda', 'body' => 'Berapa nilai Ayu?', 'option_a' => '=2+2', 'option_b' => '20', 'option_e' => '25', 'correct_option' => 'b', 'points' => 10, 'group_key' => 'group-1'],
                     ['type' => 'pilihan_ganda_kompleks', 'body' => 'Pilih dua jawaban.', 'option_a' => 'Satu', 'option_b' => 'Dua', 'option_c' => 'Tiga', 'correct_options' => ['a', 'c'], 'points' => 15, 'group_key' => 'group-1'],
                     ['type' => 'kategori', 'body' => 'Tentukan benar salah.', 'category_items' => [['statement' => 'Pernyataan satu', 'answer' => 'benar'], ['statement' => 'Pernyataan dua', 'answer' => 'salah']], 'points' => 20, 'group_key' => null],
                     ['type' => 'esai', 'body' => 'Jelaskan jawaban.', 'points' => 5, 'group_key' => null],
@@ -88,9 +88,10 @@ class QuestionBankTest extends TestCase
             $this->assertSame(QuestionImportTemplateXlsxExporter::HEADERS, $rows[0]->toArray());
             $this->assertCount(5, $rows);
             $this->assertSame('=2+2', $rows[1]->toArray()[2]);
-            $this->assertSame('group-1', $rows[2]->toArray()[13]);
-            $this->assertSame('', $rows[2]->toArray()[15]);
-            $this->assertSame('Benar|Salah', $rows[3]->toArray()[8]);
+            $this->assertSame('25', $rows[1]->toArray()[6]);
+            $this->assertSame('group-1', $rows[2]->toArray()[14]);
+            $this->assertSame('', $rows[2]->toArray()[16]);
+            $this->assertSame('Benar|Salah', $rows[3]->toArray()[9]);
             $this->assertSame('Informasi Paket', $sheets[1]->getName());
             $info = array_map(fn ($row) => $row->toArray(), iterator_to_array($sheets[1]->getRowIterator()));
             $this->assertContains(['Durasi (menit)', '75'], $info);
@@ -107,6 +108,7 @@ class QuestionBankTest extends TestCase
         $this->assertCount(4, $quiz->questions);
         $this->assertCount(1, $quiz->questionGroups);
         $this->assertSame('=2+2', $quiz->questions->first()->option_a);
+        $this->assertSame('25', $quiz->questions->first()->option_e);
     }
 
     public function test_question_package_round_trip_restores_images_uploaded_video_and_youtube_url(): void
@@ -276,7 +278,8 @@ class QuestionBankTest extends TestCase
             'option_b' => 'Pernyataan B',
             'option_c' => 'Pernyataan C',
             'option_d' => 'Pernyataan D',
-            'correct_options' => ['a', 'c'],
+            'option_e' => 'Pernyataan E',
+            'correct_options' => ['a', 'e'],
             'competency' => 'Aljabar',
             'cognitive_level' => 'penalaran',
             'points' => 20,
@@ -321,6 +324,7 @@ class QuestionBankTest extends TestCase
             ->assertSee('Perhatikan grafik dan tabel berikut.')
             ->assertSee('Pilih dua pernyataan yang benar.')
             ->assertSee('Pernyataan A')
+            ->assertSee('Pernyataan E')
             ->assertSee('✓ kunci')
             ->assertSee('Tentukan benar atau salah.')
             ->assertSee('Januari')
@@ -360,7 +364,8 @@ class QuestionBankTest extends TestCase
         $this->assertTrue($newQuiz->shuffle_questions);
         $this->assertCount(2, $newQuiz->questions);
         $this->assertCount(1, $newQuiz->questionGroups);
-        $this->assertSame(['a', 'c'], $newQuiz->questions->first()->correct_options);
+        $this->assertSame(['a', 'e'], $newQuiz->questions->first()->correct_options);
+        $this->assertSame('Pernyataan E', $newQuiz->questions->first()->option_e);
         $this->assertSame($newQuiz->questionGroups->first()->id, $newQuiz->questions->first()->question_group_id);
         $this->assertSame([['Bulan', 'Nilai'], ['Januari', '20']], $newQuiz->questionGroups->first()->table_data);
         $importedMedia = $newQuiz->questionGroups->first()->media_path;
