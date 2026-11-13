@@ -17,6 +17,14 @@
             } catch (_) {}
             document.documentElement.dataset.theme = theme;
             document.documentElement.style.colorScheme = theme;
+
+            var sidebarThemes = ['indigo', 'ocean', 'emerald', 'rose', 'graphite'];
+            var sidebarTheme = 'indigo';
+            try {
+                var savedSidebarTheme = localStorage.getItem('lms-sidebar-theme');
+                if (sidebarThemes.indexOf(savedSidebarTheme) !== -1) sidebarTheme = savedSidebarTheme;
+            } catch (_) {}
+            document.documentElement.dataset.sidebarTheme = sidebarTheme;
         })();
     </script>
     @endauth
@@ -32,10 +40,25 @@
         <div class="lms-overlay" data-sidebar-overlay></div>
 
         <aside class="lms-sidebar" id="lms-sidebar" data-sidebar aria-label="Navigasi utama">
-            <a href="{{ route('dashboard') }}" class="lms-brand">
-                <span class="lms-brand-mark" aria-hidden="true"><img src="{{ asset('media/logo-smkn1-cerme.png') }}" alt="" class="lms-brand-logo"></span>
-                <span><span class="lms-brand-title">RuangKelas</span><span class="lms-brand-subtitle">SMK NEGERI 1 CERME</span></span>
-            </a>
+            <div class="lms-sidebar-head">
+                <a href="{{ route('dashboard') }}" class="lms-brand">
+                    <span class="lms-brand-mark" aria-hidden="true"><img src="{{ asset('media/logo-smkn1-cerme.png') }}" alt="" class="lms-brand-logo"></span>
+                    <span class="lms-brand-copy"><span class="lms-brand-title">RuangKelas</span><span class="lms-brand-subtitle">SMK NEGERI 1 CERME</span></span>
+                </a>
+                <details class="lms-sidebar-theme-menu" data-sidebar-theme-menu>
+                    <summary aria-label="Ubah warna sidebar" title="Ubah warna sidebar">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h3.5A5.5 5.5 0 0 0 21 7.5C21 5 17 3 12 3Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="9" cy="6.5" r="1"/><circle cx="14" cy="6.5" r="1"/></svg>
+                    </summary>
+                    <div class="lms-sidebar-theme-popover" role="group" aria-label="Pilihan warna sidebar">
+                        <div class="lms-sidebar-theme-copy"><strong>Warna sidebar</strong><span>Tersimpan di perangkat ini</span></div>
+                        <div class="lms-sidebar-theme-options">
+                            @foreach(['indigo' => 'Indigo', 'ocean' => 'Samudra', 'emerald' => 'Zamrud', 'rose' => 'Mawar', 'graphite' => 'Grafit'] as $themeValue => $themeLabel)
+                                <button type="button" data-sidebar-theme-option="{{ $themeValue }}" aria-pressed="false"><span class="lms-sidebar-theme-swatch" aria-hidden="true"></span><span>{{ $themeLabel }}</span></button>
+                            @endforeach
+                        </div>
+                    </div>
+                </details>
+            </div>
 
             <div class="lms-nav-label">Menu Utama</div>
             <nav class="lms-nav">

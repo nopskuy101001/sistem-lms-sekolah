@@ -32,6 +32,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const sidebarThemeMenu = document.querySelector('[data-sidebar-theme-menu]');
+    const sidebarThemeOptions = [...document.querySelectorAll('[data-sidebar-theme-option]')];
+    const sidebarThemeLabels = {
+        indigo: 'Indigo', ocean: 'Samudra', emerald: 'Zamrud', rose: 'Mawar', graphite: 'Grafit',
+    };
+    const applySidebarTheme = (theme, persist = false) => {
+        const normalizedTheme = Object.prototype.hasOwnProperty.call(sidebarThemeLabels, theme) ? theme : 'indigo';
+        themeRoot.dataset.sidebarTheme = normalizedTheme;
+        sidebarThemeOptions.forEach((option) => {
+            option.setAttribute('aria-pressed', String(option.dataset.sidebarThemeOption === normalizedTheme));
+        });
+
+        const trigger = sidebarThemeMenu?.querySelector('summary');
+        if (trigger) {
+            const label = `Ubah warna sidebar. Tema aktif: ${sidebarThemeLabels[normalizedTheme]}`;
+            trigger.setAttribute('aria-label', label);
+            trigger.setAttribute('title', label);
+        }
+
+        if (persist) {
+            try {
+                localStorage.setItem('lms-sidebar-theme', normalizedTheme);
+            } catch (_) {}
+        }
+    };
+
+    if (sidebarThemeMenu && sidebarThemeOptions.length) {
+        applySidebarTheme(themeRoot.dataset.sidebarTheme || 'indigo');
+        sidebarThemeOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                applySidebarTheme(option.dataset.sidebarThemeOption, true);
+                sidebarThemeMenu.open = false;
+                sidebarThemeMenu.querySelector('summary')?.focus({preventScroll: true});
+            });
+        });
+        document.addEventListener('click', (event) => {
+            if (sidebarThemeMenu.open && !sidebarThemeMenu.contains(event.target)) sidebarThemeMenu.open = false;
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && sidebarThemeMenu.open) {
+                sidebarThemeMenu.open = false;
+                sidebarThemeMenu.querySelector('summary')?.focus({preventScroll: true});
+            }
+        });
+    }
+
     document.querySelectorAll('[data-password-toggle]').forEach((button) => {
         const field = button.closest('.lms-password-field');
         const input = field?.querySelector('input');
