@@ -25,7 +25,7 @@
                         <div class="min-w-0 max-w-[88%] sm:max-w-[75%]">
                             <div class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 {{ $mine ? 'justify-end' : '' }}"><b class="text-slate-600">{{ $message->user->name }}</b><time datetime="{{ $message->created_at->toIso8601String() }}">{{ $message->created_at->translatedFormat('d M Y, H:i') }}</time></div>
                             <div class="rounded-2xl px-4 py-3 {{ $mine ? 'discussion-message-mine rounded-tr-md text-white' : 'rounded-tl-md bg-slate-100 text-slate-800' }}">
-                                @if($message->body)<p class="whitespace-pre-wrap break-words text-sm leading-6">{{ $message->body }}</p>@endif
+                                @if($message->body)<p class="whitespace-pre-wrap break-words text-sm leading-6">{{ \App\Support\MessageLinkifier::render($message->body) }}</p>@endif
                                 @if($message->attachment_path)
                                     @if($message->isImage())
                                         <a href="{{ route('discussion-messages.attachment', $message) }}" target="_blank" rel="noopener" class="mt-2 block overflow-hidden rounded-xl bg-black/10">
@@ -53,7 +53,11 @@
             <form method="POST" action="{{ route('discussion-messages.store', $discussionRoom) }}" enctype="multipart/form-data" class="border-t border-slate-200 bg-white p-4 sm:p-5">
                 @csrf
                 <label for="discussion-body" class="sr-only">Tulis pesan</label>
-                <textarea id="discussion-body" name="body" rows="3" maxlength="10000" placeholder="Tulis pesan untuk anggota ruang..." class="w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm">{{ old('body') }}</textarea>
+                <textarea id="discussion-body" name="body" rows="3" maxlength="10000" placeholder="Tulis pesan atau tempel tautan untuk anggota ruang..." class="w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm">{{ old('body') }}</textarea>
+                <p class="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Tautan dengan awalan https://, http://, atau www. otomatis dapat diklik.
+                </p>
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <label class="min-w-0 cursor-pointer text-xs font-medium text-indigo-700"><span class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-2">&#128206;&nbsp; Tambahkan foto atau file</span><input type="file" name="attachment" class="mt-2 block w-full max-w-sm text-xs text-slate-500" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"></label>
                     <button class="discussion-send-button lms-button text-white">Kirim pesan</button>

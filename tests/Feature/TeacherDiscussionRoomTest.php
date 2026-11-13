@@ -85,6 +85,28 @@ class TeacherDiscussionRoomTest extends TestCase
         Storage::disk('local')->assertMissing($path);
     }
 
+    public function test_message_urls_are_clickable_without_allowing_message_html(): void
+    {
+        $teacher = User::factory()->create(['role' => 'guru']);
+        $room = DiscussionRoom::create([
+            'creator_id' => $teacher->id,
+            'name' => 'Berbagi Materi',
+            'subject' => 'Produktif RPL',
+        ]);
+        $room->members()->attach($teacher->id);
+
+        $this->actingAs($teacher)->post(route('discussion-messages.store', $room), [
+            'body' => 'Materi: www.example.com/modul?kelas=XI&bab=1. <script>alert("x")</script>',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->get(route('discussion-rooms.show', $room))
+            ->assertOk()
+            ->assertSee('href="https://www.example.com/modul?kelas=XI&amp;bab=1"', false)
+            ->assertSee('target="_blank" rel="noopener noreferrer nofollow"', false)
+            ->assertSee('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;', false)
+            ->assertDontSee('<script>alert("x")</script>', false);
+    }
+
     public function test_creator_manages_members_and_admin_can_remove_room_with_files(): void
     {
         Storage::fake('local');
