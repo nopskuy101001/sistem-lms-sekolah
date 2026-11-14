@@ -79,6 +79,11 @@
                 @error('email', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
+                <label for="staff_username" class="block text-sm font-medium mb-1">Username login <span class="font-normal text-slate-400">(opsional)</span></label>
+                <input id="staff_username" type="text" name="username" value="{{ old('username') }}" minlength="4" maxlength="50" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Contoh: darwati.guru">
+                @error('username', 'staffCreate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
                 <label for="staff_role" class="block text-sm font-medium mb-1">Role *</label>
                 <select id="staff_role" name="role" class="w-full rounded-lg border border-slate-300 px-3 py-2">
                     <option value="guru" @selected(old('role', 'guru') === 'guru')>Guru</option>
@@ -133,6 +138,31 @@
             <p class="mt-2 text-xs text-slate-500">CSV atau XLSX, maksimal 5 MB dan 1.000 siswa.</p>
             @error('student_file')<p class="mt-2 text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Import akun siswa</button>
+        </form>
+    </div>
+</section>
+
+<section class="mb-6 overflow-hidden rounded-2xl border border-sky-200 bg-white">
+    <div class="grid gap-5 p-5 lg:grid-cols-[1fr_380px]">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-sky-700">Import guru batch</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-900">Buat akun dan simpan data kepegawaian guru</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Template memakai dua baris header kategori dan subkategori. Kolom wajib adalah Nama, NIP, dan Tgl-Bln-Thn; seluruh kolom lainnya tetap disimpan tetapi boleh kosong.</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <a href="{{ route('admin.users.import.teachers.template.xlsx') }}" class="lms-button lms-button-primary">Unduh template guru</a>
+                <a href="{{ route('admin.users.export.teachers.xlsx') }}" class="lms-button border border-sky-300 bg-sky-50 text-sky-800">Unduh data guru</a>
+            </div>
+            <div class="mt-4 rounded-xl bg-sky-50 p-3 text-xs leading-5 text-sky-900">
+                <b>Login awal:</b> NIP tanpa spasi, misalnya <code>197112061997022003</code>. Password awal menggunakan tanggal lahir format <code>ddmmyyyy</code>. Guru dapat membuat username alias dari halaman Profil.
+            </div>
+        </div>
+        <form method="POST" action="{{ route('admin.users.import.teachers') }}" enctype="multipart/form-data" class="self-start rounded-xl border border-slate-200 bg-slate-50 p-4">
+            @csrf
+            <label for="teacher_file" class="block text-sm font-semibold text-slate-800">File data guru</label>
+            <input id="teacher_file" type="file" name="teacher_file" accept=".xlsx" required class="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-100 file:px-3 file:py-2 file:font-semibold file:text-sky-800">
+            <p class="mt-2 text-xs text-slate-500">XLSX, maksimal 5 MB dan 1.000 guru.</p>
+            @error('teacher_file')<p class="mt-2 text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="mt-4 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">Import akun guru</button>
         </form>
     </div>
 </section>
@@ -202,8 +232,9 @@
                     <td class="px-4 py-3"><span class="flex items-center gap-2"><x-user-avatar :user="$user" class="lms-mini-avatar" /><span>{{ $user->name }}</span></span></td>
                     <td class="px-4 py-3 text-slate-600">{{ $user->email }}</td>
                     <td class="px-4 py-3 text-slate-600">
-                        <span class="block">{{ $user->isSiswa() && $user->nipd ? $user->nipd : ($user->nomor_induk ?? '-') }}</span>
+                        <span class="block">{{ $user->isSiswa() && $user->nipd ? $user->nipd : ($user->teacherProfile?->nip_original ?: ($user->nomor_induk ?? '-')) }}</span>
                         @if($user->isSiswa() && $user->nipd)<span class="block text-[10px] text-slate-400">Username {{ $user->nomor_induk }}</span>@endif
+                        @if($user->username)<span class="block text-[10px] text-slate-400">Alias {{ $user->username }}</span>@endif
                         @if($user->date_of_birth)<span class="text-[10px] text-slate-400">Lahir {{ $user->date_of_birth->format('d/m/Y') }}</span>@endif
                     </td>
                     <td class="px-4 py-3 text-center">

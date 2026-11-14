@@ -27,8 +27,8 @@
             <form method="POST" action="{{ route('login.attempt') }}" class="space-y-4">
                 @csrf
                 <div class="lms-field">
-                    <label for="login">NIS atau alamat email</label>
-                    <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username" placeholder="NIS atau nama@sekolah.id">
+                    <label for="login">Username, NIS/NIP, atau alamat email</label>
+                    <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username" placeholder="Username, NIS/NIP, atau email">
                 </div>
                 <div class="lms-field">
                     <label for="password">Kata sandi</label>

@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Notifications\LmsPasswordResetNotification;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -40,7 +42,10 @@ class ForgotPasswordController extends Controller
 
         $user = filter_var($input, FILTER_VALIDATE_EMAIL)
             ? User::query()->where('email', mb_strtolower($input))->first()
-            : User::query()->where('nomor_induk', $input)->first();
+            : User::query()
+                ->where('username', mb_strtolower($input))
+                ->orWhere('nomor_induk', $input)
+                ->first();
 
         // Don't reveal existence of account, email, NIS, or pending registration.
         if (! $user || ! $this->canRecover($user)) {
@@ -96,7 +101,7 @@ class ForgotPasswordController extends Controller
             // No destructive DDL or session operation is performed for other drivers.
             if (config('session.driver') === 'database') {
                 try {
-                    \Illuminate\Support\Facades\DB::table(config('session.table', 'sessions'))
+                    DB::table(config('session.table', 'sessions'))
                         ->where('user_id', $account->getKey())->delete();
                 } catch (\Throwable $exception) {
                     report($exception);
@@ -109,7 +114,7 @@ class ForgotPasswordController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             // A reset may be completed while logged in as this or another user.
             // End the browser session before redirecting to guest-only /login.
-            \Illuminate\Support\Facades\Auth::logout();
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 

@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/password/change', [PasswordController::class, 'update'])->name('password.update');
     Route::post('/password/change/later', [PasswordController::class, 'defer'])->name('password.defer');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/username', [ProfileController::class, 'updateUsername'])->middleware('throttle:5,10')->name('profile.username.update');
     Route::post('/profile/email', [ProfileController::class, 'requestEmailChange'])->middleware('throttle:5,10')->name('profile.email.request');
     Route::get('/profile/email/confirm/{user}', [ProfileController::class, 'confirmEmailChange'])->middleware(['signed', 'throttle:10,1'])->name('profile.email.confirm');
     Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
@@ -200,6 +201,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [AdminUserController::class, 'storeStaff'])->name('admin.users.store');
         Route::post('/users/students', [AdminUserController::class, 'storeStudent'])->name('admin.users.students.store');
         Route::post('/users/import', [AdminUserController::class, 'importStudents'])->name('admin.users.import');
+        Route::post('/users/import/teachers', [AdminUserController::class, 'importTeachers'])->name('admin.users.import.teachers');
+        Route::get('/users/import/teachers/template.xlsx', [AdminUserController::class, 'teacherTemplateXlsx'])->name('admin.users.import.teachers.template.xlsx');
+        Route::get('/users/export/teachers.xlsx', [AdminUserController::class, 'exportTeachersXlsx'])->name('admin.users.export.teachers.xlsx');
         Route::get('/users/import/template.csv', [AdminUserController::class, 'studentTemplateCsv'])->name('admin.users.import.template.csv');
         Route::get('/users/import/template.xlsx', [AdminUserController::class, 'studentTemplateXlsx'])->name('admin.users.import.template.xlsx');
         Route::get('/users/export/students.xlsx', [AdminUserController::class, 'exportStudentsXlsx'])->name('admin.users.export.students.xlsx');

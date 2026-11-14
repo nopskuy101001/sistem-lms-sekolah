@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use App\Mail\ProfileEmailChangeMail;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -21,6 +21,29 @@ class ProfileController extends Controller
     public function edit(Request $request): View
     {
         return view('profile.edit', ['user' => $request->user()]);
+    }
+
+    public function updateUsername(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isGuru() || $user->isAdmin(), 403);
+        $request->merge(['username' => mb_strtolower(trim((string) $request->input('username')))]);
+        $data = $request->validate([
+            'username' => [
+                'required', 'string', 'min:4', 'max:50', 'regex:/^(?=.*[a-z])[a-z0-9._-]+$/',
+                Rule::unique('users', 'username')->ignore($user->id),
+            ],
+            'current_password' => ['required', 'current_password'],
+        ], [
+            'username.regex' => 'Username harus memiliki huruf dan hanya boleh memakai huruf kecil, angka, titik, garis bawah, atau tanda hubung.',
+        ]);
+        if (User::query()->where('nomor_induk', $data['username'])->whereKeyNot($user->id)->exists()) {
+            throw ValidationException::withMessages(['username' => 'Username sama dengan nomor induk pengguna lain.']);
+        }
+        $user->update(['username' => $data['username']]);
+        $request->session()->regenerate();
+
+        return back()->with('success', 'Username login berhasil diperbarui. NIP tetap dapat digunakan untuk login.');
     }
 
     /**
@@ -83,12 +106,12 @@ class ProfileController extends Controller
         $actor = $request->user();
         abort_unless((int) $actor->getKey() === $user, 403);
         $token = (string) $request->query('token', '');
-        if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+        if (! preg_match('/^[a-f0-9]{64}$/', $token)) {
             abort(403);
         }
         $key = $this->emailPendingKey($user);
         $pending = Cache::get($key);
-        if (!is_array($pending) || !hash_equals((string) ($pending['token_hash'] ?? ''), hash('sha256', $token))) {
+        if (! is_array($pending) || ! hash_equals((string) ($pending['token_hash'] ?? ''), hash('sha256', $token))) {
             return redirect()->route('profile.edit')->withErrors(['email' => 'Tautan sudah digunakan, dibatalkan, atau kedaluwarsa. Ulangi permintaan.']);
         }
 
@@ -107,17 +130,19 @@ class ProfileController extends Controller
         } catch (QueryException $exception) {
             // Handle a concurrent unique-index conflict without leaking SQL.
             report($exception);
+
             return redirect()->route('profile.edit')->withErrors(['email' => 'Email sudah digunakan atau tidak dapat disimpan. Hubungi admin bila masalah berulang.']);
         }
 
         Cache::forget($key);
         $request->session()->regenerate();
+
         return redirect()->route('profile.edit')->with('success', 'Email baru berhasil diverifikasi dan digunakan untuk login. NIS dan role tidak berubah.');
     }
 
     private function emailPendingKey(int $userId): string
     {
-        return 'lms-profile:email-change:' . $userId;
+        return 'lms-profile:email-change:'.$userId;
     }
 
     public function updatePhoto(Request $request): RedirectResponse
@@ -150,7 +175,9 @@ class ProfileController extends Controller
                 'profile_photo_position_y' => (int) ($data['profile_photo_position_y'] ?? $user->profile_photo_position_y ?? 50),
             ]);
         } catch (\Throwable $exception) {
-            if ($newPath) Storage::disk('public')->delete($newPath);
+            if ($newPath) {
+                Storage::disk('public')->delete($newPath);
+            }
             throw $exception;
         }
 

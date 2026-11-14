@@ -67,6 +67,7 @@
             <dl class="mt-6 grid gap-4 text-sm">
                 <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all text-slate-700">{{ $user->email ?: 'Belum diatur' }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $user->isSiswa() ? 'NIS' : 'NIP / Nomor induk' }}</dt><dd class="mt-1 text-slate-700">{{ $user->nomor_induk ?: 'Belum diisi' }}</dd></div>
+                @if($user->isGuru() || $user->isAdmin())<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Username</dt><dd class="mt-1 text-slate-700">{{ $user->username ?: 'Belum dibuat' }}</dd></div>@endif
             </dl>
             <a href="{{ route('password.change') }}" class="lms-button mt-6 w-full border border-slate-300 bg-white text-slate-700">Ganti password</a>
         </aside>
@@ -105,6 +106,27 @@
             <button type="submit" class="lms-button lms-button-primary">Kirim tautan verifikasi email</button>
         </form>
     </section>
+
+    @if($user->isGuru() || $user->isAdmin())
+    <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="profile-username-heading">
+        <h2 id="profile-username-heading" class="text-lg font-bold text-slate-900">Username login</h2>
+        <p class="mt-1 text-sm text-slate-500">Username menjadi alias yang lebih mudah diingat. NIP dan email tetap dapat digunakan untuk login.</p>
+        <form method="POST" action="{{ route('profile.username.update') }}" class="mt-5 grid gap-4 md:grid-cols-2">
+            @csrf @method('PUT')
+            <div>
+                <label for="profile_username" class="block text-sm font-semibold text-slate-800">Username</label>
+                <input id="profile_username" type="text" name="username" value="{{ old('username', $user->username) }}" required minlength="4" maxlength="50" autocomplete="username" class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm" placeholder="contoh: darwati.guru">
+                @error('username')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="profile_username_password" class="block text-sm font-semibold text-slate-800">Konfirmasi password</label>
+                <x-password-input id="profile_username_password" name="current_password" autocomplete="current-password" required wrapper-class="mt-2" class="block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm" />
+                @error('current_password')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div class="md:col-span-2"><button class="lms-button lms-button-primary">Simpan username</button></div>
+        </form>
+    </section>
+    @endif
 </div>
 @endsection
 

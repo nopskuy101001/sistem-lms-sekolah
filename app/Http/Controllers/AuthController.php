@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,8 +22,18 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'nomor_induk';
-        $credentials = [$field => trim($data['login']), 'password' => $data['password']];
+        $login = trim($data['login']);
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            $credentials = ['email' => mb_strtolower($login), 'password' => $data['password']];
+        } else {
+            $account = User::query()
+                ->where('username', mb_strtolower($login))
+                ->orWhere('nomor_induk', $login)
+                ->first();
+            $credentials = $account
+                ? ['id' => $account->id, 'password' => $data['password']]
+                : ['nomor_induk' => $login, 'password' => $data['password']];
+        }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             if ($request->user()->role === 'siswa_pending') {
@@ -30,6 +41,7 @@ class AuthController extends Controller
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
+
                 return redirect()->route('login')
                     ->withErrors(['login' => 'Registrasi mandiri sudah ditutup. Hubungi administrator sekolah untuk pemeriksaan akun dan NIS.']);
             }
@@ -37,6 +49,7 @@ class AuthController extends Controller
 
             if ($request->user()->must_change_password) {
                 $request->session()->forget('password_change_deferred');
+
                 return redirect()->route('password.change');
             }
 
@@ -44,7 +57,7 @@ class AuthController extends Controller
         }
 
         return back()
-            ->withErrors(['login' => 'NIS/email atau password salah.'])
+            ->withErrors(['login' => 'Username, NIS/NIP, email, atau password salah.'])
             ->onlyInput('login');
     }
 

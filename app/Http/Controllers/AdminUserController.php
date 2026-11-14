@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\StudentBatchImportService;
 use App\Services\StudentDataXlsxExporter;
 use App\Services\StudentImportTemplateXlsxExporter;
+use App\Services\TeacherBatchImportService;
+use App\Services\TeacherDataXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,8 @@ class AdminUserController extends Controller
         private readonly StudentBatchImportService $studentImporter,
         private readonly StudentImportTemplateXlsxExporter $studentTemplate,
         private readonly StudentDataXlsxExporter $studentDataExporter,
+        private readonly TeacherBatchImportService $teacherImporter,
+        private readonly TeacherDataXlsxExporter $teacherDataExporter,
     ) {}
 
     public function index(Request $request): View
@@ -36,11 +40,13 @@ class AdminUserController extends Controller
         }
 
         $users = User::query()
+            ->with('teacherProfile')
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->role))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->q.'%';
                 $q->where(fn ($w) => $w->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
+                    ->orWhere('username', 'like', $term)
                     ->orWhere('nomor_induk', 'like', $term)
                     ->orWhere('nipd', 'like', $term)
                     ->orWhere('nisn', 'like', $term));
@@ -58,6 +64,7 @@ class AdminUserController extends Controller
         $request->merge([
             'name' => trim((string) $request->input('name')),
             'email' => strtolower(trim((string) $request->input('email'))),
+            'username' => filled($request->input('username')) ? mb_strtolower(trim((string) $request->input('username'))) : null,
             'nomor_induk' => filled($request->input('nomor_induk'))
                 ? trim((string) $request->input('nomor_induk'))
                 : null,
@@ -66,14 +73,67 @@ class AdminUserController extends Controller
         $data = $request->validateWithBag('staffCreate', [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['nullable', 'string', 'min:4', 'max:50', 'regex:/^(?=.*[a-z])[a-z0-9._-]+$/', 'unique:users,username'],
             'role' => ['required', 'in:admin,guru'],
             'nomor_induk' => ['nullable', 'string', 'max:50', 'regex:/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', 'unique:users,nomor_induk'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
+        if ($data['username'] && User::query()->where('nomor_induk', $data['username'])->exists()) {
+            return back()->withErrors(['username' => 'Username sama dengan nomor induk pengguna lain.'], 'staffCreate')->withInput();
+        }
+        if ($data['nomor_induk'] && User::query()->where('username', mb_strtolower($data['nomor_induk']))->exists()) {
+            return back()->withErrors(['nomor_induk' => 'Nomor induk sama dengan username pengguna lain.'], 'staffCreate')->withInput();
+        }
+
         User::create($data + ['must_change_password' => true]);
 
         return back()->with('success', 'Akun '.($data['role'] === 'guru' ? 'guru' : 'admin').' berhasil dibuat. Pengguna wajib mengganti password awal saat login pertama.');
+    }
+
+    public function importTeachers(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'teacher_file' => ['required', 'file', 'mimes:xlsx', 'max:5120'],
+        ]);
+        $result = $this->teacherImporter->import($data['teacher_file']);
+
+        return back()->with('success', $result['created'].' akun guru berhasil diimport. Login awal memakai NIP angka dan password tanggal lahir.');
+    }
+
+    public function teacherTemplateXlsx(): StreamedResponse
+    {
+        return $this->teacherSpreadsheetDownload(collect(), 'template-import-guru.xlsx', true);
+    }
+
+    public function exportTeachersXlsx(): StreamedResponse
+    {
+        $teachers = User::query()
+            ->where('role', 'guru')
+            ->with(['teacherProfile.rankHistories', 'teacherProfile.positionHistories', 'teacherProfile.trainings', 'teacherProfile.educations'])
+            ->orderBy('name')
+            ->get();
+
+        return $this->teacherSpreadsheetDownload($teachers, 'data-guru-'.now()->format('Y-m-d').'.xlsx');
+    }
+
+    private function teacherSpreadsheetDownload($teachers, string $filename, bool $withGuide = false): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($teachers, $withGuide) {
+            $temporaryPath = tempnam(sys_get_temp_dir(), 'data-guru-');
+            abort_if($temporaryPath === false, 500, 'Folder sementara tidak tersedia.');
+            try {
+                $this->teacherDataExporter->write($temporaryPath, $teachers, $withGuide);
+                readfile($temporaryPath);
+            } finally {
+                if (is_file($temporaryPath)) {
+                    unlink($temporaryPath);
+                }
+            }
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
     }
 
     public function storeStudent(Request $request): RedirectResponse
