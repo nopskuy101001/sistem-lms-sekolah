@@ -78,6 +78,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const dashboardThemeMenu = document.querySelector('[data-dashboard-theme-menu]');
+    const dashboardThemeOptions = [...document.querySelectorAll('[data-dashboard-theme-option]')];
+    const dashboardThemeLabels = {
+        indigo: 'Indigo', ocean: 'Samudra', emerald: 'Zamrud', rose: 'Mawar', amber: 'Senja',
+    };
+    const applyDashboardTheme = (theme, persist = false) => {
+        const normalizedTheme = Object.prototype.hasOwnProperty.call(dashboardThemeLabels, theme) ? theme : 'indigo';
+        themeRoot.dataset.dashboardTheme = normalizedTheme;
+        dashboardThemeOptions.forEach((option) => {
+            option.setAttribute('aria-pressed', String(option.dataset.dashboardThemeOption === normalizedTheme));
+        });
+
+        const trigger = dashboardThemeMenu?.querySelector('summary');
+        if (trigger) {
+            const label = `Ubah warna beranda. Tema aktif: ${dashboardThemeLabels[normalizedTheme]}`;
+            trigger.setAttribute('aria-label', label);
+            trigger.setAttribute('title', label);
+        }
+
+        if (persist) {
+            try {
+                localStorage.setItem('lms-dashboard-theme', normalizedTheme);
+            } catch (_) {}
+        }
+    };
+
+    if (dashboardThemeMenu && dashboardThemeOptions.length) {
+        applyDashboardTheme(themeRoot.dataset.dashboardTheme || 'indigo');
+        dashboardThemeOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                applyDashboardTheme(option.dataset.dashboardThemeOption, true);
+                dashboardThemeMenu.open = false;
+                dashboardThemeMenu.querySelector('summary')?.focus({preventScroll: true});
+            });
+        });
+        document.addEventListener('click', (event) => {
+            if (dashboardThemeMenu.open && !dashboardThemeMenu.contains(event.target)) dashboardThemeMenu.open = false;
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && dashboardThemeMenu.open) {
+                dashboardThemeMenu.open = false;
+                dashboardThemeMenu.querySelector('summary')?.focus({preventScroll: true});
+            }
+        });
+    }
+
     document.querySelectorAll('[data-password-toggle]').forEach((button) => {
         const field = button.closest('.lms-password-field');
         const input = field?.querySelector('input');

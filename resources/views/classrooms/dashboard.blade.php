@@ -4,7 +4,7 @@
 @php
     $hour = now()->hour;
     $greeting = $hour < 11 ? 'Selamat pagi' : ($hour < 15 ? 'Selamat siang' : ($hour < 18 ? 'Selamat sore' : 'Selamat malam'));
-    $firstName = explode(' ', trim(auth()->user()->name))[0];
+    $fullName = trim(auth()->user()->name);
     $statIcons = [
         '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
         '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
@@ -15,12 +15,25 @@
 
 @section('content')
 <section class="lms-hero">
+    <details class="lms-dashboard-theme-menu" data-dashboard-theme-menu>
+        <summary aria-label="Ubah warna beranda" title="Ubah warna beranda">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h3.5A5.5 5.5 0 0 0 21 7.5C21 5 17 3 12 3Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="9" cy="6.5" r="1"/><circle cx="14" cy="6.5" r="1"/></svg>
+        </summary>
+        <div class="lms-dashboard-theme-popover" role="group" aria-label="Pilihan warna beranda">
+            <div class="lms-dashboard-theme-copy"><strong>Warna beranda</strong><span>Tersimpan di perangkat ini</span></div>
+            <div class="lms-dashboard-theme-options">
+                @foreach(['indigo' => 'Indigo', 'ocean' => 'Samudra', 'emerald' => 'Zamrud', 'rose' => 'Mawar', 'amber' => 'Senja'] as $themeValue => $themeLabel)
+                    <button type="button" data-dashboard-theme-option="{{ $themeValue }}" aria-pressed="false"><span class="lms-dashboard-theme-swatch" aria-hidden="true"></span><span>{{ $themeLabel }}</span></button>
+                @endforeach
+            </div>
+        </div>
+    </details>
     <div class="lms-hero-content">
         <span class="lms-hero-kicker">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
             {{ now()->translatedFormat('l, d F Y') }}
         </span>
-        <h1>{{ $greeting }}, {{ $firstName }}!</h1>
+        <h1>{{ $greeting }}, {{ $fullName }}!</h1>
         <p>
             @if(auth()->user()->isSiswa())
                 Siap belajar hari ini? Pantau tugas, kuis, dan materi terbaru dari semua kelasmu dalam satu tempat.

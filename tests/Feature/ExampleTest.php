@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Classroom;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -57,11 +57,15 @@ class ExampleTest extends TestCase
 
     public function test_student_can_open_the_dashboard(): void
     {
-        $student = User::factory()->create(['role' => 'siswa']);
+        $student = User::factory()->create([
+            'name' => 'Ahmad Rizky Pratama',
+            'role' => 'siswa',
+        ]);
 
         $this->actingAs($student)
             ->get(route('dashboard'))
             ->assertOk()
+            ->assertSee(', Ahmad Rizky Pratama!')
             ->assertSee('Kelas Saya')
             ->assertSee('Agenda Terdekat')
             ->assertSee('© 2026 Muhammad Misfalah Saputra');

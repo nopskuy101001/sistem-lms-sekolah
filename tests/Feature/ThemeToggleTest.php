@@ -25,7 +25,14 @@ class ThemeToggleTest extends TestCase
                 ->assertSee('data-sidebar-theme-option="emerald"', false)
                 ->assertSee('data-sidebar-theme-option="rose"', false)
                 ->assertSee('data-sidebar-theme-option="graphite"', false)
+                ->assertSee('data-dashboard-theme-menu', false)
+                ->assertSee('data-dashboard-theme-option="indigo"', false)
+                ->assertSee('data-dashboard-theme-option="ocean"', false)
+                ->assertSee('data-dashboard-theme-option="emerald"', false)
+                ->assertSee('data-dashboard-theme-option="rose"', false)
+                ->assertSee('data-dashboard-theme-option="amber"', false)
                 ->assertSee('Ubah warna sidebar')
+                ->assertSee('Ubah warna beranda')
                 ->assertSee('Aktifkan mode gelap')
                 ->assertSeeInOrder(['lms-brand', 'data-sidebar-theme-menu', 'Menu Utama'], false)
                 ->assertSeeInOrder(['data-theme-toggle', 'lms-notifications'], false);
@@ -83,6 +90,23 @@ class ThemeToggleTest extends TestCase
         $this->assertStringContainsString('var(--sidebar-active-end)', $css);
         $this->assertStringContainsString("localStorage.setItem('lms-sidebar-theme'", $script);
         $this->assertStringContainsString('applySidebarTheme', $script);
-        $this->assertStringContainsString("sidebarThemeMenu.open = false", $script);
+        $this->assertStringContainsString('sidebarThemeMenu.open = false', $script);
+    }
+
+    public function test_dashboard_theme_palette_is_persisted_and_has_distinct_color_schemes(): void
+    {
+        $css = file_get_contents(public_path('css/lms-ui.css'));
+        $script = file_get_contents(public_path('js/lms-ui.js'));
+
+        $this->assertIsString($css);
+        $this->assertIsString($script);
+        foreach (['indigo', 'ocean', 'emerald', 'rose', 'amber'] as $theme) {
+            $this->assertStringContainsString("html[data-dashboard-theme='".$theme."']", $css);
+        }
+        $this->assertStringContainsString('var(--dashboard-hero-start)', $css);
+        $this->assertStringContainsString('var(--dashboard-hero-end)', $css);
+        $this->assertStringContainsString("localStorage.setItem('lms-dashboard-theme'", $script);
+        $this->assertStringContainsString('applyDashboardTheme', $script);
+        $this->assertStringContainsString('dashboardThemeMenu.open = false', $script);
     }
 }

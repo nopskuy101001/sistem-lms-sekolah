@@ -25,6 +25,14 @@
                 if (sidebarThemes.indexOf(savedSidebarTheme) !== -1) sidebarTheme = savedSidebarTheme;
             } catch (_) {}
             document.documentElement.dataset.sidebarTheme = sidebarTheme;
+
+            var dashboardThemes = ['indigo', 'ocean', 'emerald', 'rose', 'amber'];
+            var dashboardTheme = 'indigo';
+            try {
+                var savedDashboardTheme = localStorage.getItem('lms-dashboard-theme');
+                if (dashboardThemes.indexOf(savedDashboardTheme) !== -1) dashboardTheme = savedDashboardTheme;
+            } catch (_) {}
+            document.documentElement.dataset.dashboardTheme = dashboardTheme;
         })();
     </script>
     @endauth
