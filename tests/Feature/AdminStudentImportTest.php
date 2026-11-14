@@ -33,7 +33,7 @@ class AdminStudentImportTest extends TestCase
             ->streamedContent();
 
         $this->assertStringStartsWith("\xEF\xBB\xBFsep=,\r\n", $csv);
-        $this->assertStringContainsString('NIS,Nama,"Tanggal Lahir",Email,"Jenis Kelamin"', $csv);
+        $this->assertStringContainsString('No,Nama,NIPD,JK,NISN,"Tempat Lahir","Tanggal Lahir",NIK,"Rombel Saat Ini",Email', $csv);
         $this->assertStringNotContainsString('Telepon', $csv);
         $this->assertStringNotContainsString('Alamat', $csv);
 
@@ -45,7 +45,7 @@ class AdminStudentImportTest extends TestCase
 
         $path = tempnam(sys_get_temp_dir(), 'student-template-test-');
         file_put_contents($path, $xlsx);
-        $reader = new Reader();
+        $reader = new Reader;
 
         try {
             $reader->open($path);
@@ -104,12 +104,12 @@ class AdminStudentImportTest extends TestCase
     public function test_admin_can_import_excel_students(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'student-import-test-');
-        $writer = new Writer();
+        $writer = new Writer;
         $writer->openToFile($path);
         $writer->addRow(Row::fromValues(StudentImportTemplateXlsxExporter::HEADERS));
         $writer->addRow(Row::fromValues([
-            'XLSX-001', 'Budi Santoso', new \DateTimeImmutable('2006-07-15'),
-            'budi@example.test', 'L',
+            '1', 'Budi Santoso', '13494/496.042', 'L', '0067890123', 'Gresik',
+            new \DateTimeImmutable('2006-07-15'), '3525011507060001', 'X RPL 1', 'budi@example.test',
         ]));
         $writer->close();
 
@@ -127,10 +127,64 @@ class AdminStudentImportTest extends TestCase
                 ->assertRedirect()
                 ->assertSessionHasNoErrors();
 
-            $student = User::where('nomor_induk', 'XLSX-001')->firstOrFail();
+            $student = User::where('nomor_induk', '13494496042')->firstOrFail();
+            $this->assertSame('13494/496.042', $student->nipd);
+            $this->assertSame('0067890123', $student->nisn);
+            $this->assertSame('Gresik', $student->birth_place);
+            $this->assertSame('3525011507060001', $student->nik);
+            $this->assertSame('X RPL 1', $student->current_rombel);
+            $this->assertSame('1', $student->source_number);
             $this->assertSame('2006-07-15', $student->date_of_birth->format('Y-m-d'));
             $this->assertTrue(Hash::check('15072006', $student->password));
+
+            $this->post(route('logout'));
+            $this->post(route('login.attempt'), [
+                'login' => '13494496042',
+                'password' => '15072006',
+            ])->assertRedirect(route('password.change'));
         } finally {
+            @unlink($path);
+        }
+    }
+
+    public function test_admin_can_export_students_with_original_nipd_and_optional_fields(): void
+    {
+        User::factory()->create([
+            'role' => 'siswa',
+            'name' => 'Adinda Ramadhani',
+            'nomor_induk' => '13494496042',
+            'nipd' => '13494/496.042',
+            'nisn' => '0102083824',
+            'birth_place' => 'Lamongan',
+            'date_of_birth' => '2010-08-13',
+            'gender' => 'P',
+            'nik' => '3524125308100001',
+            'current_rombel' => 'XAPL1',
+            'source_number' => '1',
+        ]);
+
+        $xlsx = $this->actingAs($this->admin)
+            ->get(route('admin.users.export.students.xlsx'))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'student-export-test-');
+        file_put_contents($path, $xlsx);
+        $reader = new Reader;
+
+        try {
+            $reader->open($path);
+            $sheet = array_values(iterator_to_array($reader->getSheetIterator()))[0];
+            $rows = array_values(iterator_to_array($sheet->getRowIterator()));
+            $this->assertSame(StudentImportTemplateXlsxExporter::HEADERS, $rows[0]->toArray());
+            $this->assertSame([
+                '1', 'Adinda Ramadhani', '13494/496.042', 'P', '0102083824',
+                'Lamongan', '2010-08-13', '3524125308100001', 'XAPL1',
+                $rows[1]->toArray()[9],
+            ], $rows[1]->toArray());
+        } finally {
+            $reader->close();
             @unlink($path);
         }
     }

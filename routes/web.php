@@ -202,6 +202,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/users/import', [AdminUserController::class, 'importStudents'])->name('admin.users.import');
         Route::get('/users/import/template.csv', [AdminUserController::class, 'studentTemplateCsv'])->name('admin.users.import.template.csv');
         Route::get('/users/import/template.xlsx', [AdminUserController::class, 'studentTemplateXlsx'])->name('admin.users.import.template.xlsx');
+        Route::get('/users/export/students.xlsx', [AdminUserController::class, 'exportStudentsXlsx'])->name('admin.users.export.students.xlsx');
         Route::put('/users/{user}/password', [AdminUserController::class, 'resetPassword'])
             ->middleware('throttle:10,10')
             ->name('admin.users.password.reset');

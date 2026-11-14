@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DiscussionMessage;
 use App\Models\User;
 use App\Services\StudentBatchImportService;
+use App\Services\StudentDataXlsxExporter;
 use App\Services\StudentImportTemplateXlsxExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class AdminUserController extends Controller
     public function __construct(
         private readonly StudentBatchImportService $studentImporter,
         private readonly StudentImportTemplateXlsxExporter $studentTemplate,
+        private readonly StudentDataXlsxExporter $studentDataExporter,
     ) {}
 
     public function index(Request $request): View
@@ -39,7 +41,9 @@ class AdminUserController extends Controller
                 $term = '%'.$request->q.'%';
                 $q->where(fn ($w) => $w->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
-                    ->orWhere('nomor_induk', 'like', $term));
+                    ->orWhere('nomor_induk', 'like', $term)
+                    ->orWhere('nipd', 'like', $term)
+                    ->orWhere('nisn', 'like', $term));
             })
             ->orderBy('role')
             ->orderBy('name')
@@ -178,6 +182,30 @@ class AdminUserController extends Controller
         ]);
     }
 
+    public function exportStudentsXlsx(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $temporaryPath = tempnam(sys_get_temp_dir(), 'data-siswa-');
+            abort_if($temporaryPath === false, 500, 'Folder sementara tidak tersedia.');
+
+            try {
+                $students = User::query()
+                    ->where('role', 'siswa')
+                    ->orderBy('name')
+                    ->get();
+                $this->studentDataExporter->write($temporaryPath, $students);
+                readfile($temporaryPath);
+            } finally {
+                if (is_file($temporaryPath)) {
+                    unlink($temporaryPath);
+                }
+            }
+        }, 'data-siswa-'.now()->format('Y-m-d').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
+    }
+
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
         abort_unless(
@@ -243,7 +271,9 @@ class AdminUserController extends Controller
             ->all();
         $user->notifications()->delete();
         $user->delete();
-        if ($profilePhoto) Storage::disk('public')->delete($profilePhoto);
+        if ($profilePhoto) {
+            Storage::disk('public')->delete($profilePhoto);
+        }
         Storage::disk('local')->delete($discussionAttachments);
 
         return back()->with('success', 'Pengguna dihapus.');

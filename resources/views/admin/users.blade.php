@@ -113,10 +113,14 @@
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Import siswa batch</p>
             <h2 class="mt-1 text-lg font-bold text-slate-900">Buat banyak akun dari CSV atau Excel</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600">Unduh template, isi data siswa, lalu unggah kembali. Kolom wajib adalah NIS, Nama, dan Tanggal Lahir.</p>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Unduh template, isi data siswa, lalu unggah kembali. Kolom wajib adalah NIPD, Nama, dan Tanggal Lahir; kolom lainnya boleh kosong.</p>
             <div class="mt-4 flex flex-wrap gap-2">
                 <a href="{{ route('admin.users.import.template.xlsx') }}" class="lms-button lms-button-primary">Unduh template Excel</a>
                 <a href="{{ route('admin.users.import.template.csv') }}" class="lms-button border border-slate-300 bg-white text-slate-700">Unduh template CSV</a>
+                <a href="{{ route('admin.users.export.students.xlsx') }}" class="lms-button border border-emerald-300 bg-emerald-50 text-emerald-800">Unduh data siswa</a>
+            </div>
+            <div class="mt-4 rounded-xl bg-sky-50 p-3 text-xs leading-5 text-sky-900">
+                <b>Username login:</b> hanya angka dari NIPD. Contoh <code>13494/496.042</code> menjadi <code>13494496042</code>. NIPD asli tetap tersimpan dan muncul saat data diekspor.
             </div>
             <div class="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">
                 <b>Password awal:</b> tanggal lahir dengan format <code>ddmmyyyy</code>. Contoh 22/03/2005 menjadi <code>22032005</code>. Siswa wajib mengganti password saat login pertama.
@@ -187,7 +191,7 @@
             <tr>
                 <th class="text-left px-4 py-3 font-medium">Nama</th>
                 <th class="text-left px-4 py-3 font-medium">Email</th>
-                <th class="text-left px-4 py-3 font-medium">NIP/NIS</th>
+                <th class="text-left px-4 py-3 font-medium">NIP/NIPD</th>
                 <th class="px-4 py-3 font-medium">Role</th>
                 <th class="px-4 py-3"></th>
             </tr>
@@ -197,7 +201,11 @@
                 <tr class="border-t border-slate-100">
                     <td class="px-4 py-3"><span class="flex items-center gap-2"><x-user-avatar :user="$user" class="lms-mini-avatar" /><span>{{ $user->name }}</span></span></td>
                     <td class="px-4 py-3 text-slate-600">{{ $user->email }}</td>
-                    <td class="px-4 py-3 text-slate-600"><span class="block">{{ $user->nomor_induk ?? '-' }}</span>@if($user->date_of_birth)<span class="text-[10px] text-slate-400">Lahir {{ $user->date_of_birth->format('d/m/Y') }}</span>@endif</td>
+                    <td class="px-4 py-3 text-slate-600">
+                        <span class="block">{{ $user->isSiswa() && $user->nipd ? $user->nipd : ($user->nomor_induk ?? '-') }}</span>
+                        @if($user->isSiswa() && $user->nipd)<span class="block text-[10px] text-slate-400">Username {{ $user->nomor_induk }}</span>@endif
+                        @if($user->date_of_birth)<span class="text-[10px] text-slate-400">Lahir {{ $user->date_of_birth->format('d/m/Y') }}</span>@endif
+                    </td>
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full
                             {{ $user->role === 'admin' ? 'bg-violet-50 text-violet-700' : ($user->role === 'guru' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700') }}">

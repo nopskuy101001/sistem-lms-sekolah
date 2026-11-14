@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\User;
 use DateTimeImmutable;
 use DateTimeInterface;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,14 +16,23 @@ use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 
 class StudentBatchImportService
 {
-    private const REQUIRED_HEADERS = ['nis', 'nama', 'tanggallahir'];
+    private const REQUIRED_HEADERS = ['name', 'date_of_birth'];
 
     private const HEADER_MAP = [
-        'nis' => 'nis',
+        'no' => 'source_number',
+        'nomor' => 'source_number',
+        'nis' => 'legacy_nis',
+        'nipd' => 'nipd',
         'nama' => 'name',
         'tanggallahir' => 'date_of_birth',
         'email' => 'email',
+        'jk' => 'gender',
         'jeniskelamin' => 'gender',
+        'nisn' => 'nisn',
+        'tempatlahir' => 'birth_place',
+        'nik' => 'nik',
+        'rombel' => 'current_rombel',
+        'rombelsaatini' => 'current_rombel',
     ];
 
     /** @return array{created:int} */
@@ -50,12 +59,23 @@ class StudentBatchImportService
                     }
                     if ($headers === null) {
                         $headers = $this->headerIndexes($values);
-                        $missing = collect(self::REQUIRED_HEADERS)->reject(fn ($header) => array_key_exists($header, $headers));
+                        $missing = collect(self::REQUIRED_HEADERS)
+                            ->reject(fn ($header) => array_key_exists($header, $headers));
+                        if (! array_key_exists('nipd', $headers) && ! array_key_exists('legacy_nis', $headers)) {
+                            $missing->prepend('nipd');
+                        }
                         if ($missing->isNotEmpty()) {
+                            $labels = $missing->map(fn (string $header) => match ($header) {
+                                'nipd' => 'NIPD',
+                                'name' => 'Nama',
+                                'date_of_birth' => 'Tanggal Lahir',
+                                default => $header,
+                            });
                             throw ValidationException::withMessages([
-                                'student_file' => 'Kolom wajib tidak ditemukan: '.$missing->implode(', ').'. Gunakan template yang disediakan.',
+                                'student_file' => 'Kolom wajib tidak ditemukan: '.$labels->implode(', ').'. Gunakan template yang disediakan.',
                             ]);
                         }
+
                         continue;
                     }
 
@@ -111,7 +131,7 @@ class StudentBatchImportService
             });
         } catch (QueryException $exception) {
             throw ValidationException::withMessages([
-                'student_file' => 'Import dibatalkan karena NIS atau email baru saja digunakan. Muat ulang halaman dan periksa kembali data.',
+                'student_file' => 'Import dibatalkan karena username, NIPD, NISN, atau email baru saja digunakan. Muat ulang halaman dan periksa kembali data.',
             ]);
         }
 
@@ -121,10 +141,10 @@ class StudentBatchImportService
     private function readerFor(UploadedFile $file): CsvReader|XlsxReader
     {
         if (strtolower($file->getClientOriginalExtension()) === 'xlsx') {
-            return new XlsxReader();
+            return new XlsxReader;
         }
 
-        $options = new CsvOptions();
+        $options = new CsvOptions;
         $options->FIELD_DELIMITER = ',';
 
         return new CsvReader($options);
@@ -143,7 +163,8 @@ class StudentBatchImportService
         foreach ($values as $index => $value) {
             $normalized = $this->normalizeHeader((string) $value);
             if (isset(self::HEADER_MAP[$normalized])) {
-                $indexes[$normalized] = $index;
+                $canonical = self::HEADER_MAP[$normalized];
+                $indexes[$canonical] ??= $index;
             }
         }
 
@@ -151,22 +172,35 @@ class StudentBatchImportService
     }
 
     /**
-     * @param array<int, mixed> $values
-     * @param array<string, int> $headers
-     * @param array<int, string> $errors
+     * @param  array<int, mixed>  $values
+     * @param  array<string, int>  $headers
+     * @param  array<int, string>  $errors
      * @return array<string, mixed>|null
      */
     private function parseRow(array $values, array $headers, int $rowNumber, array &$errors): ?array
     {
         $value = fn (string $header) => isset($headers[$header]) ? ($values[$headers[$header]] ?? null) : null;
-        $nis = trim((string) $value('nis'));
-        $name = trim((string) $value('nama'));
-        $dateOfBirth = $this->parseDate($value('tanggallahir'));
+        $usesNipd = array_key_exists('nipd', $headers);
+        $rawIdentifier = trim((string) $value($usesNipd ? 'nipd' : 'legacy_nis'));
+        $loginIdentifier = $usesNipd ? self::normalizeNipd($rawIdentifier) : $rawIdentifier;
+        $name = trim((string) $value('name'));
+        $dateOfBirth = $this->parseDate($value('date_of_birth'));
         $email = trim((string) $value('email'));
-        $gender = $this->parseGender($value('jeniskelamin'));
+        $gender = $this->parseGender($value('gender'));
+        $sourceNumber = $this->optionalText($value('source_number'));
+        $nisn = $this->optionalText($value('nisn'));
+        $birthPlace = $this->optionalText($value('birth_place'));
+        $nik = $this->optionalText($value('nik'));
+        $currentRombel = $this->optionalText($value('current_rombel'));
         $rowErrors = [];
 
-        if ($nis === '' || mb_strlen($nis) > 50 || ! preg_match('/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', $nis)) {
+        if ($usesNipd) {
+            if ($rawIdentifier === '' || mb_strlen($rawIdentifier) > 50 || ! preg_match('/^(?=.*\d)[0-9.\-\/\s]+$/', $rawIdentifier)) {
+                $rowErrors[] = 'NIPD wajib diisi (maks. 50 karakter; berisi angka serta boleh memakai titik, garis miring, tanda hubung, atau spasi)';
+            } elseif ($loginIdentifier === '' || mb_strlen($loginIdentifier) > 50) {
+                $rowErrors[] = 'NIPD tidak menghasilkan username angka yang valid';
+            }
+        } elseif ($rawIdentifier === '' || mb_strlen($rawIdentifier) > 50 || ! preg_match('/^(?=.*[A-Za-z0-9])[A-Za-z0-9.\-\/]+$/', $rawIdentifier)) {
             $rowErrors[] = 'NIS wajib diisi (maks. 50 karakter; minimal satu huruf/angka; boleh memakai titik, garis miring, atau tanda hubung)';
         }
         if ($name === '' || mb_strlen($name) > 255) {
@@ -180,8 +214,23 @@ class StudentBatchImportService
         if ($email !== '' && (! filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255)) {
             $rowErrors[] = 'Email tidak valid';
         }
-        if ($value('jeniskelamin') !== null && trim((string) $value('jeniskelamin')) !== '' && $gender === null) {
+        if ($value('gender') !== null && trim((string) $value('gender')) !== '' && $gender === null) {
             $rowErrors[] = 'Jenis Kelamin harus L atau P';
+        }
+        if ($sourceNumber !== null && mb_strlen($sourceNumber) > 30) {
+            $rowErrors[] = 'No maksimal 30 karakter';
+        }
+        if ($nisn !== null && (! preg_match('/^\d{4,20}$/', $nisn))) {
+            $rowErrors[] = 'NISN harus berisi 4 sampai 20 angka';
+        }
+        if ($birthPlace !== null && mb_strlen($birthPlace) > 100) {
+            $rowErrors[] = 'Tempat Lahir maksimal 100 karakter';
+        }
+        if ($nik !== null && ! preg_match('/^\d{16}$/', $nik)) {
+            $rowErrors[] = 'NIK harus berisi tepat 16 angka';
+        }
+        if ($currentRombel !== null && mb_strlen($currentRombel) > 100) {
+            $rowErrors[] = 'Rombel Saat Ini maksimal 100 karakter';
         }
 
         if ($rowErrors !== []) {
@@ -192,8 +241,14 @@ class StudentBatchImportService
 
         return [
             'name' => $name,
-            'email' => $email !== '' ? strtolower($email) : self::generatedEmailFor($nis),
-            'nomor_induk' => $nis,
+            'email' => $email !== '' ? strtolower($email) : self::generatedEmailFor($loginIdentifier),
+            'nomor_induk' => $loginIdentifier,
+            'nipd' => $rawIdentifier,
+            'nisn' => $nisn,
+            'birth_place' => $birthPlace,
+            'nik' => $nik,
+            'current_rombel' => $currentRombel,
+            'source_number' => $sourceNumber,
             'date_of_birth' => $dateOfBirth,
             'gender' => $gender,
             '_row' => $rowNumber,
@@ -204,15 +259,36 @@ class StudentBatchImportService
     private function validateDuplicates(array &$rows, array &$errors): void
     {
         $nisCounts = collect($rows)->countBy('nomor_induk');
+        $nipdCounts = collect($rows)->pluck('nipd')->filter()->countBy();
+        $nisnCounts = collect($rows)->pluck('nisn')->filter()->countBy();
+        $nikCounts = collect($rows)->pluck('nik')->filter()->countBy();
         $emailCounts = collect($rows)->countBy('email');
         $existingNis = User::whereIn('nomor_induk', collect($rows)->pluck('nomor_induk'))->pluck('nomor_induk')->flip();
+        $existingNipd = User::whereIn('nipd', collect($rows)->pluck('nipd')->filter())->pluck('nipd')->flip();
+        $existingNisn = User::whereIn('nisn', collect($rows)->pluck('nisn')->filter())->pluck('nisn')->flip();
         $existingEmail = User::whereIn('email', collect($rows)->pluck('email'))->pluck('email')->map(fn ($email) => strtolower($email))->flip();
 
         foreach ($rows as &$row) {
             if (($nisCounts[$row['nomor_induk']] ?? 0) > 1) {
-                $errors[] = 'Baris '.$row['_row'].': NIS '.$row['nomor_induk'].' muncul lebih dari sekali dalam file.';
+                $errors[] = 'Baris '.$row['_row'].': username '.$row['nomor_induk'].' muncul lebih dari sekali setelah normalisasi NIPD.';
             } elseif ($existingNis->has($row['nomor_induk'])) {
-                $errors[] = 'Baris '.$row['_row'].': NIS '.$row['nomor_induk'].' sudah terdaftar.';
+                $errors[] = 'Baris '.$row['_row'].': username '.$row['nomor_induk'].' sudah terdaftar.';
+            }
+
+            if (($nipdCounts[$row['nipd']] ?? 0) > 1) {
+                $errors[] = 'Baris '.$row['_row'].': NIPD '.$row['nipd'].' muncul lebih dari sekali dalam file.';
+            } elseif ($existingNipd->has($row['nipd'])) {
+                $errors[] = 'Baris '.$row['_row'].': NIPD '.$row['nipd'].' sudah terdaftar.';
+            }
+
+            if ($row['nisn'] !== null && ($nisnCounts[$row['nisn']] ?? 0) > 1) {
+                $errors[] = 'Baris '.$row['_row'].': NISN '.$row['nisn'].' muncul lebih dari sekali dalam file.';
+            } elseif ($row['nisn'] !== null && $existingNisn->has($row['nisn'])) {
+                $errors[] = 'Baris '.$row['_row'].': NISN '.$row['nisn'].' sudah terdaftar.';
+            }
+
+            if ($row['nik'] !== null && ($nikCounts[$row['nik']] ?? 0) > 1) {
+                $errors[] = 'Baris '.$row['_row'].': NIK muncul lebih dari sekali dalam file.';
             }
 
             if (($emailCounts[$row['email']] ?? 0) > 1) {
@@ -268,6 +344,18 @@ class StudentBatchImportService
         $local = trim((string) preg_replace('/[^A-Za-z0-9]+/', '.', $nis), '.');
 
         return 'siswa.'.strtolower($local).'@akun.ruangkelas.local';
+    }
+
+    public static function normalizeNipd(string $nipd): string
+    {
+        return (string) preg_replace('/\D+/u', '', $nipd);
+    }
+
+    private function optionalText(mixed $value): ?string
+    {
+        $text = trim((string) $value);
+
+        return $text === '' ? null : $text;
     }
 
     private function normalizeHeader(string $header): string

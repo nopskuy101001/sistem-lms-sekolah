@@ -18,6 +18,12 @@ class User extends Authenticatable
         'password',
         'role',
         'nomor_induk',
+        'nipd',
+        'nisn',
+        'birth_place',
+        'nik',
+        'current_rombel',
+        'source_number',
         'date_of_birth',
         'gender',
         'profile_photo_path',
@@ -30,6 +36,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'nik',
     ];
 
     protected function casts(): array
@@ -37,6 +44,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'date_of_birth' => 'date',
+            'nik' => 'encrypted',
             'must_change_password' => 'boolean',
             'profile_photo_zoom' => 'integer',
             'profile_photo_position_x' => 'integer',
