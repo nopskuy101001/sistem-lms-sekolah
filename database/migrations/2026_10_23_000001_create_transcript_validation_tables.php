@@ -73,7 +73,7 @@ return new class extends Migration
                 $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
                 $table->unique(['classroom_id', 'user_id', 'activity_type', 'activity_id'], 'transcript_override_unique');
-                $table->index(['classroom_id', 'activity_type', 'activity_id']);
+                $table->index(['classroom_id', 'activity_type', 'activity_id'], 'transcript_override_activity_idx');
             });
         }
 
@@ -93,6 +93,15 @@ return new class extends Migration
             });
         }
 
+        // A failed MySQL CREATE TABLE may leave earlier DDL changes committed.
+        // Recover the secondary lookup index when the compatible table exists,
+        // while accepting an equivalent index created under another safe name.
+        $this->ensureIndex(
+            'transcript_score_overrides',
+            ['classroom_id', 'activity_type', 'activity_id'],
+            'transcript_override_activity_idx'
+        );
+
         foreach ($schemas as $table => $requirements) {
             $this->assertCompatible($table, $requirements);
         }
@@ -107,9 +116,9 @@ return new class extends Migration
         $existingColumns = array_map('strtolower', Schema::getColumnListing($name));
         $missing = array_diff($requirements['columns'], $existingColumns);
         if ($missing !== []) {
-            throw new \RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel ' . $name
-                . ' sudah ada tetapi kolom berikut tidak ditemukan: ' . implode(', ', $missing)
-                . '. Tidak ada tabel dihapus. Periksa schema secara manual sebelum mengulang upgrade.');
+            throw new RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel '.$name
+                .' sudah ada tetapi kolom berikut tidak ditemukan: '.implode(', ', $missing)
+                .'. Tidak ada tabel dihapus. Periksa schema secara manual sebelum mengulang upgrade.');
         }
 
         $indexes = Schema::getIndexes($name);
@@ -123,9 +132,9 @@ return new class extends Migration
                 }
             }
             if (! $found) {
-                throw new \RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel ' . $name
-                    . ' tidak memiliki unique index pada (' . implode(', ', $wanted)
-                    . '). Tidak ada perubahan otomatis pada tabel yang sudah ada.');
+                throw new RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel '.$name
+                    .' tidak memiliki unique index pada ('.implode(', ', $wanted)
+                    .'). Tidak ada perubahan otomatis pada tabel yang sudah ada.');
             }
         }
 
@@ -143,18 +152,40 @@ return new class extends Migration
                 }
             }
             if (! $found) {
-                throw new \RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel ' . $name
-                    . ' tidak memiliki foreign key ' . $column . ' -> ' . $targetTable
-                    . '. Tidak ada perubahan otomatis pada tabel yang sudah ada.');
+                throw new RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: tabel '.$name
+                    .' tidak memiliki foreign key '.$column.' -> '.$targetTable
+                    .'. Tidak ada perubahan otomatis pada tabel yang sudah ada.');
             }
         }
+    }
+
+    /** Add only the known missing index; never replace or drop an existing index. */
+    private function ensureIndex(string $table, array $columns, string $name): void
+    {
+        foreach (Schema::getIndexes($table) as $index) {
+            $existingName = strtolower((string) ($index['name'] ?? ''));
+            $existingColumns = array_map('strtolower', $index['columns'] ?? []);
+
+            if ($existingColumns === $columns) {
+                return;
+            }
+
+            if ($existingName === strtolower($name)) {
+                throw new RuntimeException('TRANSKRIP_DB_SCHEMA_MISMATCH: index '.$name
+                    .' sudah ada dengan susunan kolom berbeda. Tidak ada index yang dihapus.');
+            }
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($columns, $name) {
+            $blueprint->index($columns, $name);
+        });
     }
 
     public function down(): void
     {
         // The tables may predate the successful migration due to partial MySQL DDL.
         // Deleting them on rollback could destroy teacher-entered scores/snapshots.
-        throw new \RuntimeException('Rollback otomatis migrasi transkrip diblokir untuk melindungi data.'
-            . ' Gunakan prosedur pemulihan database terverifikasi jika diperlukan.');
+        throw new RuntimeException('Rollback otomatis migrasi transkrip diblokir untuk melindungi data.'
+            .' Gunakan prosedur pemulihan database terverifikasi jika diperlukan.');
     }
 };
