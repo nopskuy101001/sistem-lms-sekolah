@@ -1369,6 +1369,10 @@ html[data-theme='dark'] .discussion-conversation-head { background: color-mix(in
 html[data-theme='dark'] .discussion-theme-choice span { border-color: #111a2d; box-shadow: 0 0 0 1px #43506a; }
 
 /* Fast essay grading workspace */
+.essay-grading-page,
+.essay-grading-workspace,
+.essay-review-form,
+.essay-answer-list { width: 100%; min-width: 0; max-width: 100%; }
 .essay-grading-entry { padding: 17px 18px; border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line)); border-radius: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: linear-gradient(120deg, var(--paper), color-mix(in srgb, var(--primary-soft) 55%, var(--paper))); box-shadow: var(--shadow-sm); }
 .essay-grading-entry > div { min-width: 0; display: flex; align-items: center; gap: 12px; }
 .essay-grading-entry-icon { width: 43px; height: 43px; flex: 0 0 auto; border-radius: 13px; display: grid; place-items: center; color: var(--primary); background: var(--primary-soft); }
@@ -1410,7 +1414,7 @@ html[data-theme='dark'] .discussion-theme-choice span { border-color: #111a2d; b
 .essay-student-item > i.pending { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.13); }
 .essay-student-item > i.graded { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.13); }
 .essay-student-empty { padding: 27px 13px; color: var(--muted); font-size: 9px; line-height: 1.6; text-align: center; }
-.essay-answer-panel { min-width: 0; overflow: clip; border: 1px solid var(--line); border-radius: 19px; background: var(--paper); box-shadow: var(--shadow-sm); }
+.essay-answer-panel { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 19px; background: var(--paper); box-shadow: var(--shadow-sm); }
 .essay-answer-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .essay-answer-head > div:first-child > span { color: var(--primary); font-size: 8px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .essay-answer-head h2 { margin: 4px 0 0; font-size: 18px; font-weight: 800; }
@@ -1420,19 +1424,19 @@ html[data-theme='dark'] .discussion-theme-choice span { border-color: #111a2d; b
 .essay-current-score strong { color: var(--primary); font-size: 22px; }
 .essay-current-score span { margin-top: 2px; color: var(--muted); font-size: 7px; }
 .essay-answer-list { padding: 17px; display: grid; gap: 14px; }
-.essay-stimulus-card { padding: 16px; border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--line)); border-radius: 15px; background: color-mix(in srgb, var(--primary-soft) 64%, var(--paper)); }
+.essay-stimulus-card { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; padding: 16px; border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--line)); border-radius: 15px; background: color-mix(in srgb, var(--primary-soft) 64%, var(--paper)); }
 .essay-stimulus-card > span { color: var(--primary); font-size: 8px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .essay-stimulus-card h3 { margin: 6px 0; font-size: 13px; }
 .essay-stimulus-card .quiz-readable-text { margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.7; white-space: pre-line; }
-.essay-review-card { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
-.essay-question-meta { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 8px; }
+.essay-review-card { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
+.essay-question-meta { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 8px; }
 .essay-question-meta span:first-child { color: var(--primary); font-weight: 800; }
 .essay-review-card > h3 { margin: 0; font-size: 12px; line-height: 1.75; font-weight: 700; white-space: pre-line; }
 .essay-student-answer { margin-top: 14px; padding: 14px; border-radius: 13px; background: var(--canvas); }
 .essay-student-answer > span { color: var(--muted); font-size: 7px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .essay-student-answer p { margin: 7px 0 0; color: var(--ink); font-size: 11px; line-height: 1.75; overflow-wrap: anywhere; white-space: pre-line; }
 .essay-score-field { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; color: var(--ink); font-size: 9px; font-weight: 700; }
-.essay-score-field > span:last-child { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.essay-score-field > span:last-child { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .essay-score-field input { width: 92px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--paper); font: inherit; font-size: 12px; }
 .essay-score-field input:focus { border-color: var(--primary); outline: 3px solid color-mix(in srgb, var(--primary) 14%, transparent); }
 .essay-answer-warning { margin: 13px 0 0; color: var(--danger); font-size: 9px; }
@@ -1452,8 +1456,8 @@ html[data-theme='dark'] .discussion-theme-choice span { border-color: #111a2d; b
     .essay-grading-head { align-items: flex-start; flex-direction: column; }
     .essay-grading-progress { width: 100%; }
     .essay-grading-workspace { grid-template-columns: 1fr; }
-    .essay-student-panel { position: static; max-height: none; }
-    .essay-student-list { overflow-x: auto; grid-auto-flow: column; grid-auto-columns: minmax(220px, 75vw); grid-template-columns: none; }
+    .essay-student-panel { position: static; max-height: 390px; }
+    .essay-student-list { max-height: 285px; overflow-x: hidden; overflow-y: auto; grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 540px) {
     .discussion-room-hero { min-height: 0; padding: 21px; border-radius: 19px; }
@@ -1465,11 +1469,23 @@ html[data-theme='dark'] .discussion-theme-choice span { border-color: #111a2d; b
     .essay-grading-head { padding: 20px; border-radius: 18px; }
     .essay-answer-head { align-items: flex-start; flex-direction: column; }
     .essay-current-score { text-align: left; }
-    .essay-answer-list { padding: 12px; }
-    .essay-review-card { padding: 15px; }
+    .essay-answer-list { padding: 10px; gap: 10px; }
+    .essay-stimulus-card, .essay-review-card { padding: 14px; border-radius: 13px; }
+    .essay-student-answer { padding: 12px; }
     .essay-score-field { align-items: flex-start; flex-direction: column; }
-    .essay-score-field > span:last-child, .essay-score-field input { width: 100%; }
-    .essay-grading-actions { bottom: 8px; margin: 0 12px 12px; align-items: stretch; flex-direction: column; }
+    .essay-score-field > span:last-child { width: 100%; }
+    .essay-score-field input { width: auto; min-width: 0; flex: 1 1 auto; }
+    .essay-grading-actions { bottom: calc(8px + env(safe-area-inset-bottom)); margin: 0 10px 10px; padding: 10px; align-items: stretch; flex-direction: column; }
     .essay-grading-actions > div { display: grid; grid-template-columns: 1fr; }
-    .essay-grading-actions .lms-button { width: 100%; }
+    .essay-grading-actions .lms-button { width: 100%; min-width: 0; height: auto; padding-block: 10px; line-height: 1.4; white-space: normal; }
+    .essay-stimulus-card :is(img, video, iframe),
+    .essay-review-card :is(img, video, iframe) { max-width: 100%; }
+    .essay-stimulus-card .quiz-stimulus-table { width: 100%; max-width: 100%; overflow-x: auto; }
+}
+@media (max-width: 380px) {
+    .essay-grading-head { padding: 17px 15px; }
+    .essay-student-panel-head, .essay-answer-head { padding-inline: 14px; }
+    .essay-answer-list { padding: 8px; }
+    .essay-stimulus-card, .essay-review-card { padding: 12px; }
+    .essay-grading-actions { margin-inline: 8px; }
 }
