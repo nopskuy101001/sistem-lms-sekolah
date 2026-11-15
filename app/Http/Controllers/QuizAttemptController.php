@@ -12,6 +12,7 @@ use App\Support\AcademicNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class QuizAttemptController extends Controller
@@ -202,6 +203,70 @@ class QuizAttemptController extends Controller
         ));
     }
 
+    /** Ruang koreksi cepat untuk seluruh jawaban esai dalam satu kuis. */
+    public function essayGrading(Request $request, Quiz $quiz): View|RedirectResponse
+    {
+        $quiz->load(['classroom', 'questions.group']);
+        $this->authorizeManage($quiz->classroom);
+
+        $essayQuestions = $quiz->questions
+            ->where('type', Question::TYPE_ESAI)
+            ->values();
+
+        if ($essayQuestions->isEmpty()) {
+            return redirect()->route('quizzes.show', $quiz)
+                ->withErrors(['grading' => 'Mode koreksi esai hanya tersedia untuk kuis yang memiliki soal esai.']);
+        }
+
+        $essayQuestionIds = $essayQuestions->pluck('id');
+        $attempts = $quiz->attempts()
+            ->whereNotNull('finished_at')
+            ->with('user')
+            ->withCount(['answers as pending_essay_count' => fn ($query) => $query
+                ->whereIn('question_id', $essayQuestionIds)
+                ->whereNull('score')])
+            ->orderBy('is_graded')
+            ->orderBy('finished_at')
+            ->get();
+
+        $pendingCount = $attempts->where('pending_essay_count', '>', 0)->count();
+        $statusFilter = in_array($request->query('status'), ['pending', 'graded', 'all'], true)
+            ? $request->query('status')
+            : ($pendingCount > 0 ? 'pending' : 'all');
+
+        $listedAttempts = (match ($statusFilter) {
+            'pending' => $attempts->where('pending_essay_count', '>', 0),
+            'graded' => $attempts->where('pending_essay_count', 0),
+            default => $attempts,
+        })->values();
+
+        $selectedAttempt = null;
+        if ($request->filled('attempt')) {
+            $selectedAttempt = $attempts->firstWhere('id', $request->integer('attempt'));
+            abort_unless($selectedAttempt, 404);
+
+            if (! $listedAttempts->contains('id', $selectedAttempt->id)) {
+                $statusFilter = 'all';
+                $listedAttempts = $attempts;
+            }
+        } else {
+            $selectedAttempt = $listedAttempts->first();
+        }
+
+        if ($selectedAttempt) {
+            $selectedAttempt->load(['answers' => fn ($query) => $query
+                ->whereIn('question_id', $essayQuestionIds)]);
+        }
+
+        $answers = $selectedAttempt?->answers->keyBy('question_id') ?? collect();
+        $gradedCount = $attempts->count() - $pendingCount;
+
+        return view('quizzes.essay-grading', compact(
+            'quiz', 'essayQuestions', 'attempts', 'listedAttempts', 'selectedAttempt',
+            'answers', 'pendingCount', 'gradedCount', 'statusFilter'
+        ));
+    }
+
     /** Guru menilai jawaban esai. */
     public function grade(Request $request, QuizAttempt $attempt): RedirectResponse
     {
@@ -210,7 +275,25 @@ class QuizAttemptController extends Controller
         $request->validate([
             'scores' => ['required', 'array'],
             'scores.*' => ['nullable', 'numeric', 'min:0'],
+            'grading_mode' => ['sometimes', 'boolean'],
+            'navigation' => ['sometimes', 'in:stay,next'],
         ]);
+
+        if ($request->boolean('grading_mode')) {
+            $essayAnswerIds = $attempt->answers()
+                ->whereHas('question', fn ($query) => $query->where('type', Question::TYPE_ESAI))
+                ->pluck('id');
+            $submittedScores = $request->input('scores', []);
+            $hasMissingScore = $essayAnswerIds->contains(fn ($answerId) => ! array_key_exists($answerId, $submittedScores)
+                || $submittedScores[$answerId] === null
+                || $submittedScores[$answerId] === '');
+
+            if ($hasMissingScore) {
+                return back()->withInput()->withErrors([
+                    'scores' => 'Isi nilai untuk seluruh jawaban esai sebelum berpindah ke siswa berikutnya.',
+                ]);
+            }
+        }
 
         $questions = $attempt->quiz->questions->keyBy('id');
 
@@ -238,11 +321,34 @@ class QuizAttemptController extends Controller
             'grade',
         );
 
+        if ($request->boolean('grading_mode')) {
+            $nextAttempt = null;
+            if ($request->input('navigation') === 'next') {
+                $nextAttempt = $attempt->quiz->attempts()
+                    ->whereNotNull('finished_at')
+                    ->where('id', '!=', $attempt->id)
+                    ->where('is_graded', false)
+                    ->orderBy('finished_at')
+                    ->first();
+            }
+
+            $allReviewed = $request->input('navigation') === 'next' && ! $nextAttempt;
+            $targetAttempt = $nextAttempt ?? $attempt;
+
+            return redirect()->route('quizzes.essay-grading', [
+                'quiz' => $attempt->quiz,
+                'attempt' => $targetAttempt,
+                'status' => $nextAttempt ? 'pending' : 'all',
+            ])->with('success', $allReviewed
+                ? 'Nilai esai disimpan. Semua jawaban yang masuk sudah diperiksa.'
+                : 'Nilai esai disimpan.');
+        }
+
         return back()->with('success', 'Nilai esai disimpan.');
     }
 
     /** Batas waktu pengerjaan (null jika tanpa batas). */
-    private function deadline(QuizAttempt $attempt): ?\Illuminate\Support\Carbon
+    private function deadline(QuizAttempt $attempt): ?Carbon
     {
         $quiz = $attempt->quiz;
         $deadline = null;

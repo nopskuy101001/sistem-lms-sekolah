@@ -239,6 +239,25 @@
         </div>
     </form>
 
+    @php
+        $hasEssay = $quiz->questions->contains(fn ($question) => $question->type === \App\Models\Question::TYPE_ESAI);
+        $finishedAttempts = $attempts->whereNotNull('finished_at');
+        $pendingEssayCount = $finishedAttempts->where('is_graded', false)->count();
+    @endphp
+    @if($hasEssay)
+        <section class="essay-grading-entry mt-7">
+            <div>
+                <span class="essay-grading-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></span>
+                <span><strong>{{ $pendingEssayCount > 0 ? 'Mode Koreksi Esai' : 'Lihat / Koreksi Penilaian' }}</strong><small>{{ $finishedAttempts->isEmpty() ? 'Belum ada jawaban siswa yang dapat dinilai.' : ($pendingEssayCount.' dari '.$finishedAttempts->count().' siswa belum selesai dinilai.') }}</small></span>
+            </div>
+            @if($finishedAttempts->isEmpty())
+                <span class="lms-button essay-grading-entry-disabled" aria-disabled="true">Belum ada jawaban</span>
+            @else
+                <a href="{{ route('quizzes.essay-grading', $quiz) }}" class="lms-button lms-button-primary">Buka ruang koreksi <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a>
+            @endif
+        </section>
+    @endif
+
     <section class="mt-7"><h2 class="text-lg font-semibold mb-3">Hasil siswa</h2><div class="mobile-data-table overflow-x-auto bg-white rounded-2xl border border-slate-200"><table class="min-w-full text-sm"><thead class="bg-slate-50"><tr><th class="text-left px-4 py-3">Siswa</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Nilai</th><th class="px-4 py-3">Integritas</th><th></th></tr></thead><tbody>
         @forelse($attempts as $attempt)<tr class="border-t"><td class="px-4 py-3">{{ $attempt->user->name }}</td><td class="px-4 py-3 text-center">{{ !$attempt->isFinished() ? 'Sedang mengerjakan' : (!$attempt->is_graded ? 'Menunggu nilai esai' : 'Selesai') }}</td><td class="px-4 py-3 text-center">{{ $attempt->isFinished() ? $fmt($attempt->score).' / '.$quiz->totalPoints() : '–' }}</td><td class="px-4 py-3 text-center">@if($quiz->monitoring_enabled || $quiz->require_fullscreen)<span class="integrity-badge {{ $attempt->violation_count === 0 ? 'integrity-safe' : ($attempt->violation_count <= 2 ? 'integrity-review' : 'integrity-risk') }}">{{ $attempt->integrityLabel((int)$attempt->violation_count) }} · {{ $attempt->violation_count }}</span>@else Nonaktif @endif</td><td class="px-4 py-3">@if($attempt->isFinished())<a class="text-indigo-700" href="{{ route('attempts.show',$attempt) }}">Lihat / nilai</a>@endif</td></tr>
         @empty<tr><td colspan="5" class="p-6 text-center text-slate-500">Belum ada siswa yang mengerjakan.</td></tr>@endforelse

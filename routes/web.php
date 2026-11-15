@@ -174,6 +174,7 @@ Route::middleware('auth')->group(function () {
 
     // Pengerjaan kuis
     Route::post('/quizzes/{quiz}/start', [QuizAttemptController::class, 'start'])->name('attempts.start');
+    Route::get('/quizzes/{quiz}/essay-grading', [QuizAttemptController::class, 'essayGrading'])->name('quizzes.essay-grading');
     Route::get('/attempts/{attempt}/take', [QuizAttemptController::class, 'take'])->name('attempts.take');
     Route::post('/attempts/{attempt}/answers', [QuizAttemptController::class, 'saveAnswers'])->name('attempts.answers.save');
     Route::post('/attempts/{attempt}/security-events', [QuizAttemptController::class, 'securityEvent'])->name('attempts.security-events.store');
