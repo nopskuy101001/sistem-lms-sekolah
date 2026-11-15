@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Integrasi Guru')
+@section('title', 'Integrasi')
 
 @section('content')
 <section class="lms-integration-hero">
@@ -7,8 +7,8 @@
         <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v3a6 6 0 0 1-12 0V8Z"/></svg>
     </span>
     <div>
-        <span class="lms-integration-kicker">Khusus guru</span>
-        <h1>Pusat Integrasi Guru</h1>
+        <span class="lms-integration-kicker">Khusus guru dan admin</span>
+        <h1>Pusat Integrasi</h1>
         <p>Akses layanan sekolah pendukung dari satu tempat. Daftar ini dapat dikembangkan saat ada layanan baru.</p>
     </div>
 </section>
@@ -18,11 +18,11 @@
         <h2>Layanan tersedia</h2>
         <p>Pilih layanan yang ingin dibuka.</p>
     </div>
-    <span>{{ count(config('integrations.teacher', [])) }} layanan</span>
+    <span>{{ count(config('integrations.staff', [])) }} layanan</span>
 </div>
 
-<section class="lms-integration-grid" aria-label="Daftar integrasi guru">
-    @forelse(config('integrations.teacher', []) as $key => $integration)
+<section class="lms-integration-grid" aria-label="Daftar integrasi guru dan admin">
+    @forelse(config('integrations.staff', []) as $key => $integration)
         <article class="lms-integration-card" data-integration="{{ $key }}" data-color="{{ $integration['color'] ?? 'indigo' }}">
             <div class="lms-integration-card-top">
                 <span class="lms-integration-logo" aria-hidden="true">
@@ -47,7 +47,7 @@
     @empty
         <div class="lms-empty-state">
             <h3>Belum ada integrasi</h3>
-            <p>Layanan guru yang terhubung akan ditampilkan di sini.</p>
+            <p>Layanan guru dan admin yang terhubung akan ditampilkan di sini.</p>
         </div>
     @endforelse
 </section>

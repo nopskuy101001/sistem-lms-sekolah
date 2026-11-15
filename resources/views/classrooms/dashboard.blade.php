@@ -48,10 +48,10 @@
             @else
                 <a href="#buat-kelas" class="lms-button lms-button-ghost-light">Buat kelas baru</a>
             @endif
-            @if(auth()->user()->isGuru())
+            @if(auth()->user()->isGuru() || auth()->user()->isAdmin())
                 <a href="{{ route('integrations.index') }}" class="lms-button lms-button-ghost-light">
                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v3a6 6 0 0 1-12 0V8Z"/></svg>
-                    Integrasi guru
+                    Integrasi
                 </a>
             @endif
         </div>

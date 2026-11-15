@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'teacher' => [
+    'staff' => [
         'doku' => [
             'name' => 'DoKu',
             'subtitle' => 'Dokumen Kurikulum SMK Negeri 1 Cerme',

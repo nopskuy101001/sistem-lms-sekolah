@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     Route::middleware(RoleMiddleware::class.':guru,admin')->prefix('staff')->group(function () {
+        Route::view('/integrations', 'integrations.index')->name('integrations.index');
         Route::post('/video-uploads/chunks', [ChunkedVideoUploadController::class, 'store'])
             ->middleware('throttle:180,1')
             ->name('video-uploads.chunks');
@@ -87,7 +88,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware(RoleMiddleware::class.':guru')->prefix('teacher')->group(function () {
-        Route::view('/integrations', 'integrations.index')->name('integrations.index');
         Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');
         Route::get('/transcripts/{classroom}/pdf', [TranscriptController::class, 'pdf'])->name('transcripts.pdf');
         Route::get('/transcripts/{classroom}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
