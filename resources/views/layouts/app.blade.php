@@ -83,6 +83,9 @@
                     <a href="{{ route('transcripts.index') }}" class="lms-nav-link {{ request()->routeIs('transcripts.*') ? 'active' : '' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3h16v18H4z"/><path d="M8 7h8M8 11h8M8 15h3"/><path d="m14 16 2 2 4-4"/></svg><span>Transkrip</span>
                     </a>
+                    <a href="{{ route('integrations.index') }}" class="lms-nav-link {{ request()->routeIs('integrations.*') ? 'active' : '' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v3a6 6 0 0 1-12 0V8Z"/></svg><span>Integrasi</span>
+                    </a>
                 @endif
                 @if(auth()->user()->isSiswa())
                     <a href="{{ route('student.transcripts.index') }}" class="lms-nav-link {{ request()->routeIs('student.transcripts.*') ? 'active' : '' }}">
@@ -159,7 +162,7 @@
                         <div class="lms-user-popover">
                             <a href="{{ route('profile.edit') }}">Profil saya</a>
                             <a href="{{ route('dashboard') }}">Beranda saya</a>
-                            @if(auth()->user()->isGuru())<a href="{{ route('question-banks.index') }}">Bank soal</a><a href="{{ route('transcripts.index') }}">Transkrip nilai</a>@endif
+                            @if(auth()->user()->isGuru())<a href="{{ route('question-banks.index') }}">Bank soal</a><a href="{{ route('transcripts.index') }}">Transkrip nilai</a><a href="{{ route('integrations.index') }}">Integrasi guru</a>@endif
                             @if(auth()->user()->isGuru() || auth()->user()->isAdmin())<a href="{{ route('discussion-rooms.index') }}">Diskusi guru</a>@endif
                             @if(auth()->user()->isSiswa())<a href="{{ route('student.transcripts.index') }}">Transkrip saya</a>@endif
                             @if(auth()->user()->isAdmin())<a href="{{ route('admin.users.index') }}">Kelola pengguna</a>@endif

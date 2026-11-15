@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware(RoleMiddleware::class.':guru')->prefix('teacher')->group(function () {
+        Route::view('/integrations', 'integrations.index')->name('integrations.index');
         Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');
         Route::get('/transcripts/{classroom}/pdf', [TranscriptController::class, 'pdf'])->name('transcripts.pdf');
         Route::get('/transcripts/{classroom}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
